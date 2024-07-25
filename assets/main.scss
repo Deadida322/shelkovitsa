@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+
+body {
+    font-family: "Open Sans" !important;
+}
+
+:root {
+    --vs-primary: 196, 25, 36 !important;
+}
+
+.vs-sidebar {
+    position: relative !important;
+    height: fit-content !important;
+    border-radius: 0 0 12px 12px !important;
+    min-width: 300px !important;
+    padding: 10px !important;
+
+    &__logo {
+        padding: 0 12px;
+        min-height: 60px;
+        font-weight: 600;
+    }
+}
+
+.s-input {
+    input {
+        width: 100%;
+    }
+}
+
+.s-input {
+    width: 100% !important;
+}
