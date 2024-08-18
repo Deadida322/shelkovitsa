@@ -18,22 +18,23 @@
             <div class="text-center text-h6 mb-4">
                 Восстановить пароль
             </div>
-            <div class="auth-card__form">
-                <vs-input class="s-input" v-model="user.login" placeholder="Укажите email">
-                    <template #icon>
-                        <v-icon>mdi-email-outline</v-icon>
-                    </template>
-                </vs-input>
-            </div>
-            <div class="auth-card__actions actions">
-                <div class="actions__links">
-                    <nuxt-link to="/signin">Уже етсь аккаунт?</nuxt-link>
-                </div>
-                <div class="actions__button">
-                    <vs-button>Отправить письмо</vs-button>
-                </div>
-            </div>
-            
+            <s-form 
+                class="auth-card__form"
+                button-label="Отправить письмо"
+            >
+                <s-input 
+                    class="s-input" 
+                    icon="email-outline" 
+                    v-model="user.login" 
+                    placeholder="Укажите email"
+                    required
+                    email
+                >
+                </s-input>
+                <template #actions-prepend>
+                    <nuxt-link to="/signin">Уже есть аккаунт?</nuxt-link>
+                </template>
+            </s-form>
         </div>
     </div>
 </template>

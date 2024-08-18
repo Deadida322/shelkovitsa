@@ -1,5 +1,27 @@
 <script setup>
-    const user = ref({});
+    import useVuelidate from '@vuelidate/core';
+    import { email, required, helpers } from '@vuelidate/validators';
+    const rules = {
+        login: {
+            required: helpers.withMessage('Укажите логин', required), 
+            email: helpers.withMessage('Неверный формат почты', email)
+        },
+        password: {
+            required: helpers.withMessage('Укажите пароль', required)
+        }
+    }
+    const user = ref({
+        login: "",
+        password: ""
+    });
+    const $v = useVuelidate(rules, user);
+
+    const onBlur = () => {
+        console.log($v.value.login.$touch)
+    }
+
+    const loginErrors = computed(() => $v.value.login.$errors?.[0]?.$message)
+    const passwordErrors = computed(() => $v.value.password.$errors?.[0]?.$message)
 </script>
 
 <template>
@@ -12,33 +34,44 @@
             <template #icon>
                 <v-icon size="40">mdi-information</v-icon>
             </template>
-            Вы можете <nuxt-link to="/signin">войти в аккаунт</nuxt-link> или <nuxt-link to="/signup">зарегистрировать его</nuxt-link>, чтобы получить дополнительные возможности, а также восстановить пароль
+            Вы можете 
+            <nuxt-link to="/signin">войти в аккаунт</nuxt-link>
+            или 
+            <nuxt-link to="/signup">зарегистрировать его</nuxt-link>, 
+            чтобы получить дополнительные возможности, а также восстановить пароль
         </vs-alert>
         <div class="auth-card">
             <div class="text-center text-h6 mb-4">
                 Войти в аккаунт
             </div>
-            <div class="auth-card__form">
-                <vs-input class="s-input" v-model="user.login" placeholder="Ваш логин">
-                    <template #icon>
-                        <v-icon>mdi-account-outline</v-icon>
-                    </template>
-                </vs-input>
-                <vs-input class="s-input" v-model="user.password" placeholder="Введите пароль">
-                    <template #icon>
-                        <v-icon>mdi-lock-outline</v-icon>
-                    </template>
-                </vs-input>
-            </div>
-            <div class="auth-card__actions actions">
-                <div class="actions__links">
-                    <nuxt-link to="/signup">Ещё нет аккаунта?</nuxt-link>
-                    <nuxt-link to="/recover">Забыли пароль?</nuxt-link>
+            <s-form>
+                <div class="auth-card__form">
+                    <s-input 
+                        class="s-input" 
+                        v-model="user.login" 
+                        placeholder="Ваш логин"
+                        icon="account-outline"
+                        required
+                        email
+                    >
+                    </s-input>
+                    <s-input 
+                        class="s-input" 
+                        v-model="user.password" 
+                        placeholder="Введите пароль"
+                        icon="lock-outline"
+                        required
+                        type="password"
+                    >
+                    </s-input>
                 </div>
-                <div class="actions__button">
-                    <vs-button>Войти</vs-button>
-                </div>
-            </div>
+                <template #actions-prepend>
+                    <div class="actions__links">
+                        <nuxt-link to="/signup">Ещё нет аккаунта?</nuxt-link>
+                        <nuxt-link to="/recover">Забыли пароль?</nuxt-link>
+                    </div>
+                </template>
+            </s-form>
             
         </div>
     </div>
