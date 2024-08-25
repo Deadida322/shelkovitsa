@@ -7,12 +7,12 @@ import { Repository } from 'typeorm';
 export class ProductController {
 	constructor(
 		@InjectRepository(Product)
-		private usersRepository: Repository<Product>
+		private productRepository: Repository<Product>
 	) {}
 
 	@Get(':id')
 	getOne(@Param('id') id: number): Promise<Product> {
-		const p = this.usersRepository.findOne({
+		const p = this.productRepository.findOne({
 			where: {
 				id
 			}
@@ -22,6 +22,6 @@ export class ProductController {
 
 	@Get()
 	getList(): Promise<Product[]> {
-		return this.usersRepository.find();
+		return this.productRepository.find();
 	}
 }
