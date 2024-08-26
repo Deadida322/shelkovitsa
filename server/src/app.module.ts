@@ -8,6 +8,7 @@ import { DataSource } from 'typeorm';
 import { TypeOrmModule } from './db/typeOrmModule';
 import { UserModule } from './user/user.module';
 import { JwtModule } from '@nestjs/jwt';
+import { BenefitModule } from './benefit/benefit.module';
 @Module({
 	imports: [
 		configuration,
@@ -20,7 +21,8 @@ import { JwtModule } from '@nestjs/jwt';
 		ProductModule,
 		AuthModule,
 		AppModule,
-		UserModule
+		UserModule,
+		BenefitModule
 	]
 })
 export class AppModule {

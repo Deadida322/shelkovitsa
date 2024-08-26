@@ -8,23 +8,17 @@ import {
 } from 'typeorm';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
-import { Order } from './Order';
+import { Product } from './Product';
 
 @Entity()
-export class User extends BaseEntity {
+export class ProductFile extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
 	@Column()
-	fio!: string;
+	image!: string;
 
-	@Column({ unique: true })
-	mail!: string;
-
-	@Column()
-	password!: string;
-
-	@Type(() => Order)
-	@ManyToOne(() => Order, (order) => order.user)
-	orders?: Order[];
+	@Type(() => Product)
+	@ManyToOne(() => Product, (product) => product.productFiles)
+	product: Product;
 }
