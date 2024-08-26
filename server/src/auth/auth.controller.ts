@@ -9,6 +9,7 @@ import { convertToClass } from 'src/helpers/convertHelper';
 import { encodePsd } from 'src/helpers/authHelper';
 import { Public } from 'src/decorators/public';
 import { AuthService } from './auth.service';
+import { LoginDto } from './dto/LoginDto';
 
 @Controller('auth')
 export class AuthController {
@@ -42,7 +43,13 @@ export class AuthController {
 
 		const { access_token } = await this.authService.generateAccess(newUser);
 
-		res['access_token'] = access_token;
+		res.access_token = access_token;
 		return res;
+	}
+
+	@Public()
+	@Post('login')
+	async login(@Body() loginDto: LoginDto): Promise<UserDto> {
+		return this.authService.signIn(loginDto);
 	}
 }
