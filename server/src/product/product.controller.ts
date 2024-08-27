@@ -1,7 +1,11 @@
-import { BadRequestException, Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
 import { Repository } from 'typeorm';
+import { GetListDto } from '../common/dto/GetListDto';
+import { convertToClass, convertToClassMany } from 'src/helpers/convertHelper';
+import { ProductDto } from './dto/ProductDto';
+import { FullProductDto } from './dto/FullProductDto';
 
 @Controller('product')
 export class ProductController {
@@ -11,17 +15,26 @@ export class ProductController {
 	) {}
 
 	@Get(':id')
-	getOne(@Param('id') id: number): Promise<Product> {
-		const p = this.productRepository.findOne({
+	async getOne(@Param('id') id: number): Promise<FullProductDto> {
+		const p = await this.productRepository.findOne({
 			where: {
 				id
 			}
 		});
-		throw new BadRequestException('Продукт не найден');
+		if (!p) {
+			throw new NotFoundException('Продукт не найден');
+		}
+		return convertToClass(FullProductDto, p);
 	}
 
-	@Get()
-	getList(): Promise<Product[]> {
-		return this.productRepository.find();
+	@Post()
+	async getList(@Body() getListDto: GetListDto): Promise<ProductDto[]> {
+		const { itemsPerPage, page } = getListDto;
+		const products = await this.productRepository.find({
+			take: itemsPerPage,
+			skip: itemsPerPage * page
+		});
+
+		return convertToClassMany(ProductDto, products);
 	}
 }
