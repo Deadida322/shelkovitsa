@@ -9,6 +9,8 @@ import { TypeOrmModule } from './db/typeOrmModule';
 import { UserModule } from './user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { BenefitModule } from './benefit/benefit.module';
+import { SizeModule } from './size/size.module';
+import { ProductCategoryModule } from './product-category/product-category.module';
 @Module({
 	imports: [
 		configuration,
@@ -22,7 +24,9 @@ import { BenefitModule } from './benefit/benefit.module';
 		AuthModule,
 		AppModule,
 		UserModule,
-		BenefitModule
+		BenefitModule,
+		SizeModule,
+		ProductCategoryModule
 	]
 })
 export class AppModule {
