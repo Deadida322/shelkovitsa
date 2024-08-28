@@ -1,4 +1,13 @@
-import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Get,
+	NotFoundException,
+	Param,
+	Post,
+	UploadedFile,
+	UseInterceptors
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
 import { Repository } from 'typeorm';
@@ -6,6 +15,7 @@ import { GetListDto } from '../common/dto/GetListDto';
 import { convertToClass, convertToClassMany } from 'src/helpers/convertHelper';
 import { ProductDto } from './dto/ProductDto';
 import { FullProductDto } from './dto/FullProductDto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('product')
 export class ProductController {
@@ -36,5 +46,11 @@ export class ProductController {
 		});
 
 		return convertToClassMany(ProductDto, products);
+	}
+
+	@Post('upload')
+	@UseInterceptors(FileInterceptor('file'))
+	uploadFile(@UploadedFile() file: Express.Multer.File) {
+		console.log(file);
 	}
 }
