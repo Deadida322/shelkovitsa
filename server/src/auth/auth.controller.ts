@@ -4,7 +4,6 @@ import { User } from 'src/db/entities/User';
 import { Repository } from 'typeorm';
 import { RegisterDto } from './dto/RegisterDto';
 import { UserDto } from './dto/UserDto';
-import { classToPlain, plainToClass } from 'class-transformer';
 import { convertToClass } from 'src/helpers/convertHelper';
 import { encodePsd } from 'src/helpers/authHelper';
 import { Public } from 'src/decorators/public';
