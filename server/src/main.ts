@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './middleware/errorMiddleware';
 
 async function bootstrap() {
@@ -9,9 +9,18 @@ async function bootstrap() {
 	app.useGlobalPipes(
 		new ValidationPipe({
 			whitelist: true,
+			transform: true,
 			validationError: {
 				target: true
-			}
+			},
+			exceptionFactory: (errors) => {
+				const result = errors.map((error) => ({
+					property: error.property,
+					message: error.constraints[Object.keys(error.constraints)[0]]
+				}));
+				return new UnprocessableEntityException(result);
+			},
+			stopAtFirstError: true
 		})
 	);
 	app.useGlobalFilters(new HttpExceptionFilter());

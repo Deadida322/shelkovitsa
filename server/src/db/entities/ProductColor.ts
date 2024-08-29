@@ -16,6 +16,9 @@ export class ProductColor extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
+	@Column({ default: 0 })
+	amount!: number;
+
 	@Type(() => Product)
 	@ManyToOne(() => Product, (product) => product.productColors)
 	product: Product;

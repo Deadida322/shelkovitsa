@@ -22,9 +22,6 @@ export class FullProductDto {
 	article!: string;
 
 	@Expose()
-	amount!: number;
-
-	@Expose()
 	price!: number;
 
 	@Expose()
