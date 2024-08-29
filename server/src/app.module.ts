@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { ProductModule } from './product/product.module';
 import { AuthModule } from './auth/auth.module';
 import configuration from './config/index';
-import AppDataSource from './db/datasource';
-import { DataSource } from 'typeorm';
 // import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeOrmModule } from './db/typeOrmModule';
 import { UserModule } from './user/user.module';
@@ -11,6 +9,9 @@ import { JwtModule } from '@nestjs/jwt';
 import { BenefitModule } from './benefit/benefit.module';
 import { SizeModule } from './size/size.module';
 import { ProductCategoryModule } from './product-category/product-category.module';
+import { CsvModule } from 'nest-csv-parser';
+import { MulterModule } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 @Module({
 	imports: [
 		configuration,
@@ -20,6 +21,13 @@ import { ProductCategoryModule } from './product-category/product-category.modul
 			secret: process.env.JWT_PUBLIC_KEY,
 			signOptions: { expiresIn: process.env.JWT_PUBLIC_EXP }
 		}),
+		MulterModule.register({
+			// storage: diskStorage({
+			// 	destination: './temp'
+			// })
+			dest: './temp'
+		}),
+		CsvModule,
 		ProductModule,
 		AuthModule,
 		AppModule,

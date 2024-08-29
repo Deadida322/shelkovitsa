@@ -31,9 +31,6 @@ export class Product extends BaseEntity {
 	@Column({ unique: true })
 	article!: string;
 
-	@Column({ default: 0 })
-	amount!: number;
-
 	@Column()
 	price!: number;
 
