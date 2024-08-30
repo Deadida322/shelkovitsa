@@ -1,22 +1,6 @@
-// import { TypeOrmModule } from '@nestjs/typeorm';
-// import { Product } from './entities/Product';
-
-// export default TypeOrmModule.forRoot({
-// 	type: 'postgres',
-// 	host: process.env.DB_HOST,
-// 	port: +process.env.DB_PORT,
-// 	username: process.env.DB_USER,
-// 	password: process.env.DB_PASSWORD,
-// 	database: process.env.DB_NAME,
-// 	entities: [Product],
-// 	// migrations: ['dist/db/migrations/*{.ts,.js}'],
-// 	autoLoadEntities: true,
-// 	logging: false,
-// 	synchronize: false
-// });
-
 import { DataSource } from 'typeorm';
 import 'dotenv/config';
+import * as path from 'path';
 import { Product } from './entities/Product';
 import { User } from './entities/User';
 import { ProductFile } from './entities/ProductFile';
@@ -37,7 +21,8 @@ const AppDataSource = new DataSource({
 	username: process.env.DB_USER,
 	password: process.env.DB_PASSWORD,
 	database: process.env.DB_NAME,
-	entities: [`${__dirname}/entities/**{.ts,.js}`],
+	// entities: [`${__dirname}/entities/**{.ts,.js}`],
+	entities: [path.join(__dirname, 'entities/**{.ts,.js}')],
 	// entities: [
 	// 	Product,
 	// 	User,
@@ -53,7 +38,8 @@ const AppDataSource = new DataSource({
 	// 	ProductCategory,
 	// 	ProductSubcategory
 	// ],
-	migrations: [`${__dirname}/migrations/**{.ts,.js}`],
+	// migrations: [`${__dirname}/migrations/**{.ts,.js}`],
+	migrations: [path.join(__dirname, 'migrations/**{.ts,.js}')],
 	logging: false,
 	synchronize: false
 });
