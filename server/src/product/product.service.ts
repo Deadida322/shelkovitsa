@@ -7,13 +7,18 @@ import { FullProductDto } from './dto/FullProductDto';
 import { convertToClass, convertToClassMany } from 'src/helpers/convertHelper';
 import { GetListDto } from 'src/common/dto/GetListDto';
 import { ProductDto } from './dto/ProductDto';
-
+import { CsvParser } from 'nest-csv-parser';
+import { FileDto } from 'src/common/dto/FileDto';
+import * as fs from 'fs';
+import * as path from 'path';
+import { ParseProductDto } from './dto/ParseProductDto';
 @Injectable()
 export class ProductService {
 	constructor(
 		@InjectRepository(Product)
 		private productRepository: Repository<Product>,
-		private configService: ConfigService
+		private configService: ConfigService,
+		private csvParser: CsvParser
 	) {}
 
 	async getById(id: number) {
@@ -37,5 +42,23 @@ export class ProductService {
 		});
 
 		return convertToClassMany(ProductDto, products);
+	}
+	async parseProduct(file: FileDto): Promise<void> {
+		const filePath = path.join(process.cwd(), 'temp', file.filename);
+		try {
+			const stream = fs.createReadStream(filePath);
+			// console.log(filePath);
+
+			const entities: unknown = await this.csvParser.parse(stream, ParseProductDto);
+		} catch (err) {
+			console.log(err);
+		}
+		// let i = 0;
+		// (entities as ParseProductDto[]).forEach((el) => {
+		// 	if (i < 2) {
+		// 		console.log({ el });
+		// 	}
+		// 	i++;
+		// });
 	}
 }

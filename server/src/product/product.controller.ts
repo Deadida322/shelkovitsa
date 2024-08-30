@@ -17,7 +17,11 @@ import { ProductService } from './product.service';
 import { CsvParser } from 'nest-csv-parser';
 import { diskStorage } from 'multer';
 import * as path from 'path';
-
+import { FileDto } from 'src/common/dto/FileDto';
+import * as papa from 'papaparse';
+import { Readable } from 'stream';
+import { createReadStream } from 'fs';
+import * as csv from 'csv-parser';
 @Controller('product')
 export class ProductController {
 	constructor(
@@ -47,7 +51,7 @@ export class ProductController {
 			})
 		})
 	)
-	uploadFile(
+	async uploadFile(
 		@UploadedFile(
 			new ParseFilePipeBuilder()
 				.addFileTypeValidator({
@@ -62,10 +66,35 @@ export class ProductController {
 		)
 		file: Express.Multer.File
 	) {
-		const response = {
-			originalname: file.originalname,
-			filename: file.filename
-		};
-		return response;
+		// const fileDto: FileDto = {
+		// 	originalname: file.originalname,
+		// 	filename: file.filename
+		// };
+		// const stream = Readable.from(file.buffer);
+		// papa.parse(stream, {
+		// 	header: true,
+		// 	worker: true,
+		// 	delimiter: ',',
+		// 	step: function (row) {
+		// 		console.log('Row: ', row.data);
+		// 	}
+		// });
+		const results = [];
+		createReadStream(file.path)
+			.pipe(
+				csv({
+					separator: ',',
+					headers: false
+				})
+			)
+			.on('data', (data) => {
+				console.log('data');
+				results.push(data);
+			})
+			.on('error', (err) => console.log('err'));
+		// console.log(results);
+
+		// await this.productService.parseProduct(fileDto);
+		return {};
 	}
 }
