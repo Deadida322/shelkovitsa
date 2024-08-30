@@ -12,6 +12,7 @@ import { ProductCategoryModule } from './product-category/product-category.modul
 import { CsvModule } from 'nest-csv-parser';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
 	imports: [
 		configuration,
@@ -21,11 +22,15 @@ import { diskStorage } from 'multer';
 			secret: process.env.JWT_PUBLIC_KEY,
 			signOptions: { expiresIn: process.env.JWT_PUBLIC_EXP }
 		}),
-		MulterModule.register({
+		MulterModule.registerAsync({
+			imports: [ConfigModule],
+			useFactory: async (configService: ConfigService) => ({
+				dest: './temp'
+			}),
+			inject: [ConfigService]
 			// storage: diskStorage({
 			// 	destination: './temp'
 			// })
-			dest: './temp'
 		}),
 		CsvModule,
 		ProductModule,

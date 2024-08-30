@@ -9,7 +9,6 @@ import {
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { Product } from './Product';
-import { Color } from './Color';
 
 @Entity()
 export class ProductColor extends BaseEntity {
@@ -23,7 +22,6 @@ export class ProductColor extends BaseEntity {
 	@ManyToOne(() => Product, (product) => product.productColors)
 	product: Product;
 
-	@Type(() => Color)
-	@ManyToOne(() => Color, (color) => color.productColors, { eager: true })
-	color: Color;
+	@Column()
+	name!: string;
 }

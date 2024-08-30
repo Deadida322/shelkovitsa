@@ -23,7 +23,12 @@ import { ProductFile } from './entities/ProductFile';
 import { Benefit } from './entities/Benefit';
 import { ProductSize } from './entities/ProductSize';
 import { Size } from './entities/Size';
-import { Color } from './entities/Color';
+import { DeliveryType } from './entities/DeliveryType';
+import { Order } from './entities/Order';
+import { OrderProduct } from './entities/OrderProduct';
+import { ProductCategory } from './entities/ProductCategory';
+import { ProductColor } from './entities/ProductColor';
+import { ProductSubcategory } from './entities/ProductSubcategory';
 
 const AppDataSource = new DataSource({
 	type: 'postgres',
@@ -33,7 +38,21 @@ const AppDataSource = new DataSource({
 	password: process.env.DB_PASSWORD,
 	database: process.env.DB_NAME,
 	entities: [`${__dirname}/entities/**{.ts,.js}`],
-	// entities: [Product, User, ProductFile, Benefit, Size, ProductSize, Color],
+	// entities: [
+	// 	Product,
+	// 	User,
+	// 	ProductFile,
+	// 	Benefit,
+	// 	Size,
+	// 	ProductSize,
+	// 	DeliveryType,
+	// 	Order,
+	// 	OrderProduct,
+	// 	ProductCategory,
+	// 	ProductColor,
+	// 	ProductCategory,
+	// 	ProductSubcategory
+	// ],
 	migrations: [`${__dirname}/migrations/**{.ts,.js}`],
 	logging: false,
 	synchronize: false
