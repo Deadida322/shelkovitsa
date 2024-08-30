@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { ProductService } from './product.service';
 import { CsvParser } from 'nest-csv-parser';
 import { diskStorage } from 'multer';
+import * as path from 'path';
 
 @Controller('product')
 export class ProductController {
@@ -35,29 +36,14 @@ export class ProductController {
 		return this.productService.getList(getListDto);
 	}
 
-	// @Post('upload')
-	// @UseInterceptors(FileInterceptor('file'))
-	// uploadFile(
-	// 	@UploadedFile(
-	// 		new ParseEnumPipe({
-	// 			validator: [
-	// 				new MaxFileSizeValidator({
-	// 					maxSize: 10000,
-	// 					message: 'Файл слишком большой'
-	// 				}),
-	// 				new FileTypeValidator({ fileType: 'text/csv' })
-	// 			]
-	// 		})
-	// 	)
-	// 	file: Express.Multer.File
-	// ) {
-	// 	console.log(file);
-	// }
 	@Post('upload')
 	@UseInterceptors(
 		FileInterceptor('file', {
 			storage: diskStorage({
-				destination: './temp'
+				destination: './temp',
+				filename: function (req, file, cb) {
+					cb(null, Date.now() + path.extname(file.originalname)); //Appending extension
+				}
 			})
 		})
 	)

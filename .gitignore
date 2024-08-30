@@ -7,11 +7,15 @@
 dist
 
 # Node dependencies
-/temp
 /dist
 /node_modules
 node_modules
 /build
+
+# tmp
+/temp/*
+/temp
+temp
 
 # Logs
 logs

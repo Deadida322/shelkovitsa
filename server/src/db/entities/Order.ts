@@ -5,6 +5,12 @@ import { OrderProduct } from './OrderProduct';
 import { DeliveryType } from './DeliveryType';
 import { User } from './User';
 
+export enum OrderStatus {
+	CREATE = 'create',
+	PAYMENT = 'payment',
+	CLOSE = 'close'
+}
+
 @Entity()
 export class Order extends BaseEntity {
 	@PrimaryGeneratedColumn()
@@ -48,4 +54,11 @@ export class Order extends BaseEntity {
 		eager: true
 	})
 	user!: User;
+
+	@Column({
+		type: 'enum',
+		enum: OrderStatus,
+		default: OrderStatus.CREATE
+	})
+	status: OrderStatus;
 }

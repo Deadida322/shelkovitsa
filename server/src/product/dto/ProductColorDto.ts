@@ -1,5 +1,4 @@
 import { Expose } from 'class-transformer';
-import { ColorDto } from './ColorDto';
 
 export class ProductColorDto {
 	@Expose()
@@ -9,5 +8,5 @@ export class ProductColorDto {
 	amount!: number;
 
 	@Expose()
-	color: ColorDto;
+	name!: string;
 }
