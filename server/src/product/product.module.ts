@@ -5,9 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
 import { ConfigModule } from '@nestjs/config';
 import { CsvModule } from 'nest-csv-parser';
+import { ProductColor } from 'src/db/entities/ProductColor';
 
 @Module({
-	imports: [TypeOrmModule.forFeature([Product]), ConfigModule, CsvModule],
+	imports: [TypeOrmModule.forFeature([Product, ProductColor]), ConfigModule, CsvModule],
 	controllers: [ProductController],
 	providers: [ProductService]
 })

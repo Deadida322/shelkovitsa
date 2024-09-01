@@ -22,6 +22,8 @@ import * as papa from 'papaparse';
 import { Readable } from 'stream';
 import { createReadStream } from 'fs';
 import * as csv from 'csv-parser';
+import * as fs from 'fs';
+import { ParseProductDto } from './dto/ParseProductDto';
 @Controller('product')
 export class ProductController {
 	constructor(
@@ -66,35 +68,58 @@ export class ProductController {
 		)
 		file: Express.Multer.File
 	) {
-		// const fileDto: FileDto = {
-		// 	originalname: file.originalname,
-		// 	filename: file.filename
-		// };
-		// const stream = Readable.from(file.buffer);
-		// papa.parse(stream, {
-		// 	header: true,
-		// 	worker: true,
-		// 	delimiter: ',',
-		// 	step: function (row) {
-		// 		console.log('Row: ', row.data);
-		// 	}
-		// });
-		const results = [];
-		createReadStream(file.path)
-			.pipe(
-				csv({
-					separator: ',',
-					headers: false
-				})
-			)
-			.on('data', (data) => {
-				console.log('data');
-				results.push(data);
-			})
-			.on('error', (err) => console.log('err'));
-		// console.log(results);
+		const filePath = path.join(process.cwd(), 'temp', file.filename);
+		const stream = fs.createReadStream(filePath);
+		// const result: ParseProductDto[] = [];
+		const service = this.productService;
+		papa.parse(stream, {
+			header: false,
+			worker: true,
+			delimiter: ';',
+			step: async function (row) {
+				const productParse: ParseProductDto = {
+					article: row.data[0] ?? '',
+					name: row.data[1] ?? '',
+					color: row.data[2] ?? '',
+					size: row.data[3] ?? '',
+					amount: Number(row.data[4].replace(',', '.') ?? -1),
+					price: Number(row.data[5].replace(',', '.') ?? -1)
+				};
+				console.log(productParse);
 
-		// await this.productService.parseProduct(fileDto);
+				await service.parseProduct(productParse);
+			}
+		});
 		return {};
 	}
+
+	// @Post('upload')
+	// @UseInterceptors(
+	// 	FileInterceptor('file', {
+	// 		storage: diskStorage({
+	// 			destination: './temp',
+	// 			filename: function (req, file, cb) {
+	// 				cb(null, Date.now() + path.extname(file.originalname)); //Appending extension
+	// 			}
+	// 		})
+	// 	})
+	// )
+	// async uploadFile(
+	// 	@UploadedFile(
+	// 		new ParseFilePipeBuilder()
+	// 			.addFileTypeValidator({
+	// 				fileType: 'csv'
+	// 			})
+	// 			.addMaxSizeValidator({
+	// 				maxSize: 10000000
+	// 			})
+	// 			.build({
+	// 				fileIsRequired: true
+	// 			})
+	// 	)
+	// 	file: Express.Multer.File
+	// ) {
+	// 	await this.productService.parseProduct(file);
+	// 	return {};
+	// }
 }

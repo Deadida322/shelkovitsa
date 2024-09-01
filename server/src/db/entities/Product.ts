@@ -31,7 +31,9 @@ export class Product extends BaseEntity {
 	@Column({ unique: true })
 	article!: string;
 
-	@Column()
+	@Column({
+		type: 'decimal'
+	})
 	price!: number;
 
 	@Type(() => ProductFile)
@@ -60,7 +62,7 @@ export class Product extends BaseEntity {
 			eager: true
 		}
 	)
-	productSubcategory: ProductSubcategory;
+	productSubcategory?: ProductSubcategory;
 
 	@Type(() => OrderProduct)
 	@OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)

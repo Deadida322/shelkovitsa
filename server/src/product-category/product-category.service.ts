@@ -5,6 +5,8 @@ import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { Repository } from 'typeorm';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
 import { convertToClassMany } from 'src/helpers/convertHelper';
+import { Product } from 'src/db/entities/Product';
+import { ProductDto } from 'src/product/dto/ProductDto';
 
 @Injectable()
 export class ProductCategoryService {
@@ -12,7 +14,9 @@ export class ProductCategoryService {
 		@InjectRepository(ProductCategory)
 		private productCategoryRepository: Repository<ProductCategory>,
 		@InjectRepository(ProductSubcategory)
-		private productSubcategoryRepository: Repository<ProductSubcategory>
+		private productSubcategoryRepository: Repository<ProductSubcategory>,
+		@InjectRepository(Product)
+		private productRepository: Repository<Product>
 	) {}
 
 	async getList(): Promise<ListProductCategoryDto[]> {
@@ -23,5 +27,19 @@ export class ProductCategoryService {
 		});
 
 		return convertToClassMany(ListProductCategoryDto, cats);
+	}
+
+	async geProductsByCategory(id: number): Promise<ProductDto[]> {
+		const products = await this.productRepository.find({
+			where: {
+				productSubcategory: {
+					productCategory: {
+						id
+					}
+				}
+			}
+		});
+
+		return convertToClassMany(ProductDto, products);
 	}
 }
