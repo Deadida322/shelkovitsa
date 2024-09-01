@@ -18,6 +18,7 @@ export default ConfigModule.forRoot({
 			JWT_PUBLIC_KEY: process.env.JWT_PUBLIC_KEY,
 			JWT_PUBLIC_EXP: process.env.JWT_PUBLIC_EXP,
 			PSD_KEY: process.env.PSD_KEY,
+
 			OWNER_ID: process.env.OWNER_ID
 		})
 	],

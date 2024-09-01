@@ -14,8 +14,8 @@ export class ParseProductDto {
 	size: string;
 
 	@Expose()
-	amount: string;
+	amount: number;
 
 	@Expose()
-	price: string;
+	price: number;
 }
