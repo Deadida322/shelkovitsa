@@ -28,12 +28,26 @@
             border-radius: 12px;
             padding: 24px;
             align-items: center;
+
+            @media screen and (max-width: 600px) {
+                padding: 12px;
+            }
         }
 
         &__title {
             color: $primary;
             font-size: 18px;
             font-weight: 600;
+
+            @media screen and (max-width: 600px) {
+                font-size: 16px;
+            }
+        }
+
+        &__text {
+            @media screen and (max-width: 600px) {
+                font-size: 14px;
+            }
         }
     }
 </style>

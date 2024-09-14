@@ -1,6 +1,6 @@
 <template>
     <div class="catalog-page">
-        <h2 class="text-h6 mt-4 mb-4">Каталог</h2>
+        <h2 class="text-h6 mt-sm-4 mb-4">Каталог</h2>
         <client-only>
             <vs-input class="s-input" placeholder="Поиск в категории" icon-after>
                 <template #icon>
@@ -60,9 +60,21 @@ const buttonLabel = computed(() => {
         justify-content: flex-start;
         gap: 14px;
         margin-top: 30px;
+
         .shop-item {
             flex: 0 0 calc(33.3333% - 10px);
             margin-bottom: 14px;
+
+            @media screen and (max-width: 800px) {
+                flex: 0 0 calc(50% - 10px);
+            }
+
+            @media screen and (max-width: 450px) {
+                flex: 0 0 100%;
+                .vs-card {
+                    max-width: 100%;
+                }
+            }
         }
     }
 

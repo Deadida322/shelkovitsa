@@ -24,8 +24,16 @@
     gap: 40px;
     width: 100%;
 
+    @media screen and (max-width: 1200px) {
+        padding: 0 8px;
+    }
+
     &__menu {
         min-width: 300px;
+
+        @media screen and (max-width: 1000px) {
+            display: none;
+        }
     }
 
     &__main {

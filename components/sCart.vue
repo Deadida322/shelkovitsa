@@ -95,17 +95,32 @@
     .s-cart {
         display: flex;
         position: fixed;
+        z-index: 1;
         bottom: 0;
         right: 20px;
-        z-index: 99999999;
         width: 400px;
-        box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.2);
+        box-shadow: 0px 0px 6px 0px rgba(34, 60, 80, 0.2);
         background-color: white;
-        border-radius:12px 12px 0px 0;
+        border-radius: 12px 12px 0px 0;
         padding: 20px;
         flex-direction: column;
         transition: .3s all ease-in;
         transform: translateY(calc(100% - 60px));
+
+        @media screen and (max-width: 1200px) {
+            width: 300px;
+        }
+
+        @media screen and (max-width: 800px) {
+            padding: 12px;
+            transform: translateY(calc(100% - 44px));
+            right: 10px;
+        }
+
+        @media screen and (max-width: 600px) {
+            width: 98%;
+            right: 1%
+        }
 
         &_opened {
             transform: translate(0);

@@ -95,7 +95,7 @@
                 </template>
             </vs-table>
             <div v-else>
-                <vs-alert class="mt-4" color="success">
+                <vs-alert class="mt-4 alert" color="success">
                     <template #icon>
                         <v-icon size="40">mdi-cart-outline</v-icon>
                     </template>
@@ -222,7 +222,7 @@
             </template>
         </v-stepper>
 
-        <vs-alert class="mt-4" color="#1A5CFF">
+        <vs-alert class="mt-4 alert" color="#1A5CFF">
             <template #icon>
                 <v-icon size="32">mdi-information</v-icon>
             </template>
@@ -307,5 +307,11 @@
 
     .vs-select {
         max-width: 100%;
+    }
+</style>
+
+<style lang="scss" scoped>
+    .alert {
+        z-index: -1;
     }
 </style>

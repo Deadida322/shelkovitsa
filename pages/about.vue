@@ -24,8 +24,7 @@
         <div class="h2 text-h6 text-center">Популярно сейчас</div>
         <div class="s-shop-carousel">
             <client-only>
-                <s-shop-item v-for="item in mockShops.splice(0,3)" :item="item"></s-shop-item>
-
+                <s-shop-item v-for="item in mockShops.splice(0, bp.isMobile ? 2 : 3)" :item="item"></s-shop-item>
             </client-only>
         </div>
         <div class="d-flex justify-center mt-4 mb-4">
@@ -37,7 +36,8 @@
 <script setup>
 import advantages from '~/assets/js/advantages';
 import mockShops from '~/assets/js/mockShops';
-
+import useBreakpoints from '~/composables/breakpoints';
+const bp = useBreakpoints();
 const toDisplay = ref(4);
 
 const toggle = () => {
@@ -59,7 +59,7 @@ const buttonLabel = computed(() => {
 })
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
 
     .s-shop-carousel {
         margin-top: 40px;
@@ -68,6 +68,10 @@ const buttonLabel = computed(() => {
     }
 
     .about-page {
+        @media screen and (max-width: 600px) {
+            margin-top: -80px;
+        }
+
         &__advantages {
             display: flex;
             flex-direction: column;
@@ -80,6 +84,9 @@ const buttonLabel = computed(() => {
         &__title {
             color: $primary;
 
+            @media screen and (max-width: 600px) {
+                font-size: 24px !important;
+            }
         }
 
         &__image {

@@ -27,11 +27,29 @@
         padding: 40px 160px;
         padding-bottom: 80px;
         position: relative;
+        
+        @media screen and (max-width: 1000px) {
+            padding: 40px;
+            padding-bottom: 80px;
+        }
+
+        @media screen and (max-width: 600px) {
+            padding: 12px;
+            padding-bottom: 60px;
+        }
+
+        @media screen and (max-width: 450px) {
+            flex-direction: column;
+        }
 
         &__col {
             width: 33%;
             display: flex;
             flex-direction: column;
+
+            @media screen and (max-width: 450px) {
+                width: 100%;
+            }
         }
 
         &__title {
@@ -40,11 +58,25 @@
             border-bottom: 2px solid $primary;
             margin-bottom: 40px;
             padding-bottom: 4px;
+            
+            @media screen and (max-width: 600px) {
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+
+            @media screen and (max-width: 450px) {
+                margin-bottom: 10px;
+            }
         }
 
         &__item {
             margin-bottom: 20px;
-            font-size: 14px;
+            font-size: 12px;
+
+            @media screen and (max-width: 600px) {
+                font-size: 10px;
+                margin-bottom: 10px;
+            }
         }
 
         &__watermark {
