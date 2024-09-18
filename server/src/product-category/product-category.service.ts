@@ -32,9 +32,11 @@ export class ProductCategoryService {
 	async geProductsByCategory(id: number): Promise<ProductDto[]> {
 		const products = await this.productRepository.find({
 			where: {
-				productSubcategory: {
-					productCategory: {
-						id
+				productArticle: {
+					productSubcategory: {
+						productCategory: {
+							id
+						}
 					}
 				}
 			}

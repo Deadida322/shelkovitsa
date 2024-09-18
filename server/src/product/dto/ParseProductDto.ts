@@ -5,9 +5,6 @@ export class ParseProductDto {
 	article: string;
 
 	@Expose()
-	name: string;
-
-	@Expose()
 	color: string;
 
 	@Expose()
