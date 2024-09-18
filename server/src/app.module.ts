@@ -9,7 +9,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { BenefitModule } from './benefit/benefit.module';
 import { SizeModule } from './size/size.module';
 import { ProductCategoryModule } from './product-category/product-category.module';
-import { CsvModule } from 'nest-csv-parser';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -32,7 +31,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 			// 	destination: './temp'
 			// })
 		}),
-		CsvModule,
 		ProductModule,
 		AuthModule,
 		AppModule,

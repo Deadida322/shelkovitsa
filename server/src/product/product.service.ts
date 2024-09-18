@@ -7,12 +7,15 @@ import { FullProductDto } from './dto/FullProductDto';
 import { convertToClass, convertToClassMany } from 'src/helpers/convertHelper';
 import { GetListDto } from 'src/common/dto/GetListDto';
 import { ProductDto } from './dto/ProductDto';
-import { CsvParser } from 'nest-csv-parser';
 import { FileDto } from 'src/common/dto/FileDto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ParseProductDto } from './dto/ParseProductDto';
 import { ProductColor } from 'src/db/entities/ProductColor';
+import xlsx from 'node-xlsx';
+import { ProductSize } from 'src/db/entities/ProductSize';
+import { ProductArticle } from 'src/db/entities/ProductArticle';
+
 @Injectable()
 export class ProductService {
 	constructor(
@@ -20,8 +23,10 @@ export class ProductService {
 		private productRepository: Repository<Product>,
 		@InjectRepository(ProductColor)
 		private productColorRepository: Repository<ProductColor>,
-		private configService: ConfigService,
-		private csvParser: CsvParser
+		@InjectRepository(ProductSize)
+		private productSizeRepository: Repository<ProductSize>,
+		@InjectRepository(ProductArticle)
+		private productArticleRepository: Repository<ProductArticle>
 	) {}
 
 	async getById(id: number) {
@@ -46,78 +51,65 @@ export class ProductService {
 
 		return convertToClassMany(ProductDto, products);
 	}
-	// async parseProducts(file: FileDto): Promise<void> {
-	// 	const filePath = path.join(process.cwd(), 'temp', file.filename);
-	// 	try {
-	// 		const stream = fs.createReadStream(filePath);
 
-	// 		const entities: unknown = await this.csvParser.parse(
-	// 			stream,
-	// 			ParseProductDto,
-	// 			null,
-	// 			1
-	// 		);
-	// 		let i = 0;
-	// 		(entities as ParseProductDto[]).forEach((el) => {
-	// 			if (i < 2) {
-	// 				console.log({ el });
-	// 			}
-	// 			i++;
-	// 		});
-	// 	} catch (err) {
-	// 		console.log(err);
-	// 	}
-	// }
-	async parseProduct(productDto: ParseProductDto): Promise<void> {
-		const { name, amount, article, color, price, size } = productDto;
+	async parseExcelFile(filePath: string) {
+		const workSheetsFromFile = xlsx.parse(filePath);
+		const data = workSheetsFromFile[0].data;
+
+		data.forEach((row) => {
+			try {
+				const product: ParseProductDto = {
+					article: row[1] ?? '',
+					color: row[2] ?? '',
+					size: row[3] ?? '',
+					amount: Number(row[4] ?? -1),
+					price: Number(row[5] ?? -1)
+				};
+				console.log(product);
+			} catch (err) {}
+		});
+	}
+
+	private async parseProduct(productDto: ParseProductDto): Promise<void> {
+		const { amount, article, color, price, size } = productDto;
 
 		const existProduct = await this.productRepository.findOne({
 			where: {
-				article
-			}
-		});
-		let product: Product;
-		if (existProduct) {
-			await this.productRepository.update(
-				{
+				productArticle: {
 					article
 				},
-				{
-					name,
-					price
+				productColor: {
+					name: color
+				},
+				productSize: {
+					name: size
 				}
+			}
+		});
+
+		if (existProduct) {
+			await this.productRepository.upsert(
+				{
+					id: existProduct.id,
+					is_deleted: false,
+					amount,
+					price
+				},
+				{ conflictPaths: ['id'] }
 			);
-			product = await this.productRepository.findOne({
+		} else {
+			let productArticle = await this.productArticleRepository.findOne({
 				where: {
 					article
 				}
 			});
-		} else {
-			product = await this.productRepository.save({
-				name,
-				price,
-				article
-			});
-		}
-
-		const existColor = await this.productColorRepository.findOne({
-			where: {
-				name: color,
-				amount
+			if (!productArticle) {
+				productArticle = await this.productArticleRepository.save({
+					name: article
+				});
 			}
-		});
-		if (existColor) {
-			await this.productColorRepository.update(
-				{ name, id: product.id },
-				{
-					amount
-				}
-			);
-		} else {
-			await this.productColorRepository.save({
-				color: name,
-				amount
-			});
+
+			// подумать про цвета и т.д.
 		}
 	}
 }

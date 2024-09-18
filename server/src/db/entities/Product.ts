@@ -1,68 +1,48 @@
-import {
-	Entity,
-	Column,
-	PrimaryGeneratedColumn,
-	OneToMany,
-	OneToOne,
-	ManyToOne
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
-import { ProductFile } from './ProductFile';
 import { ProductSize } from './ProductSize';
 import { ProductColor } from './ProductColor';
-import { ProductSubcategory } from './ProductSubcategory';
 import { OrderProduct } from './OrderProduct';
+import { ProductArticle } from './ProductArticle';
+import { ProductFile } from './ProductFile';
 
 @Entity()
 export class Product extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
-	@Column()
-	name!: string;
-
-	@Column({ nullable: true })
-	description?: string;
-
-	@Column({ nullable: true })
-	logo?: string;
-
-	@Column({ unique: true })
-	article!: string;
+	@Column({ default: 0 })
+	amount!: number;
 
 	@Column({
 		type: 'decimal'
 	})
 	price!: number;
 
+	@Type(() => ProductArticle)
+	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.products, {
+		eager: true
+	})
+	productArticle?: ProductArticle;
+
+	@Type(() => ProductSize)
+	@ManyToOne(() => ProductSize, (productSize) => productSize.products, {
+		eager: true
+	})
+	productSize?: ProductSize;
+
+	@Type(() => ProductColor)
+	@ManyToOne(() => ProductColor, (productColor) => productColor.products, {
+		eager: true
+	})
+	productColor?: ProductColor[];
+
 	@Type(() => ProductFile)
 	@OneToMany(() => ProductFile, (productFile) => productFile.product, {
 		eager: true
 	})
 	productFiles?: ProductFile[];
-
-	@Type(() => ProductSize)
-	@OneToMany(() => ProductSize, (productSize) => productSize.product, {
-		eager: true
-	})
-	productSizes?: ProductSize[];
-
-	@Type(() => ProductColor)
-	@OneToMany(() => ProductColor, (productColor) => productColor.product, {
-		eager: true
-	})
-	productColors?: ProductColor[];
-
-	@Type(() => ProductSubcategory)
-	@ManyToOne(
-		() => ProductSubcategory,
-		(productSubcategory) => productSubcategory.products,
-		{
-			eager: true
-		}
-	)
-	productSubcategory?: ProductSubcategory;
 
 	@Type(() => OrderProduct)
 	@OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)

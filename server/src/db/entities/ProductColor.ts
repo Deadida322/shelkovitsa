@@ -1,11 +1,4 @@
-import {
-	Entity,
-	Column,
-	PrimaryGeneratedColumn,
-	OneToMany,
-	OneToOne,
-	ManyToOne
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { Product } from './Product';
@@ -15,12 +8,9 @@ export class ProductColor extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
-	@Column({ default: 0 })
-	amount!: number;
-
 	@Type(() => Product)
-	@ManyToOne(() => Product, (product) => product.productColors)
-	product: Product;
+	@OneToMany(() => Product, (product) => product.productColor)
+	products: Product[];
 
 	@Column()
 	name!: string;
