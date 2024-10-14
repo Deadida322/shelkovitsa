@@ -17,7 +17,7 @@ export class ProductSubcategory extends BaseEntity {
 		() => ProductArticle,
 		(productArticle) => productArticle.productSubcategory
 	)
-	pProductArticles?: ProductArticle[];
+	productArticles?: ProductArticle[];
 
 	@Type(() => ProductCategory)
 	@ManyToOne(

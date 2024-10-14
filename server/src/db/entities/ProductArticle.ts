@@ -3,6 +3,7 @@ import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { ProductSubcategory } from './ProductSubcategory';
 import { Product } from './Product';
+import { ProductFile } from './ProductFile';
 
 @Entity()
 export class ProductArticle extends BaseEntity {
@@ -21,6 +22,16 @@ export class ProductArticle extends BaseEntity {
 	@Column({ unique: true })
 	article!: string;
 
+	@Column({
+		type: 'decimal'
+	})
+	price!: number;
+
+	@Column({
+		default: false
+	})
+	isVisible!: boolean;
+
 	@Type(() => Product)
 	@OneToMany(() => Product, (product) => product.productArticle)
 	products?: Product[];
@@ -28,10 +39,16 @@ export class ProductArticle extends BaseEntity {
 	@Type(() => ProductSubcategory)
 	@ManyToOne(
 		() => ProductSubcategory,
-		(productSubcategory) => productSubcategory.pProductArticles,
+		(productSubcategory) => productSubcategory.productArticles,
 		{
 			eager: true
 		}
 	)
 	productSubcategory?: ProductSubcategory;
+
+	@Type(() => ProductFile)
+	@OneToMany(() => ProductFile, (productFile) => productFile.product, {
+		eager: true
+	})
+	productFiles?: ProductFile[];
 }

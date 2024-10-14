@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
-import { Product } from './Product';
+import { ProductArticle } from './ProductArticle';
 
 @Entity()
 export class ProductFile extends BaseEntity {
@@ -11,7 +11,7 @@ export class ProductFile extends BaseEntity {
 	@Column()
 	image!: string;
 
-	@Type(() => Product)
-	@ManyToOne(() => Product, (product) => product.productFiles)
-	product: Product;
+	@Type(() => ProductArticle)
+	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.productFiles)
+	product: ProductArticle;
 }

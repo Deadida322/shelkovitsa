@@ -16,10 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { ProductService } from './product.service';
 import { diskStorage } from 'multer';
 import * as path from 'path';
-import { FileDto } from 'src/common/dto/FileDto';
-import * as fs from 'fs';
-import { ParseProductDto } from './dto/ParseProductDto';
-import xlsx from 'node-xlsx';
+import { UploadFileDto } from './dto/UploadFileDto';
 
 @Controller('product')
 export class ProductController {
@@ -63,10 +60,11 @@ export class ProductController {
 					fileIsRequired: true
 				})
 		)
-		file: Express.Multer.File
+		file: Express.Multer.File,
+		@Body() uploadFileDto: UploadFileDto
 	) {
 		const filePath = path.join(process.cwd(), 'temp', file.filename);
-		this.productService.parseExcelFile(filePath);
+		this.productService.parseExcelFile(filePath, uploadFileDto);
 		return {};
 	}
 }

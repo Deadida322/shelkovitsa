@@ -7,10 +7,8 @@ import { TypeOrmModule } from './db/typeOrmModule';
 import { UserModule } from './user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { BenefitModule } from './benefit/benefit.module';
-import { SizeModule } from './size/size.module';
 import { ProductCategoryModule } from './product-category/product-category.module';
 import { MulterModule } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
 	imports: [
@@ -36,7 +34,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 		AppModule,
 		UserModule,
 		BenefitModule,
-		SizeModule,
 		ProductCategoryModule
 	]
 })

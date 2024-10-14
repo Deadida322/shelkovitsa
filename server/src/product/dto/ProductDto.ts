@@ -16,7 +16,4 @@ export class ProductDto {
 
 	@Expose()
 	article!: string;
-
-	@Expose()
-	price!: number;
 }

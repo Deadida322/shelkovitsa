@@ -15,6 +15,7 @@ import { ProductColor } from 'src/db/entities/ProductColor';
 import xlsx from 'node-xlsx';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
+import { UploadFileDto } from './dto/UploadFileDto';
 
 @Injectable()
 export class ProductService {
@@ -52,7 +53,7 @@ export class ProductService {
 		return convertToClassMany(ProductDto, products);
 	}
 
-	async parseExcelFile(filePath: string) {
+	async parseExcelFile(filePath: string, uploadFileDto: UploadFileDto) {
 		const workSheetsFromFile = xlsx.parse(filePath);
 		const data = workSheetsFromFile[0].data;
 
@@ -92,8 +93,7 @@ export class ProductService {
 				{
 					id: existProduct.id,
 					is_deleted: false,
-					amount,
-					price
+					amount
 				},
 				{ conflictPaths: ['id'] }
 			);
@@ -105,8 +105,10 @@ export class ProductService {
 			});
 			if (!productArticle) {
 				productArticle = await this.productArticleRepository.save({
-					name: article
+					name: article,
+					price
 				});
+			} else {
 			}
 
 			// подумать про цвета и т.д.

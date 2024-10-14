@@ -15,11 +15,6 @@ export class Product extends BaseEntity {
 	@Column({ default: 0 })
 	amount!: number;
 
-	@Column({
-		type: 'decimal'
-	})
-	price!: number;
-
 	@Type(() => ProductArticle)
 	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.products, {
 		eager: true
@@ -37,12 +32,6 @@ export class Product extends BaseEntity {
 		eager: true
 	})
 	productColor?: ProductColor[];
-
-	@Type(() => ProductFile)
-	@OneToMany(() => ProductFile, (productFile) => productFile.product, {
-		eager: true
-	})
-	productFiles?: ProductFile[];
 
 	@Type(() => OrderProduct)
 	@OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)
