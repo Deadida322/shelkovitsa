@@ -4,34 +4,33 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
 import { ObjectId, Repository } from 'typeorm';
 import { FullProductDto } from './dto/FullProductDto';
-import { convertToClass, convertToClassMany } from 'src/helpers/convertHelper';
+import { convertToJson } from 'src/helpers/convertHelper';
 import { GetListDto } from 'src/common/dto/GetListDto';
 import { ProductDto } from './dto/ProductDto';
-import { FileDto } from 'src/common/dto/FileDto';
-import * as fs from 'fs';
-import * as path from 'path';
 import { ParseProductDto } from './dto/ParseProductDto';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import xlsx from 'node-xlsx';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { UploadFileDto } from './dto/UploadFileDto';
+import {
+	getPaginateResult,
+	getPaginateWhere,
+	IPaginateResult
+} from '../helpers/paginateHelper';
 
 @Injectable()
 export class ProductService {
 	constructor(
 		@InjectRepository(Product)
 		private productRepository: Repository<Product>,
-		@InjectRepository(ProductColor)
-		private productColorRepository: Repository<ProductColor>,
-		@InjectRepository(ProductSize)
-		private productSizeRepository: Repository<ProductSize>,
+
 		@InjectRepository(ProductArticle)
 		private productArticleRepository: Repository<ProductArticle>
 	) {}
 
 	async getById(id: number) {
-		const p = await this.productRepository.findOne({
+		const p = await this.productArticleRepository.findOne({
 			where: {
 				id
 			}
@@ -39,18 +38,49 @@ export class ProductService {
 		if (!p) {
 			throw new NotFoundException('Продукт не найден');
 		}
-		return convertToClass(FullProductDto, p);
+		return convertToJson(FullProductDto, p);
 	}
 
-	async getList(getListDto: GetListDto): Promise<ProductDto[]> {
-		const { itemsPerPage, page } = getListDto;
-
-		const products = await this.productRepository.find({
-			take: itemsPerPage,
-			skip: itemsPerPage * page
+	async getList(getListDto: GetListDto): Promise<IPaginateResult<ProductDto>> {
+		const [result, total] = await this.productArticleRepository.findAndCount({
+			...getPaginateWhere(getListDto)
 		});
 
-		return convertToClassMany(ProductDto, products);
+		return getPaginateResult(ProductDto, result, total, getListDto);
+	}
+
+	async geProductsByCategory(
+		id: number,
+		getListDto: GetListDto
+	): Promise<IPaginateResult<ProductDto>> {
+		const [result, total] = await this.productArticleRepository.findAndCount({
+			where: {
+				productSubcategory: {
+					productCategory: {
+						id
+					}
+				}
+			},
+			...getPaginateWhere(getListDto)
+		});
+
+		return getPaginateResult(ProductDto, result, total, getListDto);
+	}
+
+	async geProductsBySubcategory(
+		id: number,
+		getListDto: GetListDto
+	): Promise<IPaginateResult<ProductDto>> {
+		const [result, total] = await this.productArticleRepository.findAndCount({
+			where: {
+				productSubcategory: {
+					id
+				}
+			},
+			...getPaginateWhere(getListDto)
+		});
+
+		return getPaginateResult(ProductDto, result, total, getListDto);
 	}
 
 	async parseExcelFile(filePath: string, uploadFileDto: UploadFileDto) {

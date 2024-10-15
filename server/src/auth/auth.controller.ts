@@ -4,7 +4,7 @@ import { User } from 'src/db/entities/User';
 import { Repository } from 'typeorm';
 import { RegisterDto } from './dto/RegisterDto';
 import { UserDto } from './dto/UserDto';
-import { convertToClass } from 'src/helpers/convertHelper';
+import { convertToJson } from 'src/helpers/convertHelper';
 import { encodePsd } from 'src/helpers/authHelper';
 import { Public } from 'src/decorators/public';
 import { AuthService } from './auth.service';
@@ -38,7 +38,7 @@ export class AuthController {
 			password: encodePsd(registerDto.password)
 		});
 
-		const res = convertToClass(UserDto, newUser);
+		const res = convertToJson(UserDto, newUser);
 
 		const { access_token } = await this.authService.generateAccess(newUser);
 
