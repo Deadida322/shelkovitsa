@@ -3,5 +3,5 @@ import 'reflect-metadata';
 
 export class UploadFileDto {
 	@Expose()
-	isDeletedOther!: boolean;
+	isDeletedOther?: boolean = false;
 }

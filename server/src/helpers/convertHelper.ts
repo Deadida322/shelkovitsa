@@ -25,13 +25,9 @@ export function convertToJsonMany<T, U>(cls: ClassConstructor<T>, payload: U[]):
 }
 
 export function convertToClass<T>(cls: ClassConstructor<T>, payload: any): T {
-	return plainToClass(cls, payload, {
-		...convertOptions
-	});
+	return plainToClass(cls, payload);
 }
 
 export function convertToClassMany<T>(cls: ClassConstructor<T>, payload: any[]): T[] {
-	return plainToClass(cls, payload, {
-		...convertOptions
-	});
+	return plainToClass(cls, payload);
 }

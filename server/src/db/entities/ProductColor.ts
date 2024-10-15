@@ -12,6 +12,8 @@ export class ProductColor extends BaseEntity {
 	@OneToMany(() => Product, (product) => product.productColor)
 	products: Product[];
 
-	@Column()
+	@Column({
+		unique: true
+	})
 	name!: string;
 }

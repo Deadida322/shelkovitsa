@@ -12,5 +12,5 @@ export class BenefitDto {
 	description!: string;
 
 	@Expose()
-	image!: string;
+	logo!: string;
 }

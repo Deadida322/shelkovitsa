@@ -12,18 +12,16 @@ import { GetListDto } from '../common/dto/GetListDto';
 import { ProductDto } from './dto/ProductDto';
 import { FullProductDto } from './dto/FullProductDto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ConfigService } from '@nestjs/config';
 import { ProductService } from './product.service';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { UploadFileDto } from './dto/UploadFileDto';
+import { IPaginateResult } from 'src/helpers/paginateHelper';
+import { excelFileType } from './product.types';
 
 @Controller('product')
 export class ProductController {
-	constructor(
-		private productService: ProductService,
-		private configService: ConfigService
-	) {}
+	constructor(private productService: ProductService) {}
 
 	@Get(':id')
 	async getOne(@Param('id') id: number): Promise<FullProductDto> {
@@ -31,8 +29,24 @@ export class ProductController {
 	}
 
 	@Post()
-	async getList(@Body() getListDto: GetListDto): Promise<ProductDto[]> {
+	async getList(@Body() getListDto: GetListDto) {
 		return this.productService.getList(getListDto);
+	}
+
+	@Post('/category/:id')
+	async getProductByCategory(
+		@Param('id') id: number,
+		@Body() getListDto: GetListDto
+	): Promise<IPaginateResult<ProductDto>> {
+		return this.productService.geProductsByCategory(id, getListDto);
+	}
+
+	@Post('/subcategory/:id')
+	async getProductBySubcategory(
+		@Param('id') id: number,
+		@Body() getListDto: GetListDto
+	): Promise<IPaginateResult<ProductDto>> {
+		return this.productService.geProductsBySubcategory(id, getListDto);
 	}
 
 	@Post('upload')
@@ -50,8 +64,7 @@ export class ProductController {
 		@UploadedFile(
 			new ParseFilePipeBuilder()
 				.addFileTypeValidator({
-					fileType:
-						'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|application/vnd.ms-excel'
+					fileType: excelFileType
 				})
 				.addMaxSizeValidator({
 					maxSize: 10000000

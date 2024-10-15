@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Benefit } from 'src/db/entities/Benefit';
 import { Repository } from 'typeorm';
 import { BenefitDto } from './dto/BenefitDto';
-import { convertToClassMany } from 'src/helpers/convertHelper';
+import { convertToJsonMany } from 'src/helpers/convertHelper';
 
 @Injectable()
 export class BenefitService {
@@ -15,6 +15,6 @@ export class BenefitService {
 	async getList(): Promise<BenefitDto[]> {
 		const benefits = await this.benefitRepository.find({});
 
-		return convertToClassMany(BenefitDto, benefits);
+		return convertToJsonMany(BenefitDto, benefits);
 	}
 }
