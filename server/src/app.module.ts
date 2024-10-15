@@ -10,6 +10,7 @@ import { BenefitModule } from './benefit/benefit.module';
 import { ProductCategoryModule } from './product-category/product-category.module';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { FileModule } from './file/file.module';
 @Module({
 	imports: [
 		configuration,
@@ -34,7 +35,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 		AppModule,
 		UserModule,
 		BenefitModule,
-		ProductCategoryModule
+		ProductCategoryModule,
+		FileModule
 	]
 })
 export class AppModule {
