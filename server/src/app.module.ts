@@ -12,6 +12,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { FileModule } from './file/file.module';
 import { ProductColorModule } from './product-color/product-color.module';
+import { OrderModule } from './order/order.module';
 @Module({
 	imports: [
 		configuration,
@@ -38,7 +39,8 @@ import { ProductColorModule } from './product-color/product-color.module';
 		BenefitModule,
 		ProductCategoryModule,
 		FileModule,
-		ProductColorModule
+		ProductColorModule,
+		OrderModule
 	]
 })
 export class AppModule {

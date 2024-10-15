@@ -1,6 +1,5 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ProductColorService } from './product-color.service';
-import { ProductCategoryDto } from 'src/product-category/dto/ProductCategoryDto';
 import { ProductColorDto } from 'src/product/dto/ProductColorDto';
 import { CreateProductColorDto } from './dto/CreateProductColorDto';
 
