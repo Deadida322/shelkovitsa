@@ -1,0 +1,28 @@
+{
+    "extends": [
+        "stylelint-config-standard",
+        "stylelint-config-standard-scss",
+        "stylelint-config-recommended-vue/scss",
+        "stylelint-config-prettier",
+        "prettier"
+    ],
+    "plugins": [
+        "stylelint-color-format",
+        "stylelint-z-index-value-constraint"
+    ],
+    "rules": {
+        "selector-class-pattern": null,
+        "color-format/format": {
+            "format": "rgba"
+        },
+        "plugin/z-index-value-constraint": {
+            "min": 0,
+            "max": 8
+        }
+    },
+    "ignoreFiles": [
+        "**/*.js",
+        "**/*.mjs",
+        "**/*.jsx"
+    ]
+}

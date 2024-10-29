@@ -1,7 +1,6 @@
-export default function useComponentValue({modelValue, emit}) {
-    console.log(modelValue)
+export default function useComponentValue({ modelValue, emit }) {
     return computed({
-        set: (val) => emit("update:model-value", val),
-        get: () => modelValue?.value
-    })
-} 
+        set: val => emit('update:model-value', val),
+        get: () => modelValue?.value,
+    });
+}

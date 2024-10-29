@@ -1,5 +1,15 @@
 <script setup>
-    const user = ref({});
+import { helpers } from '@vuelidate/validators';
+
+const { $api } = useNuxtApp();
+const user = ref({});
+const rePasswordValidation = computed(() => ({
+    rePassword: helpers.withMessage('Пароли должны совпадать', () => user.value.password === user.value.rePassword),
+}));
+
+function onSubmit() {
+    $api('/api/auth/register', { method: 'POST', body: user.value });
+}
 </script>
 
 <template>
@@ -7,53 +17,78 @@
         <div class="login-page__header text-h6 text-center mb-12">
             Регистрация
         </div>
-
-        <vs-alert color="#1A5CFF" type="info">
+        <vs-alert
+            color="#1A5CFF"
+            type="info"
+        >
             <template #icon>
-                <v-icon size="40">mdi-information</v-icon>
+                <v-icon size="40">
+                    mdi-information
+                </v-icon>
             </template>
-            Вы можете <nuxt-link to="/signin">войти в аккаунт</nuxt-link> или <nuxt-link to="/signup">зарегистрировать его</nuxt-link>, чтобы получить дополнительные возможности, а также восстановить пароль
+            Вы можете <nuxt-link to="/signin">
+                войти в аккаунт
+            </nuxt-link> или <nuxt-link to="/signup">
+                зарегистрировать его
+            </nuxt-link>, чтобы получить дополнительные возможности, а также восстановить пароль
         </vs-alert>
         <div class="auth-card">
-            <div class="text-center text-h6 mb-4">
-                Зарегистрировать аккаунт
-            </div>
-            <div class="auth-card__form">
-                <vs-input class="s-input" v-model="user.login" placeholder="Ваш email">
-                    <template #icon>
-                        <v-icon>mdi-email-outline</v-icon>
-                    </template>
-                </vs-input>
-                <vs-input class="s-input" v-model="user.login" placeholder="ФИО">
-                    <template #icon>
-                        <v-icon>mdi-account-outline</v-icon>
-                    </template>
-                </vs-input>
-                <vs-input class="s-input" v-model="user.password" placeholder="Введите пароль">
-                    <template #icon>
-                        <v-icon>mdi-lock-outline</v-icon>
-                    </template>
-                </vs-input>
-                <vs-input class="s-input" v-model="user.password" placeholder="Повторите пароль">
-                    <template #icon>
-                        <v-icon>mdi-lock-outline</v-icon>
-                    </template>
-                </vs-input>
-            </div>
-            <div class="auth-card__actions actions">
-                <div class="actions__links">
-                    <nuxt-link to="/signup">Ещё нет аккаунта?</nuxt-link>
-                    <nuxt-link to="/recover">Забыли пароль?</nuxt-link>
+            <s-form button-label="Зарегистрироваться" @submit="onSubmit">
+                <div class="text-center text-h6 mb-4">
+                    Зарегистрировать аккаунт
                 </div>
-                <div class="actions__button">
-                    <vs-button>Зарегистрировать</vs-button>
+                <div class="auth-card__form">
+                    <s-input
+                        v-model="user.mail"
+                        class="s-input"
+                        required
+                        email
+                        placeholder="Ваш email"
+                        icon="email-outline"
+                    />
+                    <s-input
+                        v-model="user.fio"
+                        class="s-input"
+                        required
+                        placeholder="ФИО"
+                        icon="account-outline"
+                    />
+                    <s-input
+                        v-model="user.password"
+                        class="s-input"
+                        placeholder="Введите пароль"
+                        type="password"
+                        icon="lock-outline"
+                        required
+                        :min-length="8"
+                    >
+                        <template #icon>
+                            <v-icon>mdi-lock-outline</v-icon>
+                        </template>
+                    </s-input>
+                    <s-input
+                        v-model="user.rePassword"
+                        class="s-input"
+                        placeholder="Повторите пароль"
+                        type="password"
+                        :custom-rules="rePasswordValidation"
+                        icon="lock-outline"
+                    />
                 </div>
-            </div>
-            
+                <template #actions-prepend>
+                    <div class="actions__links">
+                        <nuxt-link to="/signin">
+                            Уже есть аккаунт?
+                        </nuxt-link>
+                        <nuxt-link to="/recover">
+                            Забыли пароль?
+                        </nuxt-link>
+                    </div>
+                </template>
+            </s-form>
         </div>
     </div>
 </template>
-
 
 <style lang="scss">
 .auth-card {

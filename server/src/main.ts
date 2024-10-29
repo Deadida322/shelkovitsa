@@ -23,6 +23,7 @@ async function bootstrap() {
 			stopAtFirstError: true
 		})
 	);
+	app.enableCors();
 	app.useGlobalFilters(new HttpExceptionFilter());
 	await app.listen(process.env.PORT);
 

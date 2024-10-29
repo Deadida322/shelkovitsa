@@ -1,17 +1,16 @@
 <template>
     <div class="shelkovitsa-main">
-        <s-header></s-header>
+        <s-header />
         <div class="shelkovitsa-body">
             <div class="shelkovitsa-body__main">
-                <slot/>
+                <slot />
             </div>
             <div class="shelkovitsa-body__menu">
-                <s-category-menu></s-category-menu>
+                <s-category-menu />
             </div>
-            
         </div>
-        <s-footer class="mt-12"></s-footer>
-        <s-cart></s-cart>
+        <s-footer class="mt-12" />
+        <s-cart />
     </div>
 </template>
 

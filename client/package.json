@@ -1,29 +1,40 @@
 {
-  "name": "nuxt-app",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
-  },
-  "dependencies": {
-    "@vuelidate/core": "^2.0.3",
-    "@vuelidate/validators": "^2.0.4",
-    "@vuesax-alpha/icons-vue": "^0.0.2-beta.12",
-    "@vueuse/core": "^11.0.3",
-    "nuxt": "^3.10.3",
-    "nuxt-app": "file:",
-    "vue": "latest",
-    "vue3-carousel": "^0.3.3",
-    "vuesax": "^4.0.1-alpha.25",
-    "vuesax-alpha": "^0.2.0-beta.78",
-    "vuesax3": "^4.2.1",
-    "vuetify-nuxt-module": "^0.16.1"
-  },
-  "devDependencies": {
-    "@nuxtjs/vuetify": "^1.12.3"
-  }
+    "name": "nuxt-app",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "build": "nuxt build",
+        "dev": "nuxt dev",
+        "generate": "nuxt generate",
+        "preview": "nuxt preview",
+        "postinstall": "nuxt prepare"
+    },
+    "dependencies": {
+        "@antfu/eslint-config": "^3.8.0",
+        "@nuxt/eslint": "^0.6.0",
+        "@pinia/nuxt": "^0.5.5",
+        "@vuelidate/core": "^2.0.3",
+        "@vuelidate/validators": "^2.0.4",
+        "@vuesax-alpha/icons-vue": "^0.0.2-beta.12",
+        "@vueuse/core": "^11.0.3",
+        "nuxt": "^3.10.3",
+        "nuxt-app": "file:",
+        "pinia": "^2.2.5",
+        "vue": "latest",
+        "vue3-carousel": "^0.3.3",
+        "vuesax": "^4.0.1-alpha.25",
+        "vuesax-alpha": "^0.2.0-beta.78",
+        "vuesax3": "^4.2.1",
+        "vuetify-nuxt-module": "^0.16.1"
+    },
+    "devDependencies": {
+        "@nuxtjs/eslint-config-typescript": "^12.1.0",
+        "@nuxtjs/vuetify": "^1.12.3",
+        "@typescript-eslint/eslint-plugin": "^8.10.0",
+        "@typescript-eslint/parser": "^8.10.0",
+        "eslint": "^9.10.0",
+        "eslint-plugin-vue": "^9.29.1",
+        "typescript": "^5.6.3",
+        "vite-plugin-eslint": "^1.8.1"
+    }
 }

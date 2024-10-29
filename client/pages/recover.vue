@@ -1,5 +1,5 @@
 <script setup>
-    const user = ref({});
+const user = ref({});
 </script>
 
 <template>
@@ -8,37 +8,46 @@
             Восстановление пароля
         </div>
 
-        <vs-alert color="#1A5CFF" type="info">
+        <vs-alert
+            color="#1A5CFF"
+            type="info"
+        >
             <template #icon>
-                <v-icon size="40">mdi-information</v-icon>
+                <v-icon size="40">
+                    mdi-information
+                </v-icon>
             </template>
-            Вы можете <nuxt-link to="/signin">войти в аккаунт</nuxt-link> или <nuxt-link to="/signup">зарегистрировать его</nuxt-link>, чтобы получить дополнительные возможности, а также восстановить пароль
+            Вы можете <nuxt-link to="/signin">
+                войти в аккаунт
+            </nuxt-link> или <nuxt-link to="/signup">
+                зарегистрировать его
+            </nuxt-link>, чтобы получить дополнительные возможности, а также восстановить пароль
         </vs-alert>
         <div class="auth-card">
             <div class="text-center text-h6 mb-4">
                 Восстановить пароль
             </div>
-            <s-form 
+            <s-form
                 class="auth-card__form"
                 button-label="Отправить письмо"
             >
-                <s-input 
-                    class="s-input" 
-                    icon="email-outline" 
-                    v-model="user.login" 
+                <s-input
+                    v-model="user.login"
+                    class="s-input"
+                    icon="email-outline"
                     placeholder="Укажите email"
                     required
                     email
-                >
-                </s-input>
+                />
                 <template #actions-prepend>
-                    <nuxt-link to="/signin">Уже есть аккаунт?</nuxt-link>
+                    <nuxt-link to="/signin">
+                        Уже есть аккаунт?
+                    </nuxt-link>
                 </template>
             </s-form>
         </div>
     </div>
 </template>
-
 
 <style lang="scss">
 .auth-card {
