@@ -28,19 +28,22 @@ export class AuthGuard implements CanActivate {
 
 		if (isAuth && !token) {
 			throw new UnauthorizedException();
-		}
-		try {
-			const payload: UserInRequest = await this.jwtService.verifyAsync(token, {
-				secret: process.env.JWT_PUBLIC_KEY
-			});
-			request.user = payload;
-		} catch {
-			throw new UnauthorizedException();
+		} else if (token) {
+			try {
+				const payload: UserInRequest = await this.jwtService.verifyAsync(token, {
+					secret: process.env.JWT_PUBLIC_KEY
+				});
+				request.user = payload;
+			} catch {
+				throw new UnauthorizedException();
+			}
 		}
 		return true;
 	}
 
 	private extractTokenFromHeader(request: Request): string | undefined {
-		return String(request.headers.access_token) ?? undefined;
+		if (!request.headers.access_token || request.headers.access_token.length < 5)
+			return undefined;
+		return String(request.headers.access_token ?? '') ?? undefined;
 	}
 }

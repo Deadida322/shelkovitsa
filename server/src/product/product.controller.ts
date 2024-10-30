@@ -18,6 +18,7 @@ import * as path from 'path';
 import { UploadFileDto } from './dto/UploadFileDto';
 import { IPaginateResult } from 'src/helpers/paginateHelper';
 import { excelFileType } from './product.types';
+import { convertToClass } from 'src/helpers/convertHelper';
 
 @Controller('product')
 export class ProductController {
@@ -74,8 +75,10 @@ export class ProductController {
 				})
 		)
 		file: Express.Multer.File,
-		@Body() uploadFileDto: UploadFileDto
+		@Body() body
 	) {
+		const uploadFileDto = convertToClass(UploadFileDto, body);
+
 		const filePath = path.join(process.cwd(), 'temp', file.filename);
 		this.productService.parseExcelFile(filePath, uploadFileDto);
 		return {};

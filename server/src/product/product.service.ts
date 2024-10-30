@@ -26,7 +26,13 @@ export class ProductService {
 		private productRepository: Repository<Product>,
 
 		@InjectRepository(ProductArticle)
-		private productArticleRepository: Repository<ProductArticle>
+		private productArticleRepository: Repository<ProductArticle>,
+
+		@InjectRepository(ProductColor)
+		private ProductColorRepository: Repository<ProductColor>,
+
+		@InjectRepository(ProductSize)
+		private ProductSizeRepository: Repository<ProductSize>
 	) {}
 
 	async getById(id: number) {
@@ -83,11 +89,19 @@ export class ProductService {
 		return getPaginateResult(ProductDto, result, total, getListDto);
 	}
 
+	private async clearProducts() {
+		await this.productRepository.delete({});
+	}
+
 	async parseExcelFile(filePath: string, uploadFileDto: UploadFileDto) {
 		const workSheetsFromFile = xlsx.parse(filePath);
 		const data = workSheetsFromFile[0].data;
 
-		data.forEach((row) => {
+		if (uploadFileDto.isDeletedOther) {
+			await this.clearProducts();
+		}
+		const errorRows: (ParseProductDto | string)[] = [];
+		data.forEach(async (row) => {
 			try {
 				const product: ParseProductDto = {
 					article: row[1] ?? '',
@@ -96,15 +110,38 @@ export class ProductService {
 					amount: Number(row[4] ?? -1),
 					price: Number(row[5] ?? -1)
 				};
-				console.log(product);
-			} catch (err) {}
+				// console.log({ product });
+				// console.log(row);
+
+				const values = Object.values(product);
+				if (values.includes('') || values.includes(-1)) {
+					errorRows.push(product);
+				} else {
+					await this.parseProduct(product);
+				}
+			} catch (err) {
+				errorRows.push(String(err));
+				console.log(err);
+			}
 		});
+		// console.log(errorRows);
 	}
 
 	private async parseProduct(productDto: ParseProductDto): Promise<void> {
 		const { amount, article, color, price, size } = productDto;
 
-		const existProduct = await this.productRepository.findOne({
+		let productArticle = await this.productArticleRepository.findOne({
+			where: {
+				article
+			}
+		});
+		if (!productArticle) {
+			productArticle = await this.productArticleRepository.save({
+				article,
+				price
+			});
+		}
+		let existProduct = await this.productRepository.findOne({
 			where: {
 				productArticle: {
 					article
@@ -128,20 +165,41 @@ export class ProductService {
 				{ conflictPaths: ['id'] }
 			);
 		} else {
-			let productArticle = await this.productArticleRepository.findOne({
+			let productColor = await this.ProductColorRepository.findOne({
 				where: {
-					article
+					name: color
 				}
 			});
-			if (!productArticle) {
-				productArticle = await this.productArticleRepository.save({
-					name: article,
-					price
+			if (!productColor) {
+				productColor = await this.ProductColorRepository.save({
+					name: color
 				});
-			} else {
+			}
+			//секция с парсингом размеров
+
+			let productSize = await this.ProductSizeRepository.findOne({
+				where: {
+					name: size
+				}
+			});
+
+			if (!productSize) {
+				productSize = await this.ProductColorRepository.save({
+					name: size
+				});
 			}
 
-			// подумать про цвета и т.д.
+			const productPayload = {
+				amount,
+				productColor,
+				productSize,
+				productArticle
+			};
+			// console.log(productPayload);
+
+			existProduct = await this.productRepository.save(productPayload);
+
+			// console.log(existProduct);
 		}
 	}
 }
