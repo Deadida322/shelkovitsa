@@ -90,8 +90,7 @@ export class ProductController {
 		);
 
 		if (errorFile) {
-			const file = fs.createReadStream(errorFile);
-			return new StreamableFile(file);
+			return new StreamableFile(errorFile);
 		} else {
 			return {};
 		}

@@ -98,7 +98,7 @@ export class ProductService {
 	async parseExcelFile(
 		filePath: string,
 		uploadFileDto: UploadFileDto
-	): Promise<string | undefined> {
+	): Promise<Buffer | undefined> {
 		const workSheetsFromFile = xlsx.parse(filePath);
 		const data = workSheetsFromFile[0].data;
 
@@ -129,15 +129,12 @@ export class ProductService {
 				errorRows.push([String(err)]);
 			}
 		});
-		console.log(errorRows);
 		if (errorRows.length) {
 			const buffer = xlsx.build([
 				{ name: 'myFirstSheet', data: errorRows, options: {} }
 			]);
 
-			const filePath = path.join(process.cwd(), 'temp', `${Date.now()}.xlsx`);
-			await writeFile(filePath, buffer);
-			return filePath;
+			return buffer;
 		}
 		return undefined;
 	}
