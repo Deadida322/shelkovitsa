@@ -53,7 +53,7 @@ export class ProductController {
 		return this.productService.geProductsBySubcategory(id, getListDto);
 	}
 
-	// @Auth()
+	@Auth()
 	@Post('upload')
 	@UseInterceptors(
 		FileInterceptor('file', {

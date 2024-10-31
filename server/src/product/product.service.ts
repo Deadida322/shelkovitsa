@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
-import { ObjectId, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { FullProductDto } from './dto/FullProductDto';
 import { convertToJson } from 'src/helpers/convertHelper';
 import { GetListDto } from 'src/common/dto/GetListDto';
@@ -18,8 +17,7 @@ import {
 	getPaginateWhere,
 	IPaginateResult
 } from '../helpers/paginateHelper';
-import { writeFile } from 'fs/promises';
-import * as path from 'path';
+
 @Injectable()
 export class ProductService {
 	constructor(
