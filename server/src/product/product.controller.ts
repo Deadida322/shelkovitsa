@@ -5,6 +5,7 @@ import {
 	Param,
 	ParseFilePipeBuilder,
 	Post,
+	StreamableFile,
 	UploadedFile,
 	UseInterceptors
 } from '@nestjs/common';
@@ -19,6 +20,8 @@ import { UploadFileDto } from './dto/UploadFileDto';
 import { IPaginateResult } from 'src/helpers/paginateHelper';
 import { excelFileType } from './product.types';
 import { convertToClass } from 'src/helpers/convertHelper';
+import { Auth } from 'src/decorators/auth';
+import * as fs from 'fs';
 
 @Controller('product')
 export class ProductController {
@@ -50,6 +53,7 @@ export class ProductController {
 		return this.productService.geProductsBySubcategory(id, getListDto);
 	}
 
+	// @Auth()
 	@Post('upload')
 	@UseInterceptors(
 		FileInterceptor('file', {
@@ -80,7 +84,16 @@ export class ProductController {
 		const uploadFileDto = convertToClass(UploadFileDto, body);
 
 		const filePath = path.join(process.cwd(), 'temp', file.filename);
-		this.productService.parseExcelFile(filePath, uploadFileDto);
-		return {};
+		const errorFile = await this.productService.parseExcelFile(
+			filePath,
+			uploadFileDto
+		);
+
+		if (errorFile) {
+			const file = fs.createReadStream(errorFile);
+			return new StreamableFile(file);
+		} else {
+			return {};
+		}
 	}
 }

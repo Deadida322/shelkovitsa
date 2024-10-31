@@ -18,7 +18,8 @@ import {
 	getPaginateWhere,
 	IPaginateResult
 } from '../helpers/paginateHelper';
-
+import { writeFile } from 'fs/promises';
+import * as path from 'path';
 @Injectable()
 export class ProductService {
 	constructor(
@@ -91,16 +92,20 @@ export class ProductService {
 
 	private async clearProducts() {
 		await this.productRepository.delete({});
+		await this.productArticleRepository.delete({});
 	}
 
-	async parseExcelFile(filePath: string, uploadFileDto: UploadFileDto) {
+	async parseExcelFile(
+		filePath: string,
+		uploadFileDto: UploadFileDto
+	): Promise<string | undefined> {
 		const workSheetsFromFile = xlsx.parse(filePath);
 		const data = workSheetsFromFile[0].data;
 
 		if (uploadFileDto.isDeletedOther) {
 			await this.clearProducts();
 		}
-		const errorRows: (ParseProductDto | string)[] = [];
+		const errorRows: string[][] = [];
 		data.forEach(async (row) => {
 			try {
 				const product: ParseProductDto = {
@@ -110,21 +115,31 @@ export class ProductService {
 					amount: Number(row[4] ?? -1),
 					price: Number(row[5] ?? -1)
 				};
-				// console.log({ product });
-				// console.log(row);
 
 				const values = Object.values(product);
 				if (values.includes('') || values.includes(-1)) {
-					errorRows.push(product);
+					errorRows.push(row.map((el) => String(el)));
 				} else {
+					product.article = String(product.article).trim();
+					product.color = String(product.color).trim();
+					product.size = String(product.size).trim();
 					await this.parseProduct(product);
 				}
 			} catch (err) {
-				errorRows.push(String(err));
-				console.log(err);
+				errorRows.push([String(err)]);
 			}
 		});
-		// console.log(errorRows);
+		console.log(errorRows);
+		if (errorRows.length) {
+			const buffer = xlsx.build([
+				{ name: 'myFirstSheet', data: errorRows, options: {} }
+			]);
+
+			const filePath = path.join(process.cwd(), 'temp', `${Date.now()}.xlsx`);
+			await writeFile(filePath, buffer);
+			return filePath;
+		}
+		return undefined;
 	}
 
 	private async parseProduct(productDto: ParseProductDto): Promise<void> {
@@ -184,7 +199,7 @@ export class ProductService {
 			});
 
 			if (!productSize) {
-				productSize = await this.ProductColorRepository.save({
+				productSize = await this.ProductSizeRepository.save({
 					name: size
 				});
 			}
@@ -195,11 +210,8 @@ export class ProductService {
 				productSize,
 				productArticle
 			};
-			// console.log(productPayload);
 
 			existProduct = await this.productRepository.save(productPayload);
-
-			// console.log(existProduct);
 		}
 	}
 }

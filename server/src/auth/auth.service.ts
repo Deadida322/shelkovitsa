@@ -20,7 +20,7 @@ export class AuthService {
 			loginDto.password
 		);
 		if (!user) {
-			throw new UnauthorizedException();
+			throw new UnauthorizedException('Неправильный логин или пароль');
 		}
 		const payload: UserInRequest = { id: user.id, mail: user.mail };
 		return convertToJson(UserDto, {
