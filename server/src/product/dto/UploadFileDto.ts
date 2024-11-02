@@ -4,9 +4,8 @@ import 'reflect-metadata';
 
 export class UploadFileDto {
 	@Expose()
-	// @IsBoolean({
-	// 	message: 'Неправильный формат поля'
-	// })
-	// isDeletedOther?: boolean = false;
-	isDeletedOther: boolean = false;
+	@IsBoolean({
+		message: 'Неправильный формат поля'
+	})
+	isDeletedOther?: boolean = false;
 }
