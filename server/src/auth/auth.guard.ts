@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { IS_PUBLIC_KEY } from 'src/decorators/public';
+import { IS_AUTH } from 'src/decorators/auth';
 import { UserInRequest } from 'src/types/express/custom';
 
 @Injectable()
@@ -18,33 +18,33 @@ export class AuthGuard implements CanActivate {
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
-		const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+		const isAuth = this.reflector.getAllAndOverride<boolean>(IS_AUTH, [
 			context.getHandler(),
 			context.getClass()
 		]);
-		if (isPublic) {
-			// 💡 See this condition
-			return true;
-		}
 
 		const request = context.switchToHttp().getRequest();
 		const token = this.extractTokenFromHeader(request);
 
-		if (!token) {
+		if (!!isAuth && !token) {
 			throw new UnauthorizedException();
+		} else if (!!token) {
+			try {
+				const payload: UserInRequest = await this.jwtService.verifyAsync(token, {
+					secret: process.env.JWT_PUBLIC_KEY
+				});
+				request.user = payload;
+			} catch {
+				throw new UnauthorizedException();
+			}
 		}
-		try {
-			const payload: UserInRequest = await this.jwtService.verifyAsync(token, {
-				secret: process.env.JWT_PUBLIC_KEY
-			});
-			request.user = payload;
-		} catch {
-			throw new UnauthorizedException();
-		}
+
 		return true;
 	}
 
 	private extractTokenFromHeader(request: Request): string | undefined {
-		return String(request.headers.access_token) ?? undefined;
+		if (!request.headers.access_token || request.headers.access_token.length < 5)
+			return undefined;
+		return String(request.headers.access_token ?? '') ?? undefined;
 	}
 }

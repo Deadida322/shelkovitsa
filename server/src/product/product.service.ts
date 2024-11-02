@@ -1,63 +1,113 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
-import { ObjectId, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { FullProductDto } from './dto/FullProductDto';
-import { convertToClass, convertToClassMany } from 'src/helpers/convertHelper';
+import { convertToJson } from 'src/helpers/convertHelper';
 import { GetListDto } from 'src/common/dto/GetListDto';
 import { ProductDto } from './dto/ProductDto';
-import { FileDto } from 'src/common/dto/FileDto';
-import * as fs from 'fs';
-import * as path from 'path';
 import { ParseProductDto } from './dto/ParseProductDto';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import xlsx from 'node-xlsx';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { UploadFileDto } from './dto/UploadFileDto';
+import {
+	getPaginateResult,
+	getPaginateWhere,
+	IPaginateResult
+} from '../helpers/paginateHelper';
 
 @Injectable()
 export class ProductService {
 	constructor(
 		@InjectRepository(Product)
 		private productRepository: Repository<Product>,
-		@InjectRepository(ProductColor)
-		private productColorRepository: Repository<ProductColor>,
-		@InjectRepository(ProductSize)
-		private productSizeRepository: Repository<ProductSize>,
+
 		@InjectRepository(ProductArticle)
-		private productArticleRepository: Repository<ProductArticle>
+		private productArticleRepository: Repository<ProductArticle>,
+
+		@InjectRepository(ProductColor)
+		private ProductColorRepository: Repository<ProductColor>,
+
+		@InjectRepository(ProductSize)
+		private ProductSizeRepository: Repository<ProductSize>
 	) {}
 
 	async getById(id: number) {
-		const p = await this.productRepository.findOne({
+		const p = await this.productArticleRepository.findOne({
 			where: {
 				id
+			},
+			relations: {
+				products: true
 			}
 		});
 		if (!p) {
 			throw new NotFoundException('Продукт не найден');
 		}
-		return convertToClass(FullProductDto, p);
+		return convertToJson(FullProductDto, p);
 	}
 
-	async getList(getListDto: GetListDto): Promise<ProductDto[]> {
-		const { itemsPerPage, page } = getListDto;
-
-		const products = await this.productRepository.find({
-			take: itemsPerPage,
-			skip: itemsPerPage * page
+	async getList(getListDto: GetListDto): Promise<IPaginateResult<ProductDto>> {
+		const [result, total] = await this.productArticleRepository.findAndCount({
+			...getPaginateWhere(getListDto)
 		});
 
-		return convertToClassMany(ProductDto, products);
+		return getPaginateResult(ProductDto, result, total, getListDto);
 	}
 
-	async parseExcelFile(filePath: string, uploadFileDto: UploadFileDto) {
+	async geProductsByCategory(
+		id: number,
+		getListDto: GetListDto
+	): Promise<IPaginateResult<ProductDto>> {
+		const [result, total] = await this.productArticleRepository.findAndCount({
+			where: {
+				productSubcategory: {
+					productCategory: {
+						id
+					}
+				}
+			},
+			...getPaginateWhere(getListDto)
+		});
+
+		return getPaginateResult(ProductDto, result, total, getListDto);
+	}
+
+	async geProductsBySubcategory(
+		id: number,
+		getListDto: GetListDto
+	): Promise<IPaginateResult<ProductDto>> {
+		const [result, total] = await this.productArticleRepository.findAndCount({
+			where: {
+				productSubcategory: {
+					id
+				}
+			},
+			...getPaginateWhere(getListDto)
+		});
+
+		return getPaginateResult(ProductDto, result, total, getListDto);
+	}
+
+	private async clearProducts() {
+		await this.productRepository.delete({});
+		await this.productArticleRepository.delete({});
+	}
+
+	async parseExcelFile(
+		filePath: string,
+		uploadFileDto: UploadFileDto
+	): Promise<Buffer | undefined> {
 		const workSheetsFromFile = xlsx.parse(filePath);
 		const data = workSheetsFromFile[0].data;
 
-		data.forEach((row) => {
+		if (uploadFileDto.isDeletedOther) {
+			await this.clearProducts();
+		}
+		const errorRows: string[][] = [];
+		data.forEach(async (row) => {
 			try {
 				const product: ParseProductDto = {
 					article: row[1] ?? '',
@@ -66,15 +116,45 @@ export class ProductService {
 					amount: Number(row[4] ?? -1),
 					price: Number(row[5] ?? -1)
 				};
-				console.log(product);
-			} catch (err) {}
+
+				const values = Object.values(product);
+				if (values.includes('') || values.includes(-1)) {
+					errorRows.push(row.map((el) => String(el)));
+				} else {
+					product.article = String(product.article).trim();
+					product.color = String(product.color).trim();
+					product.size = String(product.size).trim();
+					await this.parseProduct(product);
+				}
+			} catch (err) {
+				errorRows.push([String(err)]);
+			}
 		});
+		if (errorRows.length) {
+			const buffer = xlsx.build([
+				{ name: 'myFirstSheet', data: errorRows, options: {} }
+			]);
+
+			return buffer;
+		}
+		return undefined;
 	}
 
 	private async parseProduct(productDto: ParseProductDto): Promise<void> {
 		const { amount, article, color, price, size } = productDto;
 
-		const existProduct = await this.productRepository.findOne({
+		let productArticle = await this.productArticleRepository.findOne({
+			where: {
+				article
+			}
+		});
+		if (!productArticle) {
+			productArticle = await this.productArticleRepository.save({
+				article,
+				price
+			});
+		}
+		let existProduct = await this.productRepository.findOne({
 			where: {
 				productArticle: {
 					article
@@ -98,20 +178,38 @@ export class ProductService {
 				{ conflictPaths: ['id'] }
 			);
 		} else {
-			let productArticle = await this.productArticleRepository.findOne({
+			let productColor = await this.ProductColorRepository.findOne({
 				where: {
-					article
+					name: color
 				}
 			});
-			if (!productArticle) {
-				productArticle = await this.productArticleRepository.save({
-					name: article,
-					price
+			if (!productColor) {
+				productColor = await this.ProductColorRepository.save({
+					name: color
 				});
-			} else {
+			}
+			//секция с парсингом размеров
+
+			let productSize = await this.ProductSizeRepository.findOne({
+				where: {
+					name: size
+				}
+			});
+
+			if (!productSize) {
+				productSize = await this.ProductSizeRepository.save({
+					name: size
+				});
 			}
 
-			// подумать про цвета и т.д.
+			const productPayload = {
+				amount,
+				productColor,
+				productSize,
+				productArticle
+			};
+
+			existProduct = await this.productRepository.save(productPayload);
 		}
 	}
 }

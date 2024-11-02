@@ -1,69 +1,89 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductCategory } from 'src/db/entities/ProductCategory';
-import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { Repository } from 'typeorm';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
-import { convertToClassMany } from 'src/helpers/convertHelper';
-import { Product } from 'src/db/entities/Product';
-import { ProductDto } from 'src/product/dto/ProductDto';
-import { GetListDto } from 'src/common/dto/GetListDto';
-import { getPaginate } from 'src/helpers/paginateHelper';
+import { convertToJson, convertToJsonMany } from 'src/helpers/convertHelper';
+import { ProductCategoryDto } from './dto/ProductCategoryDto';
+import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
+import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
+import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
 
 @Injectable()
 export class ProductCategoryService {
 	constructor(
 		@InjectRepository(ProductCategory)
 		private productCategoryRepository: Repository<ProductCategory>,
-		@InjectRepository(Product)
-		private productRepository: Repository<Product>
+
+		@InjectRepository(ProductSubcategory)
+		private productSubcategoryRepository: Repository<ProductSubcategory>
 	) {}
 
 	async getList(): Promise<ListProductCategoryDto[]> {
 		const cats = await this.productCategoryRepository.find({
-			select: {
+			relations: {
 				productSubcategories: true
 			}
 		});
 
-		return convertToClassMany(ListProductCategoryDto, cats);
+		return convertToJsonMany(ListProductCategoryDto, cats);
 	}
 
-	async geProductsByCategory(
-		id: number,
-		getListDto: GetListDto
-	): Promise<ProductDto[]> {
-		const products = await this.productRepository.find({
+	async createCategory({
+		name
+	}: CreateProductCategoryDto): Promise<ProductCategoryDto> {
+		const category = await this.productCategoryRepository.findOne({
 			where: {
-				productArticle: {
-					productSubcategory: {
-						productCategory: {
-							id
-						}
-					}
-				}
-			},
-			...getPaginate(getListDto)
+				name
+			}
+		});
+		if (category) {
+			throw new BadRequestException('Категория с таким названием уже существует!');
+		}
+
+		const newCategory = await this.productCategoryRepository.save({
+			name
 		});
 
-		return convertToClassMany(ProductDto, products);
+		return convertToJson(ProductCategoryDto, newCategory);
 	}
 
-	async geProductsBySubcategory(
-		id: number,
-		getListDto: GetListDto
-	): Promise<ProductDto[]> {
-		const products = await this.productRepository.find({
+	async updateCategory({ id, name }: ProductCategoryDto): Promise<ProductCategoryDto> {
+		const category = await this.productCategoryRepository.findOne({
 			where: {
-				productArticle: {
-					productSubcategory: {
-						id
-					}
-				}
-			},
-			...getPaginate(getListDto)
+				id
+			}
+		});
+		if (!category) {
+			throw new BadRequestException('Нет такой категории!');
+		}
+
+		const updateCategory = await this.productCategoryRepository.save({
+			id,
+			name
 		});
 
-		return convertToClassMany(ProductDto, products);
+		return convertToJson(ProductCategoryDto, updateCategory);
+	}
+
+	async createSubCategory({
+		categoryId,
+		name
+	}: CreateProductSubcategoryDto): Promise<ProductCategoryDto> {
+		const category = await this.productCategoryRepository.findOne({
+			where: {
+				id: categoryId
+			}
+		});
+		if (!category) {
+			throw new BadRequestException('Такая категория не существует!');
+		}
+
+		const newSubcategory = await this.productSubcategoryRepository.save({
+			name,
+			productCategory: category
+		});
+
+		return convertToJson(ProductCategoryDto, newSubcategory);
 	}
 }

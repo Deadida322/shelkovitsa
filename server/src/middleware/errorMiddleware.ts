@@ -14,9 +14,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
 			statusCode: status,
 			timestamp: new Date().toISOString(),
 			path: request.url,
+			stack: undefined,
 			message: exception.getResponse()['message'] ?? exception.message
 		};
+		if (process.env.NODE_ENV == 'development') {
+			payload.stack = exception.stack;
+		}
 
-		response.status(status).json(payload);
+		response.status(status).json({
+			error: payload
+		});
 	}
 }

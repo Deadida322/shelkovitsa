@@ -5,8 +5,5 @@ export class ProductColorDto {
 	id!: number;
 
 	@Expose()
-	amount!: number;
-
-	@Expose()
 	name!: string;
 }

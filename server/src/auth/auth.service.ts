@@ -5,7 +5,7 @@ import { UserInRequest } from 'src/types/express/custom';
 import { UserService } from 'src/user/user.service';
 import { LoginDto } from './dto/LoginDto';
 import { UserDto } from './dto/UserDto';
-import { convertToClass } from 'src/helpers/convertHelper';
+import { convertToJson } from 'src/helpers/convertHelper';
 
 @Injectable()
 export class AuthService {
@@ -20,10 +20,10 @@ export class AuthService {
 			loginDto.password
 		);
 		if (!user) {
-			throw new UnauthorizedException();
+			throw new UnauthorizedException('Неправильный логин или пароль');
 		}
 		const payload: UserInRequest = { id: user.id, mail: user.mail };
-		return convertToClass(UserDto, {
+		return convertToJson(UserDto, {
 			...user,
 			access_token: await this.jwtService.signAsync(payload)
 		});

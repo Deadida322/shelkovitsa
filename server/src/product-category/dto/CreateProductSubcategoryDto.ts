@@ -1,18 +1,18 @@
 import { Expose, Type } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsString } from 'class-validator';
 
-export class ProductCategoryDto {
+export class CreateProductSubcategoryDto {
 	@IsNotEmpty()
 	@IsInt({
-		message: 'id должен быть числом'
+		message: 'categoryId должен быть числом'
 	})
 	@Expose()
-	id!: number;
+	categoryId!: number;
 
 	@IsNotEmpty()
 	@IsString({
 		message: 'Имя должно быть строкой'
 	})
 	@Expose()
-	name!: string;
+	name: string;
 }

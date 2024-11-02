@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { ProductCategoryService } from './product-category.service';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
-import { ProductDto } from 'src/product/dto/ProductDto';
-import { GetListDto } from 'src/common/dto/GetListDto';
+import { ProductCategoryDto } from './dto/ProductCategoryDto';
+import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
+import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
 
 @Controller('product-category')
 export class ProductCategoryController {
@@ -12,19 +13,20 @@ export class ProductCategoryController {
 		return this.productCategoryService.getList();
 	}
 
-	@Post('/category/:id')
-	async getProductByCategory(
-		@Param('id') id: number,
-		@Body() getListDto: GetListDto
-	): Promise<ProductDto[]> {
-		return this.productCategoryService.geProductsByCategory(id, getListDto);
+	@Post('create')
+	async create(@Body() payload: CreateProductCategoryDto): Promise<ProductCategoryDto> {
+		return this.productCategoryService.createCategory(payload);
 	}
 
-	@Post('/subcategory/:id')
-	async getProductBySubcategory(
-		@Param('id') id: number,
-		@Body() getListDto: GetListDto
-	): Promise<ProductDto[]> {
-		return this.productCategoryService.geProductsBySubcategory(id, getListDto);
+	@Patch('update')
+	async update(@Body() payload: ProductCategoryDto): Promise<ProductCategoryDto> {
+		return this.productCategoryService.updateCategory(payload);
+	}
+
+	@Post('/subcategory/create')
+	async createSubCategory(
+		@Body() payload: CreateProductSubcategoryDto
+	): Promise<ProductCategoryDto> {
+		return this.productCategoryService.createSubCategory(payload);
 	}
 }
