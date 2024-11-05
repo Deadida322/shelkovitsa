@@ -17,11 +17,14 @@ export class OrderProduct extends BaseEntity {
 
 	@Type(() => Product)
 	@ManyToOne(() => Product, (product) => product.orderProducts, {
-		eager: true
+		eager: true,
+		nullable: false
 	})
 	product!: Product;
 
 	@Type(() => Order)
-	@ManyToOne(() => Order, (order) => order.orderProducts)
+	@ManyToOne(() => Order, (order) => order.orderProducts, {
+		nullable: false
+	})
 	order!: Order;
 }

@@ -1,44 +1,87 @@
 import { Expose, Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsPhoneNumber, IsString } from 'class-validator';
+import {
+	ArrayNotEmpty,
+	IsArray,
+	IsEmail,
+	IsEmpty,
+	IsInt,
+	IsNotEmpty,
+	IsOptional,
+	IsPhoneNumber,
+	IsString,
+	ValidateNested
+} from 'class-validator';
 import 'reflect-metadata';
 import { CreateOrderProductDto } from './CreateOrderProductDto';
 
 export class CreateOrderDto {
 	@Expose()
-	@IsString()
-	@IsNotEmpty()
+	@IsString({
+		message: 'Поле должно быть строкой'
+	})
+	@IsNotEmpty({
+		message: 'Поле не может быть пустым'
+	})
 	fio!: string;
 
 	@Expose()
-	@IsString()
-	@IsNotEmpty()
+	@IsEmail()
+	@IsNotEmpty({
+		message: 'Поле не может быть пустым'
+	})
 	mail!: string;
 
 	@Expose()
 	@IsPhoneNumber()
-	@IsNotEmpty()
+	@IsNotEmpty({
+		message: 'Поле не может быть пустым'
+	})
 	tel!: string;
 
+	@IsOptional()
+	@IsString({
+		message: 'Поле должно быть строкой'
+	})
 	@Expose()
-	@IsString()
 	description?: string;
 
 	@Expose()
-	@IsString()
-	@IsNotEmpty()
+	@IsString({
+		message: 'Поле должно быть строкой'
+	})
+	@IsNotEmpty({
+		message: 'Поле не может быть пустым'
+	})
 	region!: string;
 
 	@Expose()
-	@IsString()
-	@IsNotEmpty()
+	@IsString({
+		message: 'Поле должно быть строкой'
+	})
+	@IsNotEmpty({
+		message: 'Поле не может быть пустым'
+	})
 	address!: string;
 
 	@Expose()
-	@IsInt()
-	@IsNotEmpty()
+	@IsInt({
+		message: 'Поле должно быть числом'
+	})
+	@IsNotEmpty({
+		message: 'Поле не может быть пустым'
+	})
 	deliveryTypeId!: number;
 
 	@Expose()
+	@IsArray({
+		message: 'Поле должно быть массивом'
+	})
+	@ArrayNotEmpty({
+		message: 'Массив не может быть пустым'
+	})
+	@ValidateNested({
+		each: true
+	})
 	@Type(() => CreateOrderProductDto)
 	orderProducts?: CreateOrderProductDto[];
 }

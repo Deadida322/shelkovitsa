@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import 'reflect-metadata';
 
 export class CreateProductDto {
@@ -8,6 +8,7 @@ export class CreateProductDto {
 	@Expose()
 	name!: string;
 
+	@IsOptional()
 	@IsString()
 	@Expose()
 	description?: string;

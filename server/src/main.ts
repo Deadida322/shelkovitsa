@@ -2,7 +2,18 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './middleware/errorMiddleware';
+import { errorFormatter } from './helpers/errorHelper';
 
+const message = [
+	{
+		property: 'deliveryTypeId',
+		message: 'deliveryTypeId should not be empty'
+	},
+	{
+		property: 'orderProducts',
+		message: 'orderProducts should not be empty'
+	}
+];
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 	app.setGlobalPrefix('api');
@@ -13,12 +24,16 @@ async function bootstrap() {
 			validationError: {
 				target: true
 			},
+			// exceptionFactory: (errors) => {
+			// 	const result = errors.map((error) => ({
+			// 		property: error.property,
+			// 		message: error.constraints[Object.keys(error.constraints)[0]]
+			// 	}));
+			// 	return new UnprocessableEntityException(result);
+			// },
 			exceptionFactory: (errors) => {
-				const result = errors.map((error) => ({
-					property: error.property,
-					message: error.constraints[Object.keys(error.constraints)[0]]
-				}));
-				return new UnprocessableEntityException(result);
+				const message = errorFormatter(errors);
+				return new UnprocessableEntityException(message);
 			},
 			stopAtFirstError: true
 		})

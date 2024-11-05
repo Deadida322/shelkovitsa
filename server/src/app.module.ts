@@ -13,6 +13,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { FileModule } from './file/file.module';
 import { ProductColorModule } from './product-color/product-color.module';
 import { OrderModule } from './order/order.module';
+import { DeliveryTypeModule } from './delivery-type/delivery-type.module';
 @Module({
 	imports: [
 		configuration,
@@ -40,7 +41,8 @@ import { OrderModule } from './order/order.module';
 		ProductCategoryModule,
 		FileModule,
 		ProductColorModule,
-		OrderModule
+		OrderModule,
+		DeliveryTypeModule
 	]
 })
 export class AppModule {

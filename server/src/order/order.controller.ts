@@ -8,10 +8,6 @@ export class OrderController {
 
 	@Post('/create')
 	async createOrder(@Body() payload: CreateOrderDto, context: ExecutionContext) {
-		const request = context.switchToHttp().getRequest();
-		const user = request.user;
-		console.log({ user });
-
 		return this.orderService.create(payload);
 	}
 }
