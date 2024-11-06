@@ -5,6 +5,7 @@ import {
 	Param,
 	ParseFilePipeBuilder,
 	Post,
+	Req,
 	StreamableFile,
 	UploadedFile,
 	UseInterceptors
@@ -20,40 +21,49 @@ import { UploadFileDto } from './dto/UploadFileDto';
 import { IPaginateResult } from 'src/helpers/paginateHelper';
 import { excelFileType } from './product.types';
 import { convertToClass } from 'src/helpers/convertHelper';
-import { Auth } from 'src/decorators/auth';
-import * as fs from 'fs';
+import { AdminAuth } from 'src/decorators/adminAuth';
+import { Request } from 'express';
 
 @Controller('product')
 export class ProductController {
 	constructor(private productService: ProductService) {}
 
 	@Get(':id')
-	async getOne(@Param('id') id: number): Promise<FullProductDto> {
-		return this.productService.getById(id);
+	async getOne(
+		@Param('id') id: number,
+		@Req() request: Request
+	): Promise<FullProductDto> {
+		return this.productService.getById(id, request.isAdmin);
 	}
 
 	@Post()
-	async getList(@Body() getListDto: GetListDto) {
-		return this.productService.getList(getListDto);
+	async getList(@Body() getListDto: GetListDto, @Req() request: Request) {
+		return this.productService.getList(getListDto, request.isAdmin);
 	}
 
 	@Post('/category/:id')
 	async getProductByCategory(
 		@Param('id') id: number,
-		@Body() getListDto: GetListDto
+		@Body() getListDto: GetListDto,
+		@Req() request: Request
 	): Promise<IPaginateResult<ProductDto>> {
-		return this.productService.geProductsByCategory(id, getListDto);
+		return this.productService.geProductsByCategory(id, getListDto, request.isAdmin);
 	}
 
 	@Post('/subcategory/:id')
 	async getProductBySubcategory(
 		@Param('id') id: number,
-		@Body() getListDto: GetListDto
+		@Body() getListDto: GetListDto,
+		@Req() request: Request
 	): Promise<IPaginateResult<ProductDto>> {
-		return this.productService.geProductsBySubcategory(id, getListDto);
+		return this.productService.geProductsBySubcategory(
+			id,
+			getListDto,
+			request.isAdmin
+		);
 	}
 
-	@Auth()
+	@AdminAuth()
 	@Post('upload')
 	@UseInterceptors(
 		FileInterceptor('file', {

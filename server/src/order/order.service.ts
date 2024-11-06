@@ -11,6 +11,7 @@ import { OrderProduct } from 'src/db/entities/OrderProduct';
 import { Product } from 'src/db/entities/Product';
 import { convertToJson } from 'src/helpers/convertHelper';
 import { OrderDto } from './dto/OrderDto';
+import { baseWhere } from 'src/common/utils';
 
 @Injectable()
 export class OrderService {
@@ -36,7 +37,8 @@ export class OrderService {
 		);
 		const dProducts = await this.productRepository.find({
 			where: {
-				id: In(orderProducts.map((el) => el.productId))
+				id: In(orderProducts.map((el) => el.productId)),
+				...baseWhere
 			},
 			relations: {
 				productArticle: true

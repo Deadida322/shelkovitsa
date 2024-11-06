@@ -17,6 +17,7 @@ import {
 	getPaginateWhere,
 	IPaginateResult
 } from '../helpers/paginateHelper';
+import { baseWhere } from 'src/common/utils';
 
 @Injectable()
 export class ProductService {
@@ -34,11 +35,13 @@ export class ProductService {
 		private ProductSizeRepository: Repository<ProductSize>
 	) {}
 
-	async getById(id: number) {
+	async getById(id: number, isAdmin: boolean) {
+		let wherePayload = { id };
+		if (!isAdmin) {
+			wherePayload = { ...wherePayload, ...baseWhere };
+		}
 		const p = await this.productArticleRepository.findOne({
-			where: {
-				id
-			},
+			where: wherePayload,
 			relations: {
 				products: true
 			}
@@ -49,9 +52,17 @@ export class ProductService {
 		return convertToJson(FullProductDto, p);
 	}
 
-	async getList(getListDto: GetListDto): Promise<IPaginateResult<ProductDto>> {
+	async getList(
+		getListDto: GetListDto,
+		isAdmin: boolean
+	): Promise<IPaginateResult<ProductDto>> {
+		let wherePayload = {};
+		if (!isAdmin) {
+			wherePayload = { ...baseWhere };
+		}
 		const [result, total] = await this.productArticleRepository.findAndCount({
-			...getPaginateWhere(getListDto)
+			...getPaginateWhere(getListDto),
+			where: wherePayload
 		});
 
 		return getPaginateResult(ProductDto, result, total, getListDto);
@@ -59,16 +70,21 @@ export class ProductService {
 
 	async geProductsByCategory(
 		id: number,
-		getListDto: GetListDto
+		getListDto: GetListDto,
+		isAdmin: boolean
 	): Promise<IPaginateResult<ProductDto>> {
-		const [result, total] = await this.productArticleRepository.findAndCount({
-			where: {
-				productSubcategory: {
-					productCategory: {
-						id
-					}
+		let wherePayload = {
+			productSubcategory: {
+				productCategory: {
+					id
 				}
-			},
+			}
+		};
+		if (!isAdmin) {
+			wherePayload = { ...wherePayload, ...baseWhere };
+		}
+		const [result, total] = await this.productArticleRepository.findAndCount({
+			where: wherePayload,
 			...getPaginateWhere(getListDto)
 		});
 
@@ -77,14 +93,19 @@ export class ProductService {
 
 	async geProductsBySubcategory(
 		id: number,
-		getListDto: GetListDto
+		getListDto: GetListDto,
+		isAdmin: boolean
 	): Promise<IPaginateResult<ProductDto>> {
+		let wherePayload = {
+			productSubcategory: {
+				id
+			}
+		};
+		if (!isAdmin) {
+			wherePayload = { ...wherePayload, ...baseWhere };
+		}
 		const [result, total] = await this.productArticleRepository.findAndCount({
-			where: {
-				productSubcategory: {
-					id
-				}
-			},
+			where: wherePayload,
 			...getPaginateWhere(getListDto)
 		});
 
@@ -92,8 +113,18 @@ export class ProductService {
 	}
 
 	private async clearProducts() {
-		await this.productRepository.delete({});
-		await this.productArticleRepository.delete({});
+		await this.productRepository.update(
+			{},
+			{
+				is_deleted: true
+			}
+		);
+		await this.productArticleRepository.update(
+			{},
+			{
+				is_deleted: true
+			}
+		);
 	}
 
 	async parseExcelFile(
@@ -153,7 +184,16 @@ export class ProductService {
 				article,
 				price
 			});
+		} else {
+			await this.productArticleRepository.upsert(
+				{
+					id: productArticle.id,
+					is_deleted: false
+				},
+				{ conflictPaths: ['id'] }
+			);
 		}
+
 		let existProduct = await this.productRepository.findOne({
 			where: {
 				productArticle: {
@@ -187,6 +227,14 @@ export class ProductService {
 				productColor = await this.ProductColorRepository.save({
 					name: color
 				});
+			} else {
+				await this.ProductColorRepository.upsert(
+					{
+						id: productColor.id,
+						is_deleted: false
+					},
+					{ conflictPaths: ['id'] }
+				);
 			}
 			//секция с парсингом размеров
 
@@ -200,6 +248,14 @@ export class ProductService {
 				productSize = await this.ProductSizeRepository.save({
 					name: size
 				});
+			} else {
+				await this.ProductSizeRepository.upsert(
+					{
+						id: productSize.id,
+						is_deleted: false
+					},
+					{ conflictPaths: ['id'] }
+				);
 			}
 
 			const productPayload = {

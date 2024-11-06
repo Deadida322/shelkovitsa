@@ -22,6 +22,10 @@ export class AuthService {
 		if (!user) {
 			throw new UnauthorizedException('Неправильный логин или пароль');
 		}
+
+		if (user.is_deleted) {
+			throw new UnauthorizedException('Аккаунт удален!');
+		}
 		const payload: UserInRequest = { id: user.id, mail: user.mail };
 		return convertToJson(UserDto, {
 			...user,
