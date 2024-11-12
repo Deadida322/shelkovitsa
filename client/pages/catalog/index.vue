@@ -1,29 +1,17 @@
 <script setup>
-import advantages from '~/assets/js/advantages';
 import mockShops from '~/assets/js/mockShops';
 
-const page = ref(1);
+const { $api } = useNuxtApp();
+const page = ref(0);
+const pageSize = ref(10);
 
-const toDisplay = ref(4);
+const payload = computed(() => ({
+    page: page.value,
+    itemsPerPage: pageSize.value,
+}));
 
-function toggle() {
-    if (toDisplay.value !== 4) {
-        toDisplay.value = 4;
-    }
-    else {
-        toDisplay.value = advantages.length;
-    }
-};
-
-const computedAdvantages = computed(() => advantages.slice(0, toDisplay.value));
-
-const buttonLabel = computed(() => {
-    if (toDisplay.value !== 4) {
-        return 'Смотреть меньше';
-    }
-    else {
-        return 'Смотреть ещё';
-    }
+$api('/api/product', { method: 'POST', body: payload.value }).then((res) => {
+    console.log(res);
 });
 </script>
 

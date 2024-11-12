@@ -1,3 +1,11 @@
+<script setup>
+import { useCategoriesStore } from '~/stores/categories';
+
+const categoriesStore = useCategoriesStore();
+
+categoriesStore.getCategories();
+</script>
+
 <template>
     <div class="shelkovitsa-main">
         <s-header />

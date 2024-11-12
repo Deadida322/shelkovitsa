@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import categoryMenu from '~/assets/js/categoryMenu';
-const category = ref("")
+import { useCategoriesStore } from '#imports';
+
+const categoriesStore = useCategoriesStore();
+const category = ref('');
 </script>
 
 <template>
@@ -8,17 +10,16 @@ const category = ref("")
         <template #logo>
             Женское бельё
         </template>
-        <vs-sidebar-group v-for="item in categoryMenu" :id="item.title">
+        <vs-sidebar-group v-for="item in categoriesStore.categories" :id="item.name" :key="item.name">
             <template #header>
                 <vs-sidebar-item arrow>
-                    {{item.title}}
+                    {{ item.name }}
                 </vs-sidebar-item>
             </template>
 
-            <vs-sidebar-item v-for="nest in item.nested" :id="nest">
-                {{nest}}
+            <vs-sidebar-item v-for="nest in item.productSubcategories" :id="nest.name" :key="nest.name">
+                {{ nest.name }}
             </vs-sidebar-item>
-            
         </vs-sidebar-group>
     </vs-sidebar>
 </template>
