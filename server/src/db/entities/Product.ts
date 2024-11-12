@@ -31,7 +31,7 @@ export class Product extends BaseEntity {
 	@ManyToOne(() => ProductColor, (productColor) => productColor.products, {
 		eager: true
 	})
-	productColor?: ProductColor[];
+	productColor?: ProductColor;
 
 	@Type(() => OrderProduct)
 	@OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)

@@ -5,6 +5,7 @@ import {
 	Param,
 	ParseFilePipeBuilder,
 	Post,
+	StreamableFile,
 	UploadedFile,
 	UseInterceptors
 } from '@nestjs/common';
@@ -12,18 +13,19 @@ import { GetListDto } from '../common/dto/GetListDto';
 import { ProductDto } from './dto/ProductDto';
 import { FullProductDto } from './dto/FullProductDto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ConfigService } from '@nestjs/config';
 import { ProductService } from './product.service';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { UploadFileDto } from './dto/UploadFileDto';
+import { IPaginateResult } from 'src/helpers/paginateHelper';
+import { excelFileType } from './product.types';
+import { convertToClass } from 'src/helpers/convertHelper';
+import { Auth } from 'src/decorators/auth';
+import * as fs from 'fs';
 
 @Controller('product')
 export class ProductController {
-	constructor(
-		private productService: ProductService,
-		private configService: ConfigService
-	) {}
+	constructor(private productService: ProductService) {}
 
 	@Get(':id')
 	async getOne(@Param('id') id: number): Promise<FullProductDto> {
@@ -31,10 +33,27 @@ export class ProductController {
 	}
 
 	@Post()
-	async getList(@Body() getListDto: GetListDto): Promise<ProductDto[]> {
+	async getList(@Body() getListDto: GetListDto) {
 		return this.productService.getList(getListDto);
 	}
 
+	@Post('/category/:id')
+	async getProductByCategory(
+		@Param('id') id: number,
+		@Body() getListDto: GetListDto
+	): Promise<IPaginateResult<ProductDto>> {
+		return this.productService.geProductsByCategory(id, getListDto);
+	}
+
+	@Post('/subcategory/:id')
+	async getProductBySubcategory(
+		@Param('id') id: number,
+		@Body() getListDto: GetListDto
+	): Promise<IPaginateResult<ProductDto>> {
+		return this.productService.geProductsBySubcategory(id, getListDto);
+	}
+
+	@Auth()
 	@Post('upload')
 	@UseInterceptors(
 		FileInterceptor('file', {
@@ -50,8 +69,7 @@ export class ProductController {
 		@UploadedFile(
 			new ParseFilePipeBuilder()
 				.addFileTypeValidator({
-					fileType:
-						'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet|application/vnd.ms-excel'
+					fileType: excelFileType
 				})
 				.addMaxSizeValidator({
 					maxSize: 10000000
@@ -61,10 +79,20 @@ export class ProductController {
 				})
 		)
 		file: Express.Multer.File,
-		@Body() uploadFileDto: UploadFileDto
+		@Body() body
 	) {
+		const uploadFileDto = convertToClass(UploadFileDto, body);
+
 		const filePath = path.join(process.cwd(), 'temp', file.filename);
-		this.productService.parseExcelFile(filePath, uploadFileDto);
-		return {};
+		const errorFile = await this.productService.parseExcelFile(
+			filePath,
+			uploadFileDto
+		);
+
+		if (errorFile) {
+			return new StreamableFile(errorFile);
+		} else {
+			return {};
+		}
 	}
 }

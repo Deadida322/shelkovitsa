@@ -25,8 +25,10 @@ export class Order extends BaseEntity {
 	@Column()
 	tel!: string;
 
-	@Column()
-	description!: string;
+	@Column({
+		nullable: true
+	})
+	description?: string;
 
 	@Column()
 	region!: string;

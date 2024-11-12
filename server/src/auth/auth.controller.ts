@@ -4,9 +4,8 @@ import { User } from 'src/db/entities/User';
 import { Repository } from 'typeorm';
 import { RegisterDto } from './dto/RegisterDto';
 import { UserDto } from './dto/UserDto';
-import { convertToClass } from 'src/helpers/convertHelper';
+import { convertToJson } from 'src/helpers/convertHelper';
 import { encodePsd } from 'src/helpers/authHelper';
-import { Public } from 'src/decorators/public';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/LoginDto';
 
@@ -18,7 +17,6 @@ export class AuthController {
 		private authService: AuthService
 	) {}
 
-	@Public()
 	@Post('register')
 	async register(@Body() registerDto: RegisterDto): Promise<UserDto> {
 		if (registerDto.password != registerDto.rePassword) {
@@ -38,7 +36,7 @@ export class AuthController {
 			password: encodePsd(registerDto.password)
 		});
 
-		const res = convertToClass(UserDto, newUser);
+		const res = convertToJson(UserDto, newUser);
 
 		const { access_token } = await this.authService.generateAccess(newUser);
 
@@ -46,7 +44,6 @@ export class AuthController {
 		return res;
 	}
 
-	@Public()
 	@Post('login')
 	async login(@Body() loginDto: LoginDto): Promise<UserDto> {
 		return this.authService.signIn(loginDto);
