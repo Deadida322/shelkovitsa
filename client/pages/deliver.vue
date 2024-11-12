@@ -1,4 +1,9 @@
 <script setup>
+definePageMeta({
+    middleware: [
+        'auth',
+    ],
+});
 const mockItems = ref([
     {
         title: 'item 1',

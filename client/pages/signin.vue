@@ -1,12 +1,14 @@
 <script setup>
+import { useAuthStore } from '@/stores/auth';
+
+const authStore = useAuthStore();
 const user = ref({
     mail: '',
     password: '',
 });
-const { $api } = useNuxtApp();
 
 function onSubmit() {
-    $api('/api/auth/login', { method: 'POST', body: user.value });
+    authStore.login(user.value);
 }
 </script>
 
