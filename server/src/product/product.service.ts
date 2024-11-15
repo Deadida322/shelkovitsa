@@ -18,7 +18,12 @@ import {
 	IPaginateResult
 } from '../helpers/paginateHelper';
 import { baseWhere } from 'src/common/utils';
+import { ProductAdminDto } from './dto/ProductAdminDto';
 
+const baseProductWhere = {
+	...baseWhere,
+	isVisible: true
+};
 @Injectable()
 export class ProductService {
 	constructor(
@@ -38,7 +43,7 @@ export class ProductService {
 	async getById(id: number, isAdmin: boolean) {
 		let wherePayload = { id };
 		if (!isAdmin) {
-			wherePayload = { ...wherePayload, ...baseWhere };
+			wherePayload = { ...wherePayload, ...baseProductWhere };
 		}
 		const p = await this.productArticleRepository.findOne({
 			where: wherePayload,
@@ -58,14 +63,19 @@ export class ProductService {
 	): Promise<IPaginateResult<ProductDto>> {
 		let wherePayload = {};
 		if (!isAdmin) {
-			wherePayload = { ...baseWhere };
+			wherePayload = { ...baseProductWhere };
 		}
 		const [result, total] = await this.productArticleRepository.findAndCount({
 			...getPaginateWhere(getListDto),
 			where: wherePayload
 		});
 
-		return getPaginateResult(ProductDto, result, total, getListDto);
+		return getPaginateResult(
+			isAdmin ? ProductAdminDto : ProductDto,
+			result,
+			total,
+			getListDto
+		);
 	}
 
 	async geProductsByCategory(
@@ -81,7 +91,7 @@ export class ProductService {
 			}
 		};
 		if (!isAdmin) {
-			wherePayload = { ...wherePayload, ...baseWhere };
+			wherePayload = { ...wherePayload, ...baseProductWhere };
 		}
 		const [result, total] = await this.productArticleRepository.findAndCount({
 			where: wherePayload,
@@ -102,7 +112,7 @@ export class ProductService {
 			}
 		};
 		if (!isAdmin) {
-			wherePayload = { ...wherePayload, ...baseWhere };
+			wherePayload = { ...wherePayload, ...baseProductWhere };
 		}
 		const [result, total] = await this.productArticleRepository.findAndCount({
 			where: wherePayload,
@@ -185,12 +195,11 @@ export class ProductService {
 				price
 			});
 		} else {
-			await this.productArticleRepository.upsert(
+			await this.productArticleRepository.update(
+				{ id: productArticle.id },
 				{
-					id: productArticle.id,
 					is_deleted: false
-				},
-				{ conflictPaths: ['id'] }
+				}
 			);
 		}
 
@@ -209,13 +218,11 @@ export class ProductService {
 		});
 
 		if (existProduct) {
-			await this.productRepository.upsert(
+			await this.productRepository.update(
 				{
-					id: existProduct.id,
-					is_deleted: false,
-					amount
+					id: existProduct.id
 				},
-				{ conflictPaths: ['id'] }
+				{ is_deleted: false, amount }
 			);
 		} else {
 			let productColor = await this.ProductColorRepository.findOne({
@@ -228,12 +235,11 @@ export class ProductService {
 					name: color
 				});
 			} else {
-				await this.ProductColorRepository.upsert(
+				await this.ProductColorRepository.update(
 					{
-						id: productColor.id,
-						is_deleted: false
+						id: productColor.id
 					},
-					{ conflictPaths: ['id'] }
+					{ is_deleted: false }
 				);
 			}
 			//секция с парсингом размеров
@@ -249,12 +255,11 @@ export class ProductService {
 					name: size
 				});
 			} else {
-				await this.ProductSizeRepository.upsert(
+				await this.ProductSizeRepository.update(
 					{
-						id: productSize.id,
-						is_deleted: false
+						id: productSize.id
 					},
-					{ conflictPaths: ['id'] }
+					{ is_deleted: false }
 				);
 			}
 

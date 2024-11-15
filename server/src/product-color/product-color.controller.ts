@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ProductColorService } from './product-color.service';
 import { ProductColorDto } from 'src/product/dto/ProductColorDto';
 import { CreateProductColorDto } from './dto/CreateProductColorDto';
+import { AdminAuth } from 'src/decorators/adminAuth';
 
 @Controller('product-color')
 export class ProductColorController {
@@ -13,6 +14,7 @@ export class ProductColorController {
 	}
 
 	@Post('create')
+	@AdminAuth()
 	async create(@Body() payload: CreateProductColorDto): Promise<ProductColorDto> {
 		return this.productService.create(payload);
 	}

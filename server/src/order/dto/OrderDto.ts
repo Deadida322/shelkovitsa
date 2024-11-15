@@ -1,18 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import {
-	ArrayNotEmpty,
-	IsArray,
-	IsEmail,
-	IsEmpty,
-	IsInt,
-	IsNotEmpty,
-	IsOptional,
-	IsPhoneNumber,
-	IsString,
-	ValidateNested
-} from 'class-validator';
 import 'reflect-metadata';
-import { CreateOrderProductDto } from './CreateOrderProductDto';
 import { DeliveryTypeDto } from 'src/delivery-type/dto/DeliveryTypeDto';
 import { OrderProductDto } from './OrderProductDto';
 

@@ -12,6 +12,15 @@ import { Product } from 'src/db/entities/Product';
 import { convertToJson } from 'src/helpers/convertHelper';
 import { OrderDto } from './dto/OrderDto';
 import { baseWhere } from 'src/common/utils';
+import { GetListDto } from 'src/common/dto/GetListDto';
+import {
+	getPaginateResult,
+	getPaginateWhere,
+	IPaginateResult
+} from 'src/helpers/paginateHelper';
+import { OrderAdminDto } from './dto/OrderAdminDto';
+import { User } from 'src/db/entities/User';
+import { DeliveryType } from 'src/db/entities/DeliveryType';
 
 @Injectable()
 export class OrderService {
@@ -25,7 +34,7 @@ export class OrderService {
 		private dataSource: DataSource
 	) {}
 
-	async create(createOrderDto: CreateOrderDto) {
+	async create(createOrderDto: CreateOrderDto, userId?: number) {
 		const orderProducts = createOrderDto.orderProducts.map(
 			({ amount, productId }) => {
 				return {
@@ -74,9 +83,11 @@ export class OrderService {
 		});
 		const price = ops.reduce((acc, currentValue) => acc + currentValue.price, 0);
 
-		const payload = {
+		let payload = {
 			...createOrderDto,
-			price
+			price,
+			user: undefined,
+			deliveryType: undefined
 		};
 
 		const queryRunner = this.dataSource.createQueryRunner();
@@ -84,6 +95,27 @@ export class OrderService {
 		await queryRunner.connect();
 		await queryRunner.startTransaction();
 		try {
+			if (userId) {
+				const user = await queryRunner.manager.findOne(User, {
+					where: {
+						id: userId,
+						...baseWhere
+					}
+				});
+				if (user) {
+					payload.user = user;
+				}
+			}
+			const deliveryType = await queryRunner.manager.findOne(DeliveryType, {
+				where: {
+					id: createOrderDto.deliveryTypeId,
+					...baseWhere
+				}
+			});
+			if (!deliveryType) {
+				throw new BadRequestException('Не найден тип доставки');
+			}
+			payload.deliveryType = deliveryType;
 			const order = await queryRunner.manager.save(Order, payload);
 			ops = ops.map((el) => {
 				return {
@@ -111,5 +143,35 @@ export class OrderService {
 		} finally {
 			await queryRunner.release();
 		}
+	}
+
+	async getOrderList(
+		getListDto: GetListDto,
+		userId: number
+	): Promise<IPaginateResult<OrderDto>> {
+		const [result, total] = await this.orderRepository.findAndCount({
+			where: {
+				user: {
+					id: userId
+				},
+				...baseWhere
+			},
+			...getPaginateWhere(getListDto)
+		});
+
+		return getPaginateResult(OrderDto, result, total, getListDto);
+	}
+
+	async getAdminOrderList(
+		getListDto: GetListDto
+	): Promise<IPaginateResult<OrderAdminDto>> {
+		const [result, total] = await this.orderRepository.findAndCount({
+			where: {
+				...baseWhere
+			},
+			...getPaginateWhere(getListDto)
+		});
+
+		return getPaginateResult(OrderAdminDto, result, total, getListDto);
 	}
 }
