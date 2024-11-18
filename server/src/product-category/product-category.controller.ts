@@ -5,6 +5,10 @@ import { ProductCategoryDto } from './dto/ProductCategoryDto';
 import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
 import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
 import { AdminAuth } from 'src/decorators/adminAuth';
+import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
+import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
+import { FullProductDto } from 'src/product/dto/FullProductDto';
+import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
 
 @Controller('product-category')
 export class ProductCategoryController {
@@ -30,7 +34,23 @@ export class ProductCategoryController {
 	@AdminAuth()
 	async createSubCategory(
 		@Body() payload: CreateProductSubcategoryDto
-	): Promise<ProductCategoryDto> {
+	): Promise<ProductSubcategoryDto> {
 		return this.productCategoryService.createSubCategory(payload);
+	}
+
+	@Patch('/subcategory/update')
+	@AdminAuth()
+	async updateSubCategory(
+		@Body() payload: UpdateProductSubcategoryDto
+	): Promise<ProductSubcategoryDto> {
+		return this.productCategoryService.updateSubCategory(payload);
+	}
+
+	@Post('/subcategory/bindProduct')
+	@AdminAuth()
+	async bindProductToSubcategory(
+		@Body() payload: BindProductArticleToSubcategoryDto
+	): Promise<FullProductDto> {
+		return this.productCategoryService.bindProductToSubcategory(payload);
 	}
 }

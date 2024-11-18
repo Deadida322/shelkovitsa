@@ -9,6 +9,12 @@ import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
 import { baseWhere } from 'src/common/utils';
+import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
+import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
+import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
+import { ProductDto } from 'src/product/dto/ProductDto';
+import { ProductArticle } from 'src/db/entities/ProductArticle';
+import { FullProductDto } from 'src/product/dto/FullProductDto';
 
 @Injectable()
 export class ProductCategoryService {
@@ -17,7 +23,10 @@ export class ProductCategoryService {
 		private productCategoryRepository: Repository<ProductCategory>,
 
 		@InjectRepository(ProductSubcategory)
-		private productSubcategoryRepository: Repository<ProductSubcategory>
+		private productSubcategoryRepository: Repository<ProductSubcategory>,
+
+		@InjectRepository(ProductArticle)
+		private productArticleRepository: Repository<ProductArticle>
 	) {}
 
 	async getList(): Promise<ListProductCategoryDto[]> {
@@ -80,7 +89,7 @@ export class ProductCategoryService {
 	async createSubCategory({
 		categoryId,
 		name
-	}: CreateProductSubcategoryDto): Promise<ProductCategoryDto> {
+	}: CreateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
 		const category = await this.productCategoryRepository.findOne({
 			where: {
 				id: categoryId,
@@ -112,6 +121,74 @@ export class ProductCategoryService {
 			});
 		}
 
-		return convertToJson(ProductCategoryDto, subcategory);
+		return convertToJson(ProductSubcategoryDto, subcategory);
+	}
+
+	async updateSubCategory({
+		categoryId,
+		name,
+		subcategoryId
+	}: UpdateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
+		const category = await this.productCategoryRepository.findOne({
+			where: {
+				id: categoryId,
+				...baseWhere
+			}
+		});
+		if (!category) {
+			throw new BadRequestException('Такая категория не существует!');
+		}
+
+		let subcategory = await this.productSubcategoryRepository.findOne({
+			where: {
+				id: subcategoryId,
+				...baseWhere
+			}
+		});
+		if (!subcategory) {
+			throw new BadRequestException('Такая подкатегория не существует!');
+		}
+
+		const res = await this.productSubcategoryRepository.save({
+			id: subcategoryId,
+			is_deleted: false,
+			name,
+			productCategory: category
+		});
+
+		return convertToJson(ProductSubcategoryDto, res);
+	}
+
+	async bindProductToSubcategory({
+		productArticleId,
+		subcategoryId
+	}: BindProductArticleToSubcategoryDto): Promise<FullProductDto> {
+		const productArticle = await this.productArticleRepository.findOne({
+			where: {
+				...baseWhere,
+				id: productArticleId
+			}
+		});
+
+		if (!productArticle) {
+			throw new BadRequestException('Такого продукта не существует!');
+		}
+
+		let subcategory = await this.productSubcategoryRepository.findOne({
+			where: {
+				id: subcategoryId,
+				...baseWhere
+			}
+		});
+		if (!subcategory) {
+			throw new BadRequestException('Такая подкатегория не существует!');
+		}
+
+		const res = await this.productArticleRepository.save({
+			...productArticle,
+			productSubcategory: subcategory
+		});
+
+		return convertToJson(FullProductDto, res);
 	}
 }
