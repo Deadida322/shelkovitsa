@@ -1,7 +1,8 @@
 <script setup>
 import { notification } from 'vuesax-alpha/lib/components/notification/src/notify.js';
 
-const shopItem = {
+const route = useRoute();
+const shopItem = ref({
     title: 'Некоторый элемент',
     info: 'Lorem ipsum dolor sit amet consectetur. Vitae tincidunt tempor sed velit blandit nibh sed eu. Etiam mollis et maecenas nibh neque id nulla orci cursus. Eget aliquam quis purus et egestas elementum ut id adipiscing. Enim penatibus risus nisl dui ipsum.',
     images: [
@@ -20,8 +21,8 @@ const shopItem = {
     ],
     available: 4,
     price: 1232,
-};
-
+});
+const { $api } = useNuxtApp();
 function addToCart() {
     notification({
         title: 'Добавлено!',
@@ -31,8 +32,11 @@ function addToCart() {
 }
 
 const cartInfo = ref({});
-const displayedImage = ref(shopItem.images[0]);
+const displayedImage = ref(shopItem.value.images[0]);
 const showImage = ref(false);
+$api(`/api/product/${route.params.article}`).then((res) => {
+    console.log(res);
+});
 </script>
 
 <template>

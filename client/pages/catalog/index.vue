@@ -1,18 +1,22 @@
 <script setup>
-import mockShops from '~/assets/js/mockShops';
+const shopItems = ref([]);
+const route = useRoute();
 
 const { $api } = useNuxtApp();
 const page = ref(0);
-const pageSize = ref(10);
-
+const pageSize = ref(6);
+const category = ref(route.query.category);
+console.log(category);
 const payload = computed(() => ({
     page: page.value,
     itemsPerPage: pageSize.value,
 }));
 
-$api('/api/product', { method: 'POST', body: payload.value }).then((res) => {
-    console.log(res);
-});
+watch(payload, () => {
+    $api('/api/product', { method: 'POST', body: payload.value }).then((res) => {
+        shopItems.value = res.data;
+    });
+}, { immediate: true, deep: true });
 </script>
 
 <template>
@@ -42,22 +46,23 @@ $api('/api/product', { method: 'POST', body: payload.value }).then((res) => {
         </vs-alert>
         <div class="shops-container">
             <div
-                v-for="(item, key) in mockShops"
+                v-for="(item, key) in shopItems"
                 :key="key"
                 class="shop-item"
             >
                 <s-shop-item
                     :item="item"
-                    @click="navigateTo('/catalog/1')"
+                    @click="navigateTo(`/catalog/${item.article}`)"
                 />
             </div>
         </div>
         <div class="d-flex justify-end mt-10">
             <vs-pagination
-                v-model="page"
+                :model-value="page"
                 :layout="['prev', 'pager', 'next']"
                 :page-size="10"
                 :total="400"
+                @update:current-page="page = $event - 1"
             />
         </div>
     </div>
@@ -65,12 +70,10 @@ $api('/api/product', { method: 'POST', body: payload.value }).then((res) => {
 
 <style lang="scss">
     .shops-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-start;
+        display: grid;
         gap: 14px;
         margin-top: 30px;
-
+        grid-template-columns: repeat(3, 1fr);
         .shop-item {
             flex: 0 0 calc(33.3333% - 10px);
             margin-bottom: 14px;

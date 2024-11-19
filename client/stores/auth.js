@@ -8,7 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
     const login = (body) => {
         $api('/api/auth/login', { method: 'POST', body })
             .then((res) => {
-                user.value = { fio: res.fio, mail: res.mail };
+                user.value = { ...res };
                 accessToken.value = res.access_token;
             });
     };
