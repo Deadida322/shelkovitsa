@@ -26,12 +26,9 @@ import { DeliveryTypeModule } from './delivery-type/delivery-type.module';
 		MulterModule.registerAsync({
 			imports: [ConfigModule],
 			useFactory: async (configService: ConfigService) => ({
-				dest: './temp'
+				dest: './temp/src'
 			}),
 			inject: [ConfigService]
-			// storage: diskStorage({
-			// 	destination: './temp'
-			// })
 		}),
 		ProductModule,
 		AuthModule,

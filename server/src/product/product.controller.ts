@@ -3,7 +3,6 @@ import {
 	Controller,
 	Get,
 	Param,
-	ParseFilePipeBuilder,
 	Post,
 	Req,
 	StreamableFile,
@@ -15,14 +14,20 @@ import { ProductDto } from './dto/ProductDto';
 import { FullProductDto } from './dto/FullProductDto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
-import { diskStorage } from 'multer';
-import * as path from 'path';
+
 import { UploadFileDto } from './dto/UploadFileDto';
 import { IPaginateResult } from 'src/helpers/paginateHelper';
 import { excelFileType } from './product.types';
 import { convertToClass } from 'src/helpers/convertHelper';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import { Request } from 'express';
+import { SharpPipe } from 'src/helpers/sharpHelper';
+import {
+	fileInterceptor,
+	getSrcPath,
+	imageInterceptor,
+	parseFileBuilder
+} from 'src/helpers/storageHelper';
 
 @Controller('product')
 export class ProductController {
@@ -64,36 +69,29 @@ export class ProductController {
 	}
 
 	@AdminAuth()
+	@Post('create')
+	@UseInterceptors(imageInterceptor)
+	async create(@UploadedFile(SharpPipe) image: string) {
+		console.log(image);
+
+		return '';
+		// return this.productService.getList(getListDto, request.isAdmin);
+	}
+	// КРУД по продукту (артиклу)
+	// Удаление подкатегорий (удаление)
+	// разобраться с путями
+
+	@AdminAuth()
 	@Post('upload')
-	@UseInterceptors(
-		FileInterceptor('file', {
-			storage: diskStorage({
-				destination: './temp',
-				filename: function (req, file, cb) {
-					cb(null, Date.now() + path.extname(file.originalname)); //Appending extension
-				}
-			})
-		})
-	)
+	@UseInterceptors(fileInterceptor)
 	async uploadFile(
-		@UploadedFile(
-			new ParseFilePipeBuilder()
-				.addFileTypeValidator({
-					fileType: excelFileType
-				})
-				.addMaxSizeValidator({
-					maxSize: 10000000
-				})
-				.build({
-					fileIsRequired: true
-				})
-		)
+		@UploadedFile(parseFileBuilder(excelFileType))
 		file: Express.Multer.File,
 		@Body() body
 	) {
 		const uploadFileDto = convertToClass(UploadFileDto, body);
 
-		const filePath = path.join(process.cwd(), 'temp', file.filename);
+		const filePath = getSrcPath(file.filename);
 		const errorFile = await this.productService.parseExcelFile(
 			filePath,
 			uploadFileDto

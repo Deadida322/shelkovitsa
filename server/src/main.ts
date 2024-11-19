@@ -3,18 +3,11 @@ import { AppModule } from './app.module';
 import { UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './middleware/errorMiddleware';
 import { errorFormatter } from './helpers/errorHelper';
+import { initDiskStorage } from './helpers/storageHelper';
 
-const message = [
-	{
-		property: 'deliveryTypeId',
-		message: 'deliveryTypeId should not be empty'
-	},
-	{
-		property: 'orderProducts',
-		message: 'orderProducts should not be empty'
-	}
-];
 async function bootstrap() {
+	initDiskStorage();
+
 	const app = await NestFactory.create(AppModule);
 	app.setGlobalPrefix('api');
 	app.useGlobalPipes(
