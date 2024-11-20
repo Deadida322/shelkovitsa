@@ -8,6 +8,7 @@ import {
 	ParseFilePipeBuilder,
 	UnprocessableEntityException
 } from '@nestjs/common';
+import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 
 const baseSrcPath = () => path.join(process.cwd(), process.env.TEMP_PATH);
 const baseDestPath = () => path.join(process.cwd(), process.env.DEST_PATH);
@@ -52,10 +53,10 @@ export const fileInterceptor = FileInterceptor('file', {
 	})
 });
 
-export const imageInterceptor = FileInterceptor('image', {
+export const logoInterceptor = FileInterceptor('logo', {
 	storage: diskStorage({
 		destination: function (req, file, cb) {
-			const path = getDestPath();
+			const path = getSrcPath();
 			cb(null, path);
 		},
 		filename: function (req, file, cb) {
@@ -64,7 +65,22 @@ export const imageInterceptor = FileInterceptor('image', {
 	})
 });
 
-export function parseFileBuilder(fileType: string) {
+export const imagesInterceptor = FileInterceptor('images', {
+	storage: diskStorage({
+		destination: function (req, file, cb) {
+			const path = getSrcPath();
+			cb(null, path);
+		},
+		filename: function (req, file, cb) {
+			cb(null, `${Date.now()}-${file.originalname}`); //Appending extension
+		}
+	})
+});
+
+export function parseFileBuilder(
+	fileType: string | RegExp,
+	fileIsRequired: boolean = true
+) {
 	return new ParseFilePipeBuilder()
 		.addFileTypeValidator({
 			fileType
@@ -74,10 +90,7 @@ export function parseFileBuilder(fileType: string) {
 			message: 'Превышен максимальный размер файла'
 		})
 		.build({
-			fileIsRequired: true,
-			errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-			exceptionFactory: (err) => {
-				return new UnprocessableEntityException('Файл обязателен');
-			}
+			fileIsRequired,
+			errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
 		});
 }

@@ -14,10 +14,6 @@ export class CreateProductDto {
 	description?: string;
 
 	@IsString()
-	@Expose()
-	logo?: string;
-
-	@IsString()
 	@IsNotEmpty()
 	@Expose()
 	article!: string;
@@ -27,18 +23,20 @@ export class CreateProductDto {
 	@Expose()
 	price!: number;
 
+	@IsOptional()
 	@IsArray({
 		each: true
 	})
 	@Expose()
-	productSizeIds: number[];
+	productSizeIds?: number[];
 
 	@IsArray({
 		each: true
 	})
 	@Expose()
-	productColorIds: number[];
+	productColorIds?: number[];
 
+	@IsOptional()
 	@IsNumber()
 	@Expose()
 	productSubcategoryId?: number;

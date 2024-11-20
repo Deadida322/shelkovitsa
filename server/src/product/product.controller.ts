@@ -17,7 +17,7 @@ import { ProductService } from './product.service';
 
 import { UploadFileDto } from './dto/UploadFileDto';
 import { IPaginateResult } from 'src/helpers/paginateHelper';
-import { excelFileType } from './product.types';
+import { excelFileType, imageFileType } from './product.types';
 import { convertToClass } from 'src/helpers/convertHelper';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import { Request } from 'express';
@@ -25,9 +25,11 @@ import { SharpPipe } from 'src/helpers/sharpHelper';
 import {
 	fileInterceptor,
 	getSrcPath,
-	imageInterceptor,
+	imagesInterceptor,
+	logoInterceptor,
 	parseFileBuilder
 } from 'src/helpers/storageHelper';
+import { CreateProductDto } from './dto/CreateProductDto';
 
 @Controller('product')
 export class ProductController {
@@ -68,11 +70,26 @@ export class ProductController {
 		);
 	}
 
+	// @AdminAuth()
+	// @Post('create')
+	// @UseInterceptors(imageInterceptor)
+	// async create(@UploadedFile(SharpPipe) image: string) {
+	// 	console.log(image);
+
+	// 	return '';
+	// 	// return this.productService.getList(getListDto, request.isAdmin);
+	// }
+
 	@AdminAuth()
 	@Post('create')
-	@UseInterceptors(imageInterceptor)
-	async create(@UploadedFile(SharpPipe) image: string) {
-		console.log(image);
+	// @UseInterceptors(logoInterceptor)
+	// @UseInterceptors(imagesInterceptor)
+	async create(
+		// @Body() createProductDto: CreateProductDto,
+		// @UploadedFile(parseFileBuilder(imageFileType, false)) logo: File
+		@UploadedFile(parseFileBuilder(imageFileType, false)) files?: File[]
+	) {
+		console.log(imageFileType);
 
 		return '';
 		// return this.productService.getList(getListDto, request.isAdmin);
