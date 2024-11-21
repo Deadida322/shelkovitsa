@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { FullProductDto } from './dto/FullProductDto';
-import { convertToJson } from 'src/helpers/convertHelper';
+import { convertToClass, convertToJson } from 'src/helpers/convertHelper';
 import { GetListDto } from 'src/common/dto/GetListDto';
 import { ProductDto } from './dto/ProductDto';
 import { ParseProductDto } from './dto/ParseProductDto';
@@ -19,6 +19,8 @@ import {
 } from '../helpers/paginateHelper';
 import { baseWhere } from 'src/common/utils';
 import { ProductAdminDto } from './dto/ProductAdminDto';
+import { CreateProductDto } from './dto/CreateProductDto';
+import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 
 const baseProductWhere = {
 	...baseWhere,
@@ -37,7 +39,10 @@ export class ProductService {
 		private ProductColorRepository: Repository<ProductColor>,
 
 		@InjectRepository(ProductSize)
-		private ProductSizeRepository: Repository<ProductSize>
+		private ProductSizeRepository: Repository<ProductSize>,
+
+		@InjectRepository(ProductSubcategory)
+		private ProductSubcategoryRepository: Repository<ProductSubcategory>
 	) {}
 
 	async getById(id: number, isAdmin: boolean) {
@@ -135,6 +140,50 @@ export class ProductService {
 				is_deleted: true
 			}
 		);
+	}
+
+	async createProduct(createProductDto: CreateProductDto, images?: File[]) {
+		const payload = convertToClass(ProductArticle, createProductDto);
+
+		//проверка и нахождение связанных сущностей
+		const { productColorIds, productSizeIds, productSubcategoryId } =
+			createProductDto;
+		const productSizes = await this.ProductSizeRepository.find({
+			where: {
+				...baseWhere,
+				id: In(productSizeIds)
+			}
+		});
+		if (productSizes.length != productSizeIds.length) {
+			throw new BadRequestException('Нет такого размера');
+		}
+
+		const productColors = await this.ProductColorRepository.find({
+			where: {
+				...baseWhere,
+				id: In(productColorIds)
+			}
+		});
+		if (productColors.length != productColorIds.length) {
+			throw new BadRequestException('Нет такого цвета');
+		}
+
+		const productSubcategory = await this.ProductSubcategoryRepository.findOne({
+			where: {
+				...baseWhere,
+				id: productSubcategoryId
+			}
+		});
+		if (!productSubcategory) {
+			throw new BadRequestException('Нет такой подкатегории');
+		}
+
+		const productFiles = await this.productArticleRepository.save([]);
+		// const p = await this.productArticleRepository.save();
+		// if (!p) {
+		// 	throw new NotFoundException('Продукт не найден');
+		// }
+		// return convertToJson(FullProductDto, p);
 	}
 
 	async parseExcelFile(

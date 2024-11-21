@@ -7,12 +7,13 @@ import {
 	Req,
 	StreamableFile,
 	UploadedFile,
+	UploadedFiles,
 	UseInterceptors
 } from '@nestjs/common';
 import { GetListDto } from '../common/dto/GetListDto';
 import { ProductDto } from './dto/ProductDto';
 import { FullProductDto } from './dto/FullProductDto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ProductService } from './product.service';
 
 import { UploadFileDto } from './dto/UploadFileDto';
@@ -26,7 +27,6 @@ import {
 	fileInterceptor,
 	getSrcPath,
 	imagesInterceptor,
-	logoInterceptor,
 	parseFileBuilder
 } from 'src/helpers/storageHelper';
 import { CreateProductDto } from './dto/CreateProductDto';
@@ -82,14 +82,12 @@ export class ProductController {
 
 	@AdminAuth()
 	@Post('create')
-	// @UseInterceptors(logoInterceptor)
-	// @UseInterceptors(imagesInterceptor)
+	@UseInterceptors(imagesInterceptor(10))
 	async create(
-		// @Body() createProductDto: CreateProductDto,
-		// @UploadedFile(parseFileBuilder(imageFileType, false)) logo: File
-		@UploadedFile(parseFileBuilder(imageFileType, false)) files?: File[]
+		@Body() createProductDto: CreateProductDto,
+		@UploadedFiles(parseFileBuilder(imageFileType, false)) images?: File[]
 	) {
-		console.log(imageFileType);
+		// console.log({ images });
 
 		return '';
 		// return this.productService.getList(getListDto, request.isAdmin);

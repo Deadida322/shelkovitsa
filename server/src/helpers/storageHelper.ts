@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
 import * as fsPromises from 'fs/promises';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import {
 	HttpStatus,
@@ -53,29 +53,31 @@ export const fileInterceptor = FileInterceptor('file', {
 	})
 });
 
-export const logoInterceptor = FileInterceptor('logo', {
-	storage: diskStorage({
-		destination: function (req, file, cb) {
-			const path = getSrcPath();
-			cb(null, path);
-		},
-		filename: function (req, file, cb) {
-			cb(null, `${Date.now()}-${file.originalname}`); //Appending extension
-		}
-	})
-});
+// export const logoInterceptor = FileInterceptor('logo', {
+// 	storage: diskStorage({
+// 		destination: function (req, file, cb) {
+// 			const path = getSrcPath();
+// 			cb(null, path);
+// 		},
+// 		filename: function (req, file, cb) {
+// 			cb(null, `${Date.now()}-${file.originalname}`); //Appending extension
+// 		}
+// 	})
+// });
 
-export const imagesInterceptor = FileInterceptor('images', {
-	storage: diskStorage({
-		destination: function (req, file, cb) {
-			const path = getSrcPath();
-			cb(null, path);
-		},
-		filename: function (req, file, cb) {
-			cb(null, `${Date.now()}-${file.originalname}`); //Appending extension
-		}
-	})
-});
+export function imagesInterceptor(filesCount: number = 10) {
+	return FilesInterceptor('images', filesCount, {
+		storage: diskStorage({
+			destination: function (req, file, cb) {
+				const path = getSrcPath();
+				cb(null, path);
+			},
+			filename: function (req, file, cb) {
+				cb(null, `${Date.now()}-${file.originalname}`); //Appending extension
+			}
+		})
+	});
+}
 
 export function parseFileBuilder(
 	fileType: string | RegExp,
@@ -94,3 +96,8 @@ export function parseFileBuilder(
 			errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
 		});
 }
+
+// export function moveFilesToStatic(files: File[]) : string[] {
+// 	const promises = files.map(async (file) => {
+// 	})
+// }
