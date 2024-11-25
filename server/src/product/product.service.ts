@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
-import { In, Repository } from 'typeorm';
+import { Between, In, Repository } from 'typeorm';
 import { FullProductDto } from './dto/FullProductDto';
 import { convertToClass, convertToJson } from 'src/helpers/convertHelper';
 import { GetListDto } from 'src/common/dto/GetListDto';
@@ -21,8 +21,14 @@ import { baseWhere } from 'src/common/utils';
 import { ProductAdminDto } from './dto/ProductAdminDto';
 import { CreateProductDto } from './dto/CreateProductDto';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
+import { GetProductListDto } from './dto/GetProductListDto';
+import { GetProductDto } from './dto/GetProductDto';
 
-const baseProductWhere = {
+type BaseWhereType = {
+	isVisible: boolean;
+	is_deleted: boolean;
+};
+const baseProductWhere: BaseWhereType = {
 	...baseWhere,
 	isVisible: true
 };
@@ -62,25 +68,73 @@ export class ProductService {
 		return convertToJson(FullProductDto, p);
 	}
 
+	async getProduct(payload: GetProductDto) {
+		let wherePayload = { id };
+
+		const p = await this.productArticleRepository.findOne({
+			where: wherePayload,
+			relations: {
+				products: true
+			}
+		});
+		if (!p) {
+			throw new NotFoundException('Продукт не найден');
+		}
+		return convertToJson(FullProductDto, p);
+	}
+
 	async getList(
-		getListDto: GetListDto,
+		payload: GetProductListDto,
 		isAdmin: boolean
 	): Promise<IPaginateResult<ProductDto>> {
+		// type commonKeys =  keyof GetListDto
+
+		// type WherePayload =  Omit<GetProductDto, commonKeys> & BaseWhereType;
+		// let wherePayload :WherePayload  = {
+		// 	...payload
+		// };
 		let wherePayload = {};
+
+		if (payload.subcategoryId) {
+			wherePayload = {
+				...wherePayload,
+				productSubcategory: {
+					id: payload.subcategoryId
+				}
+			};
+		}
+
+		if (payload.categoryId) {
+			wherePayload = {
+				...wherePayload,
+				productSubcategory: {
+					productCategory: {
+						id: payload.categoryId
+					}
+				}
+			};
+		}
+		if (payload.minPrice || payload.maxPrice) {
+			wherePayload = {
+				...wherePayload,
+				price: Between(
+					payload.minPrice ?? 0,
+					payload.maxPrice ?? Number.MAX_VALUE
+				)
+			};
+		}
 		if (!isAdmin) {
 			wherePayload = { ...baseProductWhere };
 		}
 		const [result, total] = await this.productArticleRepository.findAndCount({
-			...getPaginateWhere(getListDto),
+			...getPaginateWhere(payload),
 			where: wherePayload
 		});
 
-		return getPaginateResult(
-			isAdmin ? ProductAdminDto : ProductDto,
-			result,
-			total,
-			getListDto
-		);
+		return getPaginateResult(isAdmin ? ProductAdminDto : ProductDto, result, total, {
+			itemsPerPage: payload.itemsPerPage,
+			page: payload.page
+		});
 	}
 
 	async geProductsByCategory(

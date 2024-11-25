@@ -30,6 +30,7 @@ import {
 	parseFileBuilder
 } from 'src/helpers/storageHelper';
 import { CreateProductDto } from './dto/CreateProductDto';
+import { GetProductDto } from './dto/GetProductListDto';
 
 @Controller('product')
 export class ProductController {
@@ -43,32 +44,37 @@ export class ProductController {
 		return this.productService.getById(id, request.isAdmin);
 	}
 
+	@Post('product/:id')
+	async getProduct(@Req() request: Request): Promise<FullProductDto> {
+		return this.productService.getById(id, request.isAdmin);
+	}
+
 	@Post()
-	async getList(@Body() getListDto: GetListDto, @Req() request: Request) {
+	async getList(@Body() getListDto: GetProductDto, @Req() request: Request) {
 		return this.productService.getList(getListDto, request.isAdmin);
 	}
 
-	@Post('/category/:id')
-	async getProductByCategory(
-		@Param('id') id: number,
-		@Body() getListDto: GetListDto,
-		@Req() request: Request
-	): Promise<IPaginateResult<ProductDto>> {
-		return this.productService.geProductsByCategory(id, getListDto, request.isAdmin);
-	}
+	// @Post('/category/:id')
+	// async getProductByCategory(
+	// 	@Param('id') id: number,
+	// 	@Body() getListDto: GetListDto,
+	// 	@Req() request: Request
+	// ): Promise<IPaginateResult<ProductDto>> {
+	// 	return this.productService.geProductsByCategory(id, getListDto, request.isAdmin);
+	// }
 
-	@Post('/subcategory/:id')
-	async getProductBySubcategory(
-		@Param('id') id: number,
-		@Body() getListDto: GetListDto,
-		@Req() request: Request
-	): Promise<IPaginateResult<ProductDto>> {
-		return this.productService.geProductsBySubcategory(
-			id,
-			getListDto,
-			request.isAdmin
-		);
-	}
+	// @Post('/subcategory/:id')
+	// async getProductBySubcategory(
+	// 	@Param('id') id: number,
+	// 	@Body() getListDto: GetListDto,
+	// 	@Req() request: Request
+	// ): Promise<IPaginateResult<ProductDto>> {
+	// 	return this.productService.geProductsBySubcategory(
+	// 		id,
+	// 		getListDto,
+	// 		request.isAdmin
+	// 	);
+	// }
 
 	// @AdminAuth()
 	// @Post('create')
