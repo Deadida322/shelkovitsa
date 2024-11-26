@@ -7,7 +7,7 @@ import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
 import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
-import { FullProductDto } from 'src/product/dto/FullProductDto';
+import { FullProductArticleDto } from 'src/product/dto/FullProductArticleDto';
 import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
 
 @Controller('product-category')
@@ -50,7 +50,7 @@ export class ProductCategoryController {
 	@AdminAuth()
 	async bindProductToSubcategory(
 		@Body() payload: BindProductArticleToSubcategoryDto
-	): Promise<FullProductDto> {
+	): Promise<FullProductArticleDto> {
 		return this.productCategoryService.bindProductToSubcategory(payload);
 	}
 }

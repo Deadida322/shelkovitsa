@@ -10,10 +10,7 @@ import {
 	UploadedFiles,
 	UseInterceptors
 } from '@nestjs/common';
-import { GetListDto } from '../common/dto/GetListDto';
-import { ProductDto } from './dto/ProductDto';
-import { FullProductDto } from './dto/FullProductDto';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FullProductArticleDto } from './dto/FullProductArticleDto';
 import { ProductService } from './product.service';
 
 import { UploadFileDto } from './dto/UploadFileDto';
@@ -30,7 +27,7 @@ import {
 	parseFileBuilder
 } from 'src/helpers/storageHelper';
 import { CreateProductDto } from './dto/CreateProductDto';
-import { GetProductDto } from './dto/GetProductListDto';
+import { GetProductListDto } from './dto/GetProductListDto';
 
 @Controller('product')
 export class ProductController {
@@ -40,17 +37,17 @@ export class ProductController {
 	async getOne(
 		@Param('id') id: number,
 		@Req() request: Request
-	): Promise<FullProductDto> {
+	): Promise<FullProductArticleDto> {
 		return this.productService.getById(id, request.isAdmin);
 	}
 
-	@Post('product/:id')
-	async getProduct(@Req() request: Request): Promise<FullProductDto> {
-		return this.productService.getById(id, request.isAdmin);
-	}
+	// @Post('product/:id')
+	// async getProduct(@Req() request: Request): Promise<FullProductDto> {
+	// 	return this.productService.getById(id, request.isAdmin);
+	// }
 
 	@Post()
-	async getList(@Body() getListDto: GetProductDto, @Req() request: Request) {
+	async getList(@Body() getListDto: GetProductListDto, @Req() request: Request) {
 		return this.productService.getList(getListDto, request.isAdmin);
 	}
 
@@ -59,7 +56,7 @@ export class ProductController {
 	// 	@Param('id') id: number,
 	// 	@Body() getListDto: GetListDto,
 	// 	@Req() request: Request
-	// ): Promise<IPaginateResult<ProductDto>> {
+	// ): Promise<IPaginateResult<ProductArticleDto>> {
 	// 	return this.productService.geProductsByCategory(id, getListDto, request.isAdmin);
 	// }
 
@@ -68,7 +65,7 @@ export class ProductController {
 	// 	@Param('id') id: number,
 	// 	@Body() getListDto: GetListDto,
 	// 	@Req() request: Request
-	// ): Promise<IPaginateResult<ProductDto>> {
+	// ): Promise<IPaginateResult<ProductArticleDto>> {
 	// 	return this.productService.geProductsBySubcategory(
 	// 		id,
 	// 		getListDto,

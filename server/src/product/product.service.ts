@@ -2,10 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
 import { Between, In, Repository } from 'typeorm';
-import { FullProductDto } from './dto/FullProductDto';
+import { FullProductArticleDto } from './dto/FullProductArticleDto';
 import { convertToClass, convertToJson } from 'src/helpers/convertHelper';
 import { GetListDto } from 'src/common/dto/GetListDto';
-import { ProductDto } from './dto/ProductDto';
+import { ProductArticleDto } from './dto/ProductArticleDto';
 import { ParseProductDto } from './dto/ParseProductDto';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import xlsx from 'node-xlsx';
@@ -18,11 +18,10 @@ import {
 	IPaginateResult
 } from '../helpers/paginateHelper';
 import { baseWhere } from 'src/common/utils';
-import { ProductAdminDto } from './dto/ProductAdminDto';
+import { ProductArticleAdminDto } from './dto/ProductArticleAdminDto';
 import { CreateProductDto } from './dto/CreateProductDto';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { GetProductListDto } from './dto/GetProductListDto';
-import { GetProductDto } from './dto/GetProductDto';
 
 type BaseWhereType = {
 	isVisible: boolean;
@@ -62,31 +61,33 @@ export class ProductService {
 				products: true
 			}
 		});
+		console.log(p);
+
 		if (!p) {
 			throw new NotFoundException('Продукт не найден');
 		}
-		return convertToJson(FullProductDto, p);
+		return convertToJson(FullProductArticleDto, p);
 	}
 
-	async getProduct(payload: GetProductDto) {
-		let wherePayload = { id };
+	// async getProduct(payload: GetProductDto) {
+	// 	let wherePayload = { id };
 
-		const p = await this.productArticleRepository.findOne({
-			where: wherePayload,
-			relations: {
-				products: true
-			}
-		});
-		if (!p) {
-			throw new NotFoundException('Продукт не найден');
-		}
-		return convertToJson(FullProductDto, p);
-	}
+	// 	const p = await this.productArticleRepository.findOne({
+	// 		where: wherePayload,
+	// 		relations: {
+	// 			products: true
+	// 		}
+	// 	});
+	// 	if (!p) {
+	// 		throw new NotFoundException('Продукт не найден');
+	// 	}
+	// 	return convertToJson(FullProductDto, p);
+	// }
 
 	async getList(
 		payload: GetProductListDto,
 		isAdmin: boolean
-	): Promise<IPaginateResult<ProductDto>> {
+	): Promise<IPaginateResult<ProductArticleDto>> {
 		// type commonKeys =  keyof GetListDto
 
 		// type WherePayload =  Omit<GetProductDto, commonKeys> & BaseWhereType;
@@ -131,17 +132,22 @@ export class ProductService {
 			where: wherePayload
 		});
 
-		return getPaginateResult(isAdmin ? ProductAdminDto : ProductDto, result, total, {
-			itemsPerPage: payload.itemsPerPage,
-			page: payload.page
-		});
+		return getPaginateResult(
+			isAdmin ? ProductArticleAdminDto : ProductArticleDto,
+			result,
+			total,
+			{
+				itemsPerPage: payload.itemsPerPage,
+				page: payload.page
+			}
+		);
 	}
 
 	async geProductsByCategory(
 		id: number,
 		getListDto: GetListDto,
 		isAdmin: boolean
-	): Promise<IPaginateResult<ProductDto>> {
+	): Promise<IPaginateResult<ProductArticleDto>> {
 		let wherePayload = {
 			productSubcategory: {
 				productCategory: {
@@ -157,14 +163,14 @@ export class ProductService {
 			...getPaginateWhere(getListDto)
 		});
 
-		return getPaginateResult(ProductDto, result, total, getListDto);
+		return getPaginateResult(ProductArticleDto, result, total, getListDto);
 	}
 
 	async geProductsBySubcategory(
 		id: number,
 		getListDto: GetListDto,
 		isAdmin: boolean
-	): Promise<IPaginateResult<ProductDto>> {
+	): Promise<IPaginateResult<ProductArticleDto>> {
 		let wherePayload = {
 			productSubcategory: {
 				id
@@ -178,7 +184,7 @@ export class ProductService {
 			...getPaginateWhere(getListDto)
 		});
 
-		return getPaginateResult(ProductDto, result, total, getListDto);
+		return getPaginateResult(ProductArticleDto, result, total, getListDto);
 	}
 
 	private async clearProducts() {

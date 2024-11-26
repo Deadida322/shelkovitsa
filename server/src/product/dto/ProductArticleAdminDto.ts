@@ -1,8 +1,8 @@
 import { Expose } from 'class-transformer';
 import 'reflect-metadata';
-import { ProductDto } from './ProductDto';
+import { ProductArticleDto } from './ProductArticleDto';
 
-export class ProductAdminDto extends ProductDto {
+export class ProductArticleAdminDto extends ProductArticleDto {
 	@Expose()
 	is_deleted!: boolean;
 

@@ -16,9 +16,7 @@ export class Product extends BaseEntity {
 	amount!: number;
 
 	@Type(() => ProductArticle)
-	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.products, {
-		eager: true
-	})
+	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.products)
 	productArticle?: ProductArticle;
 
 	@Type(() => ProductSize)

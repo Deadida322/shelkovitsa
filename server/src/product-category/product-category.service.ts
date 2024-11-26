@@ -12,9 +12,9 @@ import { baseWhere } from 'src/common/utils';
 import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
 import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
 import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
-import { ProductDto } from 'src/product/dto/ProductDto';
+import { ProductArticleDto } from 'src/product/dto/ProductArticleDto';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
-import { FullProductDto } from 'src/product/dto/FullProductDto';
+import { FullProductArticleDto } from 'src/product/dto/FullProductArticleDto';
 
 @Injectable()
 export class ProductCategoryService {
@@ -162,7 +162,7 @@ export class ProductCategoryService {
 	async bindProductToSubcategory({
 		productArticleId,
 		subcategoryId
-	}: BindProductArticleToSubcategoryDto): Promise<FullProductDto> {
+	}: BindProductArticleToSubcategoryDto): Promise<FullProductArticleDto> {
 		const productArticle = await this.productArticleRepository.findOne({
 			where: {
 				...baseWhere,
@@ -189,6 +189,6 @@ export class ProductCategoryService {
 			productSubcategory: subcategory
 		});
 
-		return convertToJson(FullProductDto, res);
+		return convertToJson(FullProductArticleDto, res);
 	}
 }

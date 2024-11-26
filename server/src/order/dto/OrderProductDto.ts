@@ -1,6 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import 'reflect-metadata';
-import { ProductDto } from 'src/product/dto/ProductDto';
+import { ProductArticleDto } from 'src/product/dto/ProductArticleDto';
 
 export class OrderProductDto {
 	@Expose()
@@ -10,6 +10,6 @@ export class OrderProductDto {
 	amount!: number;
 
 	@Expose()
-	@Type(() => ProductDto)
-	product!: ProductDto;
+	@Type(() => ProductArticleDto)
+	product!: ProductArticleDto;
 }

@@ -4,8 +4,9 @@ import { ProductFileDto } from './ProductFileDto';
 import { ProductSizeDto } from './ProductSizeDto';
 import { ProductColorDto } from './ProductColorDto';
 import { ProductSubcategoryDto } from 'src/product-category/dto/ProductSubcategoryDto';
+import { ProductArticleDto } from './ProductArticleDto';
 
-export class FullProductDto {
+export class FullProductArticleDto {
 	@Expose()
 	id!: number;
 
