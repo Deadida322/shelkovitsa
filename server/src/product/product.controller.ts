@@ -28,17 +28,19 @@ import {
 } from 'src/helpers/storageHelper';
 import { CreateProductDto } from './dto/CreateProductDto';
 import { GetProductListDto } from './dto/GetProductListDto';
+import { GetDetailProductDto } from './dto/GetDetailProductDto';
 
 @Controller('product')
 export class ProductController {
 	constructor(private productService: ProductService) {}
 
-	@Get(':id')
+	@Post(':id')
 	async getOne(
 		@Param('id') id: number,
+		@Body() payload: GetDetailProductDto,
 		@Req() request: Request
 	): Promise<FullProductArticleDto> {
-		return this.productService.getById(id, request.isAdmin);
+		return this.productService.getProduct(id, request.isAdmin, payload);
 	}
 
 	// @Post('product/:id')
@@ -50,28 +52,6 @@ export class ProductController {
 	async getList(@Body() getListDto: GetProductListDto, @Req() request: Request) {
 		return this.productService.getList(getListDto, request.isAdmin);
 	}
-
-	// @Post('/category/:id')
-	// async getProductByCategory(
-	// 	@Param('id') id: number,
-	// 	@Body() getListDto: GetListDto,
-	// 	@Req() request: Request
-	// ): Promise<IPaginateResult<ProductArticleDto>> {
-	// 	return this.productService.geProductsByCategory(id, getListDto, request.isAdmin);
-	// }
-
-	// @Post('/subcategory/:id')
-	// async getProductBySubcategory(
-	// 	@Param('id') id: number,
-	// 	@Body() getListDto: GetListDto,
-	// 	@Req() request: Request
-	// ): Promise<IPaginateResult<ProductArticleDto>> {
-	// 	return this.productService.geProductsBySubcategory(
-	// 		id,
-	// 		getListDto,
-	// 		request.isAdmin
-	// 	);
-	// }
 
 	// @AdminAuth()
 	// @Post('create')

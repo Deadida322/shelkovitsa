@@ -17,11 +17,14 @@ import {
 	getPaginateWhere,
 	IPaginateResult
 } from '../helpers/paginateHelper';
-import { baseWhere } from 'src/common/utils';
+import { baseWhere, filterDuplicateObjectById } from 'src/common/utils';
 import { ProductArticleAdminDto } from './dto/ProductArticleAdminDto';
 import { CreateProductDto } from './dto/CreateProductDto';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { GetProductListDto } from './dto/GetProductListDto';
+import { GetDetailProductDto } from './dto/GetDetailProductDto';
+import { ProductColorDto } from './dto/ProductColorDto';
+import { ProductSizeDto } from './dto/ProductSizeDto';
 
 type BaseWhereType = {
 	isVisible: boolean;
@@ -50,8 +53,31 @@ export class ProductService {
 		private ProductSubcategoryRepository: Repository<ProductSubcategory>
 	) {}
 
-	async getById(id: number, isAdmin: boolean) {
-		let wherePayload = { id };
+	// async getProduct(id: number, isAdmin: boolean) {
+	// 	let wherePayload = { id };
+	// 	if (!isAdmin) {
+	// 		wherePayload = { ...wherePayload, ...baseProductWhere };
+	// 	}
+	// 	const p = await this.productArticleRepository.findOne({
+	// 		where: wherePayload,
+	// 		relations: {
+	// 			products: true
+	// 		}
+	// 	});
+	// 	console.log(p);
+
+	// 	if (!p) {
+	// 		throw new NotFoundException('Продукт не найден');
+	// 	}
+	// 	return convertToJson(FullProductArticleDto, p);
+	// }
+
+	async getProduct(
+		productArticleId: number,
+		isAdmin: boolean,
+		payload: GetDetailProductDto
+	) {
+		let wherePayload = { id: productArticleId };
 		if (!isAdmin) {
 			wherePayload = { ...wherePayload, ...baseProductWhere };
 		}
@@ -61,28 +87,40 @@ export class ProductService {
 				products: true
 			}
 		});
-		console.log(p);
 
 		if (!p) {
 			throw new NotFoundException('Продукт не найден');
 		}
-		return convertToJson(FullProductArticleDto, p);
+		let products = [];
+		if (payload.productColorId) {
+			products = p.products.filter(
+				(el) => el.productColor.id == payload.productColorId
+			);
+		} else if (payload.productSizeId) {
+			products = p.products.filter(
+				(el) => el.productSize.id == payload.productSizeId
+			);
+		} else if (payload.productColorId && payload.productSizeId) {
+			throw new BadRequestException(
+				'Можно указать в параметрах запроса либо productColorId, либо productSizeId'
+			);
+		} else {
+			products = p.products;
+		}
+		const res = convertToClass(FullProductArticleDto, p);
+
+		const mappedColors = products.map((el) =>
+			convertToClass(ProductColorDto, el.productColor)
+		);
+		res.productColors = filterDuplicateObjectById<ProductColorDto>(mappedColors);
+
+		const mappedSizes = products.map((el) =>
+			convertToClass(ProductSizeDto, el.productSize)
+		);
+		res.productSizes = filterDuplicateObjectById<ProductSizeDto>(mappedSizes);
+
+		return convertToJson(FullProductArticleDto, res);
 	}
-
-	// async getProduct(payload: GetProductDto) {
-	// 	let wherePayload = { id };
-
-	// 	const p = await this.productArticleRepository.findOne({
-	// 		where: wherePayload,
-	// 		relations: {
-	// 			products: true
-	// 		}
-	// 	});
-	// 	if (!p) {
-	// 		throw new NotFoundException('Продукт не найден');
-	// 	}
-	// 	return convertToJson(FullProductDto, p);
-	// }
 
 	async getList(
 		payload: GetProductListDto,
@@ -141,50 +179,6 @@ export class ProductService {
 				page: payload.page
 			}
 		);
-	}
-
-	async geProductsByCategory(
-		id: number,
-		getListDto: GetListDto,
-		isAdmin: boolean
-	): Promise<IPaginateResult<ProductArticleDto>> {
-		let wherePayload = {
-			productSubcategory: {
-				productCategory: {
-					id
-				}
-			}
-		};
-		if (!isAdmin) {
-			wherePayload = { ...wherePayload, ...baseProductWhere };
-		}
-		const [result, total] = await this.productArticleRepository.findAndCount({
-			where: wherePayload,
-			...getPaginateWhere(getListDto)
-		});
-
-		return getPaginateResult(ProductArticleDto, result, total, getListDto);
-	}
-
-	async geProductsBySubcategory(
-		id: number,
-		getListDto: GetListDto,
-		isAdmin: boolean
-	): Promise<IPaginateResult<ProductArticleDto>> {
-		let wherePayload = {
-			productSubcategory: {
-				id
-			}
-		};
-		if (!isAdmin) {
-			wherePayload = { ...wherePayload, ...baseProductWhere };
-		}
-		const [result, total] = await this.productArticleRepository.findAndCount({
-			where: wherePayload,
-			...getPaginateWhere(getListDto)
-		});
-
-		return getPaginateResult(ProductArticleDto, result, total, getListDto);
 	}
 
 	private async clearProducts() {
