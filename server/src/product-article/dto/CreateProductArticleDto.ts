@@ -2,7 +2,7 @@ import { Expose, Type } from 'class-transformer';
 import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import 'reflect-metadata';
 
-export class CreateProductDto {
+export class CreateProductArticleDto {
 	@IsNotEmpty()
 	@IsString()
 	@Expose()

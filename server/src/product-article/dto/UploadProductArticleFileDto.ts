@@ -2,7 +2,7 @@ import { Expose } from 'class-transformer';
 import { IsBoolean, IsOptional } from 'class-validator';
 import 'reflect-metadata';
 
-export class UploadFileDto {
+export class UploadProductArticleFileDto {
 	@IsOptional()
 	@Expose()
 	@IsBoolean({

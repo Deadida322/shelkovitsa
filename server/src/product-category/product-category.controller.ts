@@ -7,7 +7,7 @@ import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
 import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
-import { FullProductArticleDto } from 'src/product/dto/FullProductArticleDto';
+import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
 
 @Controller('product-category')

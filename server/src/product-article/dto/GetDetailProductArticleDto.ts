@@ -1,10 +1,10 @@
 import { Expose } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsOptional, IsPositive, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsPositive, Max, Min } from 'class-validator';
 import 'reflect-metadata';
 
-export class GetDetailProductDto {
+export class GetDetailProductArticleDto {
 	@Expose()
-	@IsNotEmpty()
+	@IsOptional()
 	@IsInt()
 	@Min(0, {
 		message: 'Должно быть >= 0'
@@ -12,18 +12,10 @@ export class GetDetailProductDto {
 	productColorId: number;
 
 	@Expose()
-	@IsNotEmpty()
+	@IsOptional()
 	@IsInt()
 	@Min(0, {
 		message: 'Должно быть >= 0'
 	})
 	productSizeId: number;
-
-	@Expose()
-	@IsNotEmpty()
-	@IsInt()
-	@Min(0, {
-		message: 'Должно быть >= 0'
-	})
-	productArticleId: number;
 }

@@ -6,7 +6,7 @@ import {
 	convertToJson,
 	convertToJsonMany
 } from 'src/helpers/convertHelper';
-import { ProductColorDto } from 'src/product/dto/ProductColorDto';
+import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { Repository } from 'typeorm';
 import { CreateProductColorDto } from './dto/CreateProductColorDto';
 

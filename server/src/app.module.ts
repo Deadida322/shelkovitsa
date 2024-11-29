@@ -14,6 +14,7 @@ import { FileModule } from './file/file.module';
 import { ProductColorModule } from './product-color/product-color.module';
 import { OrderModule } from './order/order.module';
 import { DeliveryTypeModule } from './delivery-type/delivery-type.module';
+import { ProductArticleModule } from './product-article/product-article.module';
 @Module({
 	imports: [
 		configuration,
@@ -39,7 +40,8 @@ import { DeliveryTypeModule } from './delivery-type/delivery-type.module';
 		FileModule,
 		ProductColorModule,
 		OrderModule,
-		DeliveryTypeModule
+		DeliveryTypeModule,
+		ProductArticleModule
 	]
 })
 export class AppModule {

@@ -12,9 +12,9 @@ import { baseWhere } from 'src/common/utils';
 import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
 import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
 import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
-import { ProductArticleDto } from 'src/product/dto/ProductArticleDto';
+import { ProductArticleDto } from 'src/product-article/dto/ProductArticleDto';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
-import { FullProductArticleDto } from 'src/product/dto/FullProductArticleDto';
+import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 
 @Injectable()
 export class ProductCategoryService {

@@ -1,6 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import 'reflect-metadata';
-import { ProductArticleDto } from 'src/product/dto/ProductArticleDto';
+import { ProductArticleDto } from 'src/product-article/dto/ProductArticleDto';
 
 export class OrderProductDto {
 	@Expose()

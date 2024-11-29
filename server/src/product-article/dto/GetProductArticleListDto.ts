@@ -3,7 +3,7 @@ import { IsInt, IsOptional, IsPositive, Max, Min } from 'class-validator';
 import 'reflect-metadata';
 import { GetListDto } from 'src/common/dto/GetListDto';
 
-export class GetProductListDto extends GetListDto {
+export class GetProductArticleListDto extends GetListDto {
 	@Expose()
 	@IsOptional()
 	@IsInt()
