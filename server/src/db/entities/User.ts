@@ -24,6 +24,12 @@ export class User extends BaseEntity {
 	@Column()
 	password!: string;
 
+	@Column({
+		type: 'json',
+		nullable: true
+	})
+	basket!: string;
+
 	@Type(() => Order)
 	@ManyToOne(() => Order, (order) => order.user)
 	orders?: Order[];

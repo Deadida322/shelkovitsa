@@ -2,9 +2,15 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './middleware/errorMiddleware';
+import { errorFormatter } from './helpers/errorHelper';
+import { initDiskStorage } from './helpers/storageHelper';
 
 async function bootstrap() {
-	const app = await NestFactory.create(AppModule);
+	initDiskStorage();
+
+	const app = await NestFactory.create(AppModule, {
+		bodyParser: true
+	});
 	app.setGlobalPrefix('api');
 	app.useGlobalPipes(
 		new ValidationPipe({
@@ -13,12 +19,16 @@ async function bootstrap() {
 			validationError: {
 				target: true
 			},
+			// exceptionFactory: (errors) => {
+			// 	const result = errors.map((error) => ({
+			// 		property: error.property,
+			// 		message: error.constraints[Object.keys(error.constraints)[0]]
+			// 	}));
+			// 	return new UnprocessableEntityException(result);
+			// },
 			exceptionFactory: (errors) => {
-				const result = errors.map((error) => ({
-					property: error.property,
-					message: error.constraints[Object.keys(error.constraints)[0]]
-				}));
-				return new UnprocessableEntityException(result);
+				const message = errorFormatter(errors);
+				return new UnprocessableEntityException(message);
 			},
 			stopAtFirstError: true
 		})

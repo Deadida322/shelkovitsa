@@ -4,14 +4,26 @@ import 'reflect-metadata';
 
 export class CreateOrderProductDto {
 	@Expose()
-	@IsNotEmpty()
-	@IsPositive()
-	@IsInt()
+	@IsNotEmpty({
+		message: 'Поле не может быть пустым'
+	})
+	@IsPositive({
+		message: 'Поле должно быть > 0'
+	})
+	@IsInt({
+		message: 'Поле должно быть числом'
+	})
 	amount!: number;
 
 	@Expose()
-	@IsNotEmpty()
-	@IsPositive()
-	@IsInt()
+	@IsNotEmpty({
+		message: 'Поле не может быть пустым'
+	})
+	@IsPositive({
+		message: 'Поле должно быть > 0'
+	})
+	@IsInt({
+		message: 'Поле должно быть числом'
+	})
 	productId!: number;
 }

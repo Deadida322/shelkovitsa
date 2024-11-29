@@ -1,44 +1,79 @@
 import {
 	CanActivate,
 	ExecutionContext,
+	ForbiddenException,
 	Injectable,
+	InternalServerErrorException,
 	UnauthorizedException
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { IS_ADMIN_AUTH } from 'src/decorators/adminAuth';
 import { IS_AUTH } from 'src/decorators/auth';
 import { UserInRequest } from 'src/types/express/custom';
+import 'dotenv/config';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
 	constructor(
 		private jwtService: JwtService,
-		private reflector: Reflector
+		private reflector: Reflector,
+		private configService: ConfigService
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
-		const isAuth = this.reflector.getAllAndOverride<boolean>(IS_AUTH, [
+		let isAuth = this.reflector.getAllAndOverride<boolean>(IS_AUTH, [
 			context.getHandler(),
 			context.getClass()
 		]);
 
-		const request = context.switchToHttp().getRequest();
+		const isAdminAuth = this.reflector.getAllAndOverride<boolean>(IS_ADMIN_AUTH, [
+			context.getHandler(),
+			context.getClass()
+		]);
+		if (isAdminAuth) {
+			isAuth = true;
+		}
+
+		const request = context.switchToHttp().getRequest<Request>();
 		const token = this.extractTokenFromHeader(request);
 
-		if (!!isAuth && !token) {
-			throw new UnauthorizedException();
-		} else if (!!token) {
+		const ownerId = this.configService.getOrThrow<number>('OWNER_ID');
+
+		if (!ownerId || Number.isInteger(ownerId)) {
+			throw new InternalServerErrorException(
+				'Неправильно настроена конфигурация администраторской части'
+			);
+		}
+
+		let payload: UserInRequest;
+		if (!!token) {
 			try {
-				const payload: UserInRequest = await this.jwtService.verifyAsync(token, {
+				payload = await this.jwtService.verifyAsync(token, {
 					secret: process.env.JWT_PUBLIC_KEY
 				});
-				request.user = payload;
-			} catch {
-				if (!!isAuth) {
+			} catch (err) {
+				if (isAuth || isAdminAuth) {
 					throw new UnauthorizedException();
 				}
 			}
+		}
+
+		if (payload) {
+			request.user = payload;
+		}
+
+		if (payload?.id == ownerId) {
+			request.isAdmin = true;
+		}
+
+		if (!!isAuth && !request.user) {
+			throw new UnauthorizedException();
+		} else if (!!isAdminAuth && !request.isAdmin) {
+			throw new ForbiddenException('У Вас нет доступа!');
+		} else {
 		}
 
 		return true;

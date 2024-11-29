@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 
-export class ParseProductDto {
+export class ParseProductArticleDto {
 	@Expose()
 	article: string;
 

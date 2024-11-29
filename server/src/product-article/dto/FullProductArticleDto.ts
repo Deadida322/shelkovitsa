@@ -1,11 +1,11 @@
 import { Expose, Type } from 'class-transformer';
 import 'reflect-metadata';
 import { ProductFileDto } from './ProductFileDto';
-import { ProductSizeDto } from './ProductSizeDto';
-import { ProductColorDto } from './ProductColorDto';
+import { ProductSizeDto } from '../../product/dto/ProductSizeDto';
+import { ProductColorDto } from '../../product-color/dto/ProductColorDto';
 import { ProductSubcategoryDto } from 'src/product-category/dto/ProductSubcategoryDto';
 
-export class FullProductDto {
+export class FullProductArticleDto {
 	@Expose()
 	id!: number;
 

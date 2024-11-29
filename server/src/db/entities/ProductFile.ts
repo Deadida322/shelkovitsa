@@ -11,6 +11,11 @@ export class ProductFile extends BaseEntity {
 	@Column()
 	image!: string;
 
+	@Column({
+		default: false
+	})
+	isLogo!: boolean;
+
 	@Type(() => ProductArticle)
 	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.productFiles)
 	product: ProductArticle;

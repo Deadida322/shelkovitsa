@@ -1,8 +1,9 @@
 import { Expose } from 'class-transformer';
-import { IsBoolean } from 'class-validator';
+import { IsBoolean, IsOptional } from 'class-validator';
 import 'reflect-metadata';
 
-export class UploadFileDto {
+export class UploadProductArticleFileDto {
+	@IsOptional()
 	@Expose()
 	@IsBoolean({
 		message: 'Неправильный формат поля'

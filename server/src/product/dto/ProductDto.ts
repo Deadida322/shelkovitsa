@@ -1,19 +1,24 @@
-import { Expose } from 'class-transformer';
-import 'reflect-metadata';
+import { Expose, Type } from 'class-transformer';
+import { ProductArticleDto } from '../../product-article/dto/ProductArticleDto';
+import { ProductSizeDto } from './ProductSizeDto';
+import { ProductColorDto } from '../../product-color/dto/ProductColorDto';
 
 export class ProductDto {
 	@Expose()
 	id!: number;
 
 	@Expose()
-	name!: string;
+	amount!: number;
 
 	@Expose()
-	description?: string;
+	@Type(() => ProductArticleDto)
+	productArticle: ProductArticleDto;
 
 	@Expose()
-	logo?: string;
+	@Type(() => ProductSizeDto)
+	productSize: ProductSizeDto;
 
 	@Expose()
-	article!: string;
+	@Type(() => ProductColorDto)
+	productColor: ProductColorDto;
 }

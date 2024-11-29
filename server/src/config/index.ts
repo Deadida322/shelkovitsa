@@ -19,7 +19,10 @@ export default ConfigModule.forRoot({
 			JWT_PUBLIC_EXP: process.env.JWT_PUBLIC_EXP,
 			PSD_KEY: process.env.PSD_KEY,
 
-			OWNER_ID: process.env.OWNER_ID
+			OWNER_ID: process.env.OWNER_ID,
+
+			TEMP_PATH: process.env.TEMP_PATH,
+			DEST_PATH: process.env.DEST_PATH
 		})
 	],
 	isGlobal: true
