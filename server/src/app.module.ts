@@ -15,6 +15,7 @@ import { ProductColorModule } from './product-color/product-color.module';
 import { OrderModule } from './order/order.module';
 import { DeliveryTypeModule } from './delivery-type/delivery-type.module';
 import { ProductArticleModule } from './product-article/product-article.module';
+import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 @Module({
 	imports: [
 		configuration,
@@ -30,6 +31,10 @@ import { ProductArticleModule } from './product-article/product-article.module';
 				dest: './temp/src'
 			}),
 			inject: [ConfigService]
+		}),
+		NestjsFormDataModule.config({
+			storage: MemoryStoredFile,
+			isGlobal: true
 		}),
 		ProductModule,
 		AuthModule,

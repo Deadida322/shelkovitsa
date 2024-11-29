@@ -1,5 +1,20 @@
 import { Expose, Type } from 'class-transformer';
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+	IsArray,
+	IsInt,
+	IsNotEmpty,
+	IsNumber,
+	IsNumberString,
+	IsOptional,
+	IsString
+} from 'class-validator';
+import {
+	HasMimeType,
+	IsFile,
+	IsFiles,
+	MaxFileSize,
+	MemoryStoredFile
+} from 'nestjs-form-data';
 import 'reflect-metadata';
 
 export class CreateProductArticleDto {
@@ -18,7 +33,8 @@ export class CreateProductArticleDto {
 	@Expose()
 	article!: string;
 
-	@IsNumber()
+	@Type(() => Number)
+	@IsInt()
 	@IsNotEmpty()
 	@Expose()
 	price!: number;
@@ -30,6 +46,7 @@ export class CreateProductArticleDto {
 	@Expose()
 	productSizeIds?: number[];
 
+	@IsOptional()
 	@IsArray({
 		each: true
 	})
@@ -40,4 +57,21 @@ export class CreateProductArticleDto {
 	@IsNumber()
 	@Expose()
 	productSubcategoryId?: number;
+
+	// @MaxFileSize(1e6, { each: true })
+	// @HasMimeType(['image/*'], {
+	// 	each: true
+	// })
+	@IsOptional({ each: true })
+	@IsOptional()
+	@IsFiles()
+	// @Type(() => MemoryStoredFile)
+	images?: MemoryStoredFile[];
+
+	// @IsFiles()
+	// @MaxFileSize(1e6, { each: true })
+	// @HasMimeType(['image/*'], {
+	// 	each: true
+	// })
+	// images: MemoryStoredFile[];
 }

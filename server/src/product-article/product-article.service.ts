@@ -25,6 +25,7 @@ import { CreateProductArticleDto } from './dto/CreateProductArticleDto';
 import { UploadProductArticleFileDto } from './dto/UploadProductArticleFileDto';
 import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
+import { moveFilesToStatic } from 'src/helpers/storageHelper';
 @Injectable()
 export class ProductArticleService {
 	constructor(
@@ -153,7 +154,7 @@ export class ProductArticleService {
 		);
 	}
 
-	private async clearProducts() {
+	private async clearArticleProducts() {
 		await this.productRepository.update(
 			{},
 			{
@@ -168,43 +169,55 @@ export class ProductArticleService {
 		);
 	}
 
-	async createProduct(createProductDto: CreateProductArticleDto, images?: File[]) {
+	async createArticleProduct(
+		createProductDto: CreateProductArticleDto,
+		images?: File[]
+	) {
 		const payload = convertToClass(ProductArticle, createProductDto);
 
 		//проверка и нахождение связанных сущностей
 		const { productColorIds, productSizeIds, productSubcategoryId } =
 			createProductDto;
-		const productSizes = await this.ProductSizeRepository.find({
-			where: {
-				...baseWhere,
-				id: In(productSizeIds)
+
+		if (productSizeIds) {
+			const productSizes = await this.ProductSizeRepository.find({
+				where: {
+					...baseWhere,
+					id: In(productSizeIds ?? [])
+				}
+			});
+			if (productSizes.length != productSizeIds.length) {
+				throw new BadRequestException('Нет такого размера');
 			}
-		});
-		if (productSizes.length != productSizeIds.length) {
-			throw new BadRequestException('Нет такого размера');
 		}
 
-		const productColors = await this.ProductColorRepository.find({
-			where: {
-				...baseWhere,
-				id: In(productColorIds)
+		if (productColorIds) {
+			const productColors = await this.ProductColorRepository.find({
+				where: {
+					...baseWhere,
+					id: In(productColorIds ?? [])
+				}
+			});
+			if (productColors.length != productColorIds.length) {
+				throw new BadRequestException('Нет такого цвета');
 			}
-		});
-		if (productColors.length != productColorIds.length) {
-			throw new BadRequestException('Нет такого цвета');
 		}
 
-		const productSubcategory = await this.ProductSubcategoryRepository.findOne({
-			where: {
-				...baseWhere,
-				id: productSubcategoryId
-			}
-		});
-		if (!productSubcategory) {
-			throw new BadRequestException('Нет такой подкатегории');
-		}
+		if (productSubcategoryId) {
+			const productSubcategory = await this.ProductSubcategoryRepository.findOne({
+				where: {
+					...baseWhere,
+					id: productSubcategoryId
+				}
+			});
 
-		const productFiles = await this.productArticleRepository.save([]);
+			if (!productSubcategory) {
+				throw new BadRequestException('Нет такой подкатегории');
+			}
+		}
+		await moveFilesToStatic(images, 1);
+		// const productFiles = await this.productArticleRepository.save([]);
+
 		// const p = await this.productArticleRepository.save();
 		// if (!p) {
 		// 	throw new NotFoundException('Продукт не найден');
@@ -220,7 +233,7 @@ export class ProductArticleService {
 		const data = workSheetsFromFile[0].data;
 
 		if (uploadFileDto.isDeletedOther) {
-			await this.clearProducts();
+			await this.clearArticleProducts();
 		}
 		const errorRows: string[][] = [];
 		data.forEach(async (row) => {
@@ -240,7 +253,7 @@ export class ProductArticleService {
 					product.article = String(product.article).trim();
 					product.color = String(product.color).trim();
 					product.size = String(product.size).trim();
-					await this.parseProduct(product);
+					await this.parseArticleProduct(product);
 				}
 			} catch (err) {
 				errorRows.push([String(err)]);
@@ -256,7 +269,7 @@ export class ProductArticleService {
 		return undefined;
 	}
 
-	private async parseProduct(productDto: ParseProductArticleDto): Promise<void> {
+	private async parseArticleProduct(productDto: ParseProductArticleDto): Promise<void> {
 		const { amount, article, color, price, size } = productDto;
 
 		let productArticle = await this.productArticleRepository.findOne({

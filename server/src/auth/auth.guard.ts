@@ -55,7 +55,9 @@ export class AuthGuard implements CanActivate {
 					secret: process.env.JWT_PUBLIC_KEY
 				});
 			} catch (err) {
-				throw new UnauthorizedException();
+				if (isAuth || isAdminAuth) {
+					throw new UnauthorizedException();
+				}
 			}
 		}
 
@@ -73,39 +75,6 @@ export class AuthGuard implements CanActivate {
 			throw new ForbiddenException('У Вас нет доступа!');
 		} else {
 		}
-
-		// if (!!isAdminAuth) {
-		// 	try {
-		// 		const ownerId = this.configService.getOrThrow<number>('OWNER_ID');
-		// 		if (!ownerId || Number.isInteger(ownerId)) {
-		// 			throw new InternalServerErrorException(
-		// 				'Неправильно настроена конфигурация администраторской части'
-		// 			);
-		// 		}
-		// 		const payload: UserInRequest = await this.jwtService.verifyAsync(token, {
-		// 			secret: process.env.JWT_PUBLIC_KEY
-		// 		});
-		// 		if (payload.id != ownerId) {
-		// 			throw new ForbiddenException('У Вас нет доступа!');
-		// 		}
-		// 		request.user = payload;
-		// 	} catch (err) {
-		// 		throw new UnauthorizedException();
-		// 	}
-		// } else if (!!isAuth && !token) {
-		// 	throw new UnauthorizedException();
-		// } else if (!!token) {
-		// 	try {
-		// 		const payload: UserInRequest = await this.jwtService.verifyAsync(token, {
-		// 			secret: process.env.JWT_PUBLIC_KEY
-		// 		});
-		// 		request.user = payload;
-		// 	} catch {
-		// 		if (!!isAuth) {
-		// 			throw new UnauthorizedException();
-		// 		}
-		// 	}
-		// }
 
 		return true;
 	}

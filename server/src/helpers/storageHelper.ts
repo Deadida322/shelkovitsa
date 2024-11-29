@@ -97,7 +97,14 @@ export function parseFileBuilder(
 		});
 }
 
-// export function moveFilesToStatic(files: File[]) : string[] {
-// 	const promises = files.map(async (file) => {
-// 	})
-// }
+export async function moveFilesToStatic(files: File[], productArticleId: number) {
+	const promises = files.map(async (file) => {
+		const srcPath = getSrcPath(file.name);
+		const destPath = getDestPath(file.name);
+	});
+	await Promise.all(promises);
+}
+
+export const mimeTypes = {
+	images: ['image/jpeg', 'image/png', 'image/webp']
+};

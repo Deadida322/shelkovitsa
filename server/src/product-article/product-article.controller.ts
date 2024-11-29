@@ -4,6 +4,7 @@ import {
 	Controller,
 	Param,
 	Post,
+	Put,
 	Req,
 	StreamableFile,
 	UploadedFile,
@@ -26,24 +27,11 @@ import {
 import { CreateProductArticleDto } from '../product-article/dto/CreateProductArticleDto';
 import { GetProductArticleListDto } from '../product-article/dto/GetProductArticleListDto';
 import { GetDetailProductArticleDto } from '../product-article/dto/GetDetailProductArticleDto';
+import { FormDataRequest } from 'nestjs-form-data';
 
 @Controller('product-article')
 export class ProductArticleController {
 	constructor(private productArticleService: ProductArticleService) {}
-
-	@Post(':id')
-	async getProductArticle(
-		@Param('id') id: number,
-		@Body() payload: GetDetailProductArticleDto,
-		@Req() request: Request
-	): Promise<FullProductArticleDto> {
-		return this.productArticleService.getProductArticle(id, request.isAdmin, payload);
-	}
-
-	@Post()
-	async getList(@Body() getListDto: GetProductArticleListDto, @Req() request: Request) {
-		return this.productArticleService.getList(getListDto, request.isAdmin);
-	}
 
 	// @AdminAuth()
 	// @Post('create')
@@ -55,14 +43,18 @@ export class ProductArticleController {
 	// 	// return this.productArticleService.getList(getListDto, request.isAdmin);
 	// }
 
+	//создание продукта  с файлами, лого, получение изображений, привязка цветов и размеров, обновление кол-ва проуктов
 	@AdminAuth()
 	@Post('create')
-	@UseInterceptors(imagesInterceptor(10))
+	@FormDataRequest()
+	// @UseInterceptors(imagesInterceptor(10))
 	async create(
-		@Body() createProductDto: CreateProductArticleDto,
-		@UploadedFiles(parseFileBuilder(imageFileType, false)) images?: File[]
+		@Body() createProductDto: CreateProductArticleDto
+		// @UploadedFiles(parseFileBuilder(imageFileType, false)) images?: File[]
 	) {
-		// console.log({ images });
+		console.log(createProductDto);
+
+		await this.productArticleService.createArticleProduct(createProductDto, []);
 
 		return '';
 		// return this.productArticleService.getList(getListDto, request.isAdmin);
@@ -72,7 +64,7 @@ export class ProductArticleController {
 	// разобраться с путями
 
 	@AdminAuth()
-	@Post('upload')
+	@Put('upload')
 	@UseInterceptors(fileInterceptor)
 	async uploadFile(
 		@UploadedFile(parseFileBuilder(excelFileType))
@@ -92,5 +84,19 @@ export class ProductArticleController {
 		} else {
 			return {};
 		}
+	}
+
+	@Post(':id')
+	async getProductArticle(
+		@Param('id') id: number,
+		@Body() payload: GetDetailProductArticleDto,
+		@Req() request: Request
+	): Promise<FullProductArticleDto> {
+		return this.productArticleService.getProductArticle(id, request.isAdmin, payload);
+	}
+
+	@Post()
+	async getList(@Body() getListDto: GetProductArticleListDto, @Req() request: Request) {
+		return this.productArticleService.getList(getListDto, request.isAdmin);
 	}
 }

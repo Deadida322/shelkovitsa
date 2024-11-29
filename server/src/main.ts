@@ -8,7 +8,9 @@ import { initDiskStorage } from './helpers/storageHelper';
 async function bootstrap() {
 	initDiskStorage();
 
-	const app = await NestFactory.create(AppModule);
+	const app = await NestFactory.create(AppModule, {
+		bodyParser: true
+	});
 	app.setGlobalPrefix('api');
 	app.useGlobalPipes(
 		new ValidationPipe({
