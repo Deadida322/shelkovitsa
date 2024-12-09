@@ -1,6 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import { ProductArticleDto } from '../../product-article/dto/ProductArticleDto';
-import { ProductSizeDto } from './ProductSizeDto';
+import { ProductSizeDto } from '../../product-size/dto/ProductSizeDto';
 import { ProductColorDto } from '../../product-color/dto/ProductColorDto';
 
 export class ProductDto {

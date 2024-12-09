@@ -16,6 +16,7 @@ import { OrderModule } from './order/order.module';
 import { DeliveryTypeModule } from './delivery-type/delivery-type.module';
 import { ProductArticleModule } from './product-article/product-article.module';
 import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
+import { ProductSizeModule } from './product-size/product-size.module';
 @Module({
 	imports: [
 		configuration,
@@ -46,7 +47,8 @@ import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 		ProductColorModule,
 		OrderModule,
 		DeliveryTypeModule,
-		ProductArticleModule
+		ProductArticleModule,
+		ProductSizeModule
 	]
 })
 export class AppModule {
