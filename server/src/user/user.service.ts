@@ -31,4 +31,13 @@ export class UserService {
 		});
 		return JSON.parse(result.basket);
 	}
+
+	async getBasket(userId: number) {
+		const result = await this.usersRepository.findOne({
+			where: {
+				id: userId
+			}
+		});
+		return JSON.parse(result.basket);
+	}
 }

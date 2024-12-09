@@ -8,8 +8,8 @@ import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { convertToClass, convertToJson } from 'src/helpers/convertHelper';
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
-import { ProductSizeDto } from 'src/product/dto/ProductSizeDto';
-import { Between, In, Repository } from 'typeorm';
+import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
+import { Between, In, Like, Repository } from 'typeorm';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 import { Product } from 'src/db/entities/Product';
@@ -64,35 +64,29 @@ export class ProductArticleService {
 		if (!p) {
 			throw new NotFoundException('Артикул продукта не найден');
 		}
-		let products = [];
-		if (payload.productColorId) {
-			products = p.products.filter(
-				(el) => el.productColor.id == payload.productColorId
-			);
-		} else if (payload.productSizeId) {
-			products = p.products.filter(
+		let filterProducts = p.products;
+		let currentProductSize = undefined;
+		if (payload.productSizeId) {
+			filterProducts = p.products.filter(
 				(el) => el.productSize.id == payload.productSizeId
 			);
-		} else if (payload.productColorId && payload.productSizeId) {
-			throw new BadRequestException(
-				'Можно указать в параметрах запроса либо productColorId, либо productSizeId'
-			);
-		} else {
-			products = p.products;
+			currentProductSize = payload.productSizeId;
 		}
+
 		const res = convertToClass(FullProductArticleDto, p);
 
-		const mappedColors = products.map((el) =>
+		const mappedColors = filterProducts.map((el) =>
 			convertToClass(ProductColorDto, el.productColor)
 		);
 		res.productColors = filterDuplicateObjectById<ProductColorDto>(mappedColors);
 
-		const mappedSizes = products.map((el) =>
+		const mappedSizes = p.products.map((el) =>
 			convertToClass(ProductSizeDto, el.productSize)
 		);
+
 		res.productSizes = filterDuplicateObjectById<ProductSizeDto>(mappedSizes);
 
-		return convertToJson(FullProductArticleDto, res);
+		return { ...convertToJson(FullProductArticleDto, res), currentProductSize };
 	}
 
 	async getList(
@@ -135,9 +129,13 @@ export class ProductArticleService {
 				)
 			};
 		}
+		if (payload.name) {
+			wherePayload = { ...wherePayload, name: Like(payload.name) };
+		}
 		if (!isAdmin) {
 			wherePayload = { ...baseProductWhere };
 		}
+
 		const [result, total] = await this.productArticleRepository.findAndCount({
 			...getPaginateWhere(payload),
 			where: wherePayload

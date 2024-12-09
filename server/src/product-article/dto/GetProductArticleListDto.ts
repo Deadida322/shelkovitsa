@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsInt, IsOptional, IsPositive, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsPositive, IsString, Max, Min } from 'class-validator';
 import 'reflect-metadata';
 import { GetListDto } from 'src/common/dto/GetListDto';
 
@@ -35,4 +35,9 @@ export class GetProductArticleListDto extends GetListDto {
 		message: 'Должно быть >= 0'
 	})
 	maxPrice: number;
+
+	@Expose()
+	@IsOptional()
+	@IsString()
+	name: string;
 }
