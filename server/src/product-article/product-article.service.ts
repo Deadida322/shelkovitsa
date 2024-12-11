@@ -5,7 +5,11 @@ import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
-import { convertToClass, convertToJson } from 'src/helpers/convertHelper';
+import {
+	convertToClass,
+	convertToJson,
+	convertToJsonMany
+} from 'src/helpers/convertHelper';
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
@@ -26,6 +30,7 @@ import { UploadProductArticleFileDto } from './dto/UploadProductArticleFileDto';
 import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import { moveFilesToStatic } from 'src/helpers/storageHelper';
+import * as moment from 'moment';
 @Injectable()
 export class ProductArticleService {
 	constructor(
@@ -358,5 +363,35 @@ export class ProductArticleService {
 
 			existProduct = await this.productRepository.save(productPayload);
 		}
+	}
+
+	async getPopulateList() {
+		const prevDate = moment().subtract(1, 'months').toDate();
+
+		const articles = await this.productArticleRepository
+			.createQueryBuilder('product_article')
+			.leftJoinAndSelect('product_article.products', 'product')
+			.leftJoinAndSelect('product.orderProducts', 'orderProduct')
+			.leftJoinAndSelect('orderProduct.order', 'order')
+			.where('order.created_at > :createdAt', {
+				createdAt: prevDate
+			})
+			.where(
+				'product_article.isVisible = :isVisible AND product_article.is_deleted = :isDeleted',
+				{
+					isVisible: true,
+					isDeleted: false
+				}
+			)
+			.groupBy('product_article.id')
+			.addGroupBy('product_article.id')
+			.select(
+				'product_article.id as id, product_article.id as name, product_article.description as description, product_article.article as article, product_article.price as price, count(order.id) as orderCount'
+			)
+			.orderBy('count(order.id)', 'DESC')
+			.limit(3)
+			.execute();
+
+		return convertToJsonMany(ProductArticleDto, articles);
 	}
 }

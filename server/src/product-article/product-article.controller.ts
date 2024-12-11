@@ -2,6 +2,7 @@ import { ProductArticleService } from './product-article.service';
 import {
 	Body,
 	Controller,
+	Get,
 	Param,
 	Post,
 	Put,
@@ -98,5 +99,11 @@ export class ProductArticleController {
 	@Post()
 	async getList(@Body() getListDto: GetProductArticleListDto, @Req() request: Request) {
 		return this.productArticleService.getList(getListDto, request.isAdmin);
+	}
+
+	@Get('populate')
+	async getPopulateList() {
+		const articles = this.productArticleService.getPopulateList();
+		return articles;
 	}
 }
