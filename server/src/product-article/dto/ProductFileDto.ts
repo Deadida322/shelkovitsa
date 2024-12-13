@@ -6,4 +6,7 @@ export class ProductFileDto {
 
 	@Expose()
 	image!: string;
+
+	@Expose()
+	isLogo!: boolean;
 }

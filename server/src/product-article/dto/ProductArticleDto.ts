@@ -1,5 +1,6 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import 'reflect-metadata';
+import { ProductFileDto } from './ProductFileDto';
 
 export class ProductArticleDto {
 	@Expose()
@@ -12,11 +13,12 @@ export class ProductArticleDto {
 	description?: string;
 
 	@Expose()
-	logo?: string;
-
-	@Expose()
 	article!: string;
 
 	@Expose()
 	price!: number;
+
+	@Expose()
+	@Type(() => ProductFileDto)
+	productFiles?: ProductFileDto[];
 }

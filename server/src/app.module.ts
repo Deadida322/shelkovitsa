@@ -17,6 +17,8 @@ import { DeliveryTypeModule } from './delivery-type/delivery-type.module';
 import { ProductArticleModule } from './product-article/product-article.module';
 import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 import { ProductSizeModule } from './product-size/product-size.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 @Module({
 	imports: [
 		configuration,
@@ -36,6 +38,9 @@ import { ProductSizeModule } from './product-size/product-size.module';
 		NestjsFormDataModule.config({
 			storage: MemoryStoredFile,
 			isGlobal: true
+		}),
+		ServeStaticModule.forRoot({
+			rootPath: join(__dirname, '..', 'temp/dist')
 		}),
 		ProductModule,
 		AuthModule,

@@ -29,8 +29,11 @@ import { CreateProductArticleDto } from './dto/CreateProductArticleDto';
 import { UploadProductArticleFileDto } from './dto/UploadProductArticleFileDto';
 import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
-import { moveFilesToStatic } from 'src/helpers/storageHelper';
 import * as moment from 'moment';
+import { UploadImageDto } from './dto/UploadImageDto';
+import { moveFileToStatic } from 'src/helpers/storageHelper';
+import { ProductFile } from 'src/db/entities/ProductFile';
+import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 @Injectable()
 export class ProductArticleService {
 	constructor(
@@ -41,13 +44,16 @@ export class ProductArticleService {
 		private productArticleRepository: Repository<ProductArticle>,
 
 		@InjectRepository(ProductColor)
-		private ProductColorRepository: Repository<ProductColor>,
+		private productColorRepository: Repository<ProductColor>,
 
 		@InjectRepository(ProductSize)
-		private ProductSizeRepository: Repository<ProductSize>,
+		private productSizeRepository: Repository<ProductSize>,
 
 		@InjectRepository(ProductSubcategory)
-		private ProductSubcategoryRepository: Repository<ProductSubcategory>
+		private productSubcategoryRepository: Repository<ProductSubcategory>,
+
+		@InjectRepository(ProductFile)
+		private productFileRepository: Repository<ProductFile>
 	) {}
 
 	async getProductArticle(
@@ -78,7 +84,10 @@ export class ProductArticleService {
 			currentProductSize = payload.productSizeId;
 		}
 
-		const res = convertToClass(FullProductArticleDto, p);
+		const res = convertToClass(
+			isAdmin ? FullProductArticleAdminDto : FullProductArticleDto,
+			p
+		);
 
 		const mappedColors = filterProducts.map((el) =>
 			convertToClass(ProductColorDto, el.productColor)
@@ -91,19 +100,19 @@ export class ProductArticleService {
 
 		res.productSizes = filterDuplicateObjectById<ProductSizeDto>(mappedSizes);
 
-		return { ...convertToJson(FullProductArticleDto, res), currentProductSize };
+		return {
+			...convertToJson(
+				isAdmin ? FullProductArticleAdminDto : FullProductArticleDto,
+				res
+			),
+			currentProductSize
+		};
 	}
 
 	async getList(
 		payload: GetProductArticleListDto,
 		isAdmin: boolean
 	): Promise<IPaginateResult<ProductArticleDto>> {
-		// type commonKeys =  keyof GetListDto
-
-		// type WherePayload =  Omit<GetProductDto, commonKeys> & BaseWhereType;
-		// let wherePayload :WherePayload  = {
-		// 	...payload
-		// };
 		let wherePayload = {};
 
 		if (payload.subcategoryId) {
@@ -138,7 +147,7 @@ export class ProductArticleService {
 			wherePayload = { ...wherePayload, name: Like(payload.name) };
 		}
 		if (!isAdmin) {
-			wherePayload = { ...baseProductWhere };
+			wherePayload = { ...wherePayload, ...baseProductWhere };
 		}
 
 		const [result, total] = await this.productArticleRepository.findAndCount({
@@ -146,9 +155,18 @@ export class ProductArticleService {
 			where: wherePayload
 		});
 
+		console.log(isAdmin);
+
 		return getPaginateResult(
 			isAdmin ? ProductArticleAdminDto : ProductArticleDto,
-			result,
+			result.map((el) => {
+				return {
+					...el,
+					productFiles: el.productFiles.filter(
+						(file) => file.isLogo && !file.is_deleted
+					)
+				};
+			}),
 			total,
 			{
 				itemsPerPage: payload.itemsPerPage,
@@ -183,7 +201,7 @@ export class ProductArticleService {
 			createProductDto;
 
 		if (productSizeIds) {
-			const productSizes = await this.ProductSizeRepository.find({
+			const productSizes = await this.productSizeRepository.find({
 				where: {
 					...baseWhere,
 					id: In(productSizeIds ?? [])
@@ -195,7 +213,7 @@ export class ProductArticleService {
 		}
 
 		if (productColorIds) {
-			const productColors = await this.ProductColorRepository.find({
+			const productColors = await this.productColorRepository.find({
 				where: {
 					...baseWhere,
 					id: In(productColorIds ?? [])
@@ -207,7 +225,7 @@ export class ProductArticleService {
 		}
 
 		if (productSubcategoryId) {
-			const productSubcategory = await this.ProductSubcategoryRepository.findOne({
+			const productSubcategory = await this.productSubcategoryRepository.findOne({
 				where: {
 					...baseWhere,
 					id: productSubcategoryId
@@ -218,7 +236,6 @@ export class ProductArticleService {
 				throw new BadRequestException('Нет такой подкатегории');
 			}
 		}
-		await moveFilesToStatic(images, 1);
 		// const productFiles = await this.productArticleRepository.save([]);
 
 		// const p = await this.productArticleRepository.save();
@@ -316,17 +333,17 @@ export class ProductArticleService {
 				{ is_deleted: false, amount }
 			);
 		} else {
-			let productColor = await this.ProductColorRepository.findOne({
+			let productColor = await this.productColorRepository.findOne({
 				where: {
 					name: color
 				}
 			});
 			if (!productColor) {
-				productColor = await this.ProductColorRepository.save({
+				productColor = await this.productColorRepository.save({
 					name: color
 				});
 			} else {
-				await this.ProductColorRepository.update(
+				await this.productColorRepository.update(
 					{
 						id: productColor.id
 					},
@@ -335,18 +352,18 @@ export class ProductArticleService {
 			}
 			//секция с парсингом размеров
 
-			let productSize = await this.ProductSizeRepository.findOne({
+			let productSize = await this.productSizeRepository.findOne({
 				where: {
 					name: size
 				}
 			});
 
 			if (!productSize) {
-				productSize = await this.ProductSizeRepository.save({
+				productSize = await this.productSizeRepository.save({
 					name: size
 				});
 			} else {
-				await this.ProductSizeRepository.update(
+				await this.productSizeRepository.update(
 					{
 						id: productSize.id
 					},
@@ -393,5 +410,24 @@ export class ProductArticleService {
 			.execute();
 
 		return convertToJsonMany(ProductArticleDto, articles);
+	}
+
+	async uploadImage(payload: UploadImageDto) {
+		const productArticle = await this.productArticleRepository.findOne({
+			where: {
+				id: payload.productArticleId
+			}
+		});
+		if (!productArticle) {
+			throw new BadRequestException('Не найдено такого продукта');
+		}
+		const isLogo = productArticle.productFiles.length == 0;
+		const image = await moveFileToStatic(payload.image);
+
+		await this.productFileRepository.save({
+			image,
+			isLogo,
+			product: productArticle
+		});
 	}
 }

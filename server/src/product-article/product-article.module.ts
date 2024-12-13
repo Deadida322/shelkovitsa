@@ -8,6 +8,7 @@ import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { Product } from 'src/db/entities/Product';
 import { NestjsFormDataModule } from 'nestjs-form-data';
+import { ProductFile } from 'src/db/entities/ProductFile';
 
 @Module({
 	imports: [
@@ -16,7 +17,8 @@ import { NestjsFormDataModule } from 'nestjs-form-data';
 			ProductArticle,
 			ProductColor,
 			ProductSize,
-			ProductSubcategory
+			ProductSubcategory,
+			ProductFile
 		]),
 		NestjsFormDataModule
 	],

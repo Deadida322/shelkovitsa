@@ -29,6 +29,7 @@ import { CreateProductArticleDto } from '../product-article/dto/CreateProductArt
 import { GetProductArticleListDto } from '../product-article/dto/GetProductArticleListDto';
 import { GetDetailProductArticleDto } from '../product-article/dto/GetDetailProductArticleDto';
 import { FormDataRequest } from 'nestjs-form-data';
+import { UploadImageDto } from './dto/UploadImageDto';
 
 @Controller('product-article')
 export class ProductArticleController {
@@ -44,28 +45,71 @@ export class ProductArticleController {
 	// 	// return this.productArticleService.getList(getListDto, request.isAdmin);
 	// }
 
-	//создание продукта  с файлами, лого, получение изображений, привязка цветов и размеров, обновление кол-ва проуктов
-	@AdminAuth()
-	@Post('create')
-	@FormDataRequest()
-	// @UseInterceptors(imagesInterceptor(10))
-	async create(
-		@Body() createProductDto: CreateProductArticleDto
-		// @UploadedFiles(parseFileBuilder(imageFileType, false)) images?: File[]
-	) {
-		console.log(createProductDto);
+	// //создание продукта  с файлами, лого, получение изображений, привязка цветов и размеров, обновление кол-ва проуктов
+	// @AdminAuth()
+	// @Post('create')
+	// @FormDataRequest()
+	// // @UseInterceptors(imagesInterceptor(10))
+	// async create(
+	// 	@Body() createProductDto: CreateProductArticleDto
+	// 	// @UploadedFiles(parseFileBuilder(imageFileType, false)) images?: File[]
+	// ) {
+	// 	console.log(createProductDto);
 
-		await this.productArticleService.createArticleProduct(createProductDto, []);
+	// 	await this.productArticleService.createArticleProduct(createProductDto, []);
 
-		return '';
-		// return this.productArticleService.getList(getListDto, request.isAdmin);
-	}
+	// 	return '';
+	// }
+
 	// КРУД по продукту (артиклу)
 	// Удаление подкатегорий (удаление)
 	// разобраться с путями
 
+	@Post('getList')
+	async getList(@Body() getListDto: GetProductArticleListDto) {
+		return this.productArticleService.getList(getListDto, false);
+	}
+
+	@Post(':id')
+	async getProductArticle(
+		@Param('id') id: number,
+		@Body() payload: GetDetailProductArticleDto
+	): Promise<FullProductArticleDto> {
+		return this.productArticleService.getProductArticle(id, false, payload);
+	}
+
+	@Get('populate')
+	async getPopulateList() {
+		const articles = this.productArticleService.getPopulateList();
+		return articles;
+	}
+
 	@AdminAuth()
-	@Put('upload')
+	@Post('admin/uploadImage')
+	@FormDataRequest()
+	async uploadImage(@Body() payload: UploadImageDto) {
+		await this.productArticleService.uploadImage(payload);
+
+		return '';
+	}
+
+	@AdminAuth()
+	@Post('admin/getList')
+	async getAdminList(@Body() getListDto: GetProductArticleListDto) {
+		return this.productArticleService.getList(getListDto, true);
+	}
+
+	@AdminAuth()
+	@Post('admin/:id')
+	async getAdminProductArticle(
+		@Param('id') id: number,
+		@Body() payload: GetDetailProductArticleDto
+	): Promise<FullProductArticleDto> {
+		return this.productArticleService.getProductArticle(id, true, payload);
+	}
+
+	@AdminAuth()
+	@Put('uploadProducts')
 	@UseInterceptors(fileInterceptor)
 	async uploadFile(
 		@UploadedFile(parseFileBuilder(excelFileType))
@@ -85,25 +129,5 @@ export class ProductArticleController {
 		} else {
 			return {};
 		}
-	}
-
-	@Post(':id')
-	async getProductArticle(
-		@Param('id') id: number,
-		@Body() payload: GetDetailProductArticleDto,
-		@Req() request: Request
-	): Promise<FullProductArticleDto> {
-		return this.productArticleService.getProductArticle(id, request.isAdmin, payload);
-	}
-
-	@Post()
-	async getList(@Body() getListDto: GetProductArticleListDto, @Req() request: Request) {
-		return this.productArticleService.getList(getListDto, request.isAdmin);
-	}
-
-	@Get('populate')
-	async getPopulateList() {
-		const articles = this.productArticleService.getPopulateList();
-		return articles;
 	}
 }
