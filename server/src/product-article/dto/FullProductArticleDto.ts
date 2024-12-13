@@ -16,9 +16,6 @@ export class FullProductArticleDto {
 	description?: string;
 
 	@Expose()
-	logo?: string;
-
-	@Expose()
 	article!: string;
 
 	@Expose()

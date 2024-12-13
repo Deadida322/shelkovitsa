@@ -9,6 +9,7 @@ import {
 	UnprocessableEntityException
 } from '@nestjs/common';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
+import { MemoryStoredFile } from 'nestjs-form-data';
 
 const baseSrcPath = () => path.join(process.cwd(), process.env.TEMP_PATH);
 const baseDestPath = () => path.join(process.cwd(), process.env.DEST_PATH);
@@ -97,12 +98,12 @@ export function parseFileBuilder(
 		});
 }
 
-export async function moveFilesToStatic(files: File[], productArticleId: number) {
-	const promises = files.map(async (file) => {
-		const srcPath = getSrcPath(file.name);
-		const destPath = getDestPath(file.name);
-	});
-	await Promise.all(promises);
+export async function moveFileToStatic(image: MemoryStoredFile) {
+	let hash = (Math.random() + 1).toString(36).substring(5);
+	const fileName = `${hash}.${image.extension}`;
+	const destPath = getDestPath(fileName);
+	await fsPromises.writeFile(destPath, image.buffer);
+	return fileName;
 }
 
 export const mimeTypes = {
