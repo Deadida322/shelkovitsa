@@ -1,87 +1,77 @@
 <script setup>
-    const opened = ref(false)
-    const mockItems = [
-        {
-            title: "item 1",
-            description: 'description of item 1',
-            count: 2,
-            img: '/mock-shop.jpg',
-            price: 1023
-        },
-        {
-            title: "item 1",
-            description: 'description of item 1',
-            count: 2,
-            img: '/mock-shop.jpg',
-            price: 1232
-        }
-    ]
+import { useCartStore, useMappingStore } from '#imports';
 
-    const toggle = () => opened.value = !opened.value
+const cartStore = useCartStore();
+const mapps = useMappingStore();
+const opened = ref(false);
+
+const toggle = () => opened.value = !opened.value;
+
+function onDelete(index) {
+    if (cartStore.cart[index].amount === 0) {
+        cartStore.cart.splice(index, 1);
+    }
+}
 </script>
 
 <template>
-    <div 
+    <div
         class="s-cart"
         :class="{
-            's-cart_opened': opened
+            's-cart_opened': opened,
         }"
     >
-        <div @click="toggle" class="s-cart__header header">
-            <v-badge :content="mockItems.length">
+        <div class="s-cart__header header" @click="toggle">
+            <v-badge :content="cartStore.cart.length">
                 <v-icon>mdi-cart-outline</v-icon>
             </v-badge>
             <div class="header__text">
                 <div class="header__title">
                     ВАША КОРЗИНА
                 </div>
-                <div 
+                <div
                     class="header__icon aling-self-end"
-                    
                 >
-                    <v-icon v-if="opened">mdi-chevron-down</v-icon>
-                    <v-icon v-else>mdi-chevron-up</v-icon>
+                    <v-icon v-if="opened">
+                        mdi-chevron-down
+                    </v-icon>
+                    <v-icon v-else>
+                        mdi-chevron-up
+                    </v-icon>
                 </div>
             </div>
         </div>
         <div class="s-cart__body">
-            <div v-for="item in mockItems" :key="item.count" class="s-cart__item cart-item">
-                <v-img max-width="64px" height="64px" cover width="64px" class="cart-item__image" :rounded="8" :src="item.img"></v-img>
-                <div class="cart-item__text">
-                    <div class="cart-item__title">
-                        {{ item.title }}
+            <template v-if="cartStore.cart.length">
+                <div v-for="(item, index) in cartStore.cart" :key="item.count" class="s-cart__item cart-item">
+                    <v-img max-width="64px" height="64px" cover width="64px" class="cart-item__image" :rounded="8" src="/mock-shop.jpg" />
+                    <div class="cart-item__text">
+                        <div class="cart-item__title">
+                            {{ item.name }}
+                        </div>
+                        <div class="cart-item__subtitle">
+                            {{ mapps.colors[item.productColorId] }} / {{ mapps.sizes[item.productSizeId] }}
+                        </div>
                     </div>
-                    <div class="cart-item__subtitle">
-                        {{ item.description }}
+                    <div class="cart-item__actions text-center">
+                        <div class="cart-item__count align-center">
+                            <s-count-input v-model="item.amount" :max="item.maxAmount" @update:model-value="onDelete(index)" />
+                        </div>
+                        <div class="cart-item__price mt-2">
+                            {{ item.price * item.amount }} <span>₽</span>
+                        </div>
                     </div>
                 </div>
-                <div class="cart-item__actions text-center">
-                    
-                    <div class="cart-item__count align-center">
-                        <vs-button 
-                            size="small"
-                            @click="item.count = item.count -1"
-                        >
-                            -
-                        </vs-button>
-                        <client-only>
-                            <vs-input
-                                class="count__input"
-                                type="number"
-                                width="20px"
-                                v-model="item.count"
-                            />
-                        </client-only>
-                        <vs-button size="small">
-                            +
-                        </vs-button>
-                    </div>
-                    <div class="cart-item__price mt-4">{{item.price * 2}} <span>₽</span></div>
-                </div>
-            </div>
+            </template>
+            <template v-else>
+                Добавьте
+                <nuxt-link class="link" to="/catalog">
+                    товары
+                </nuxt-link> в корзину
+            </template>
         </div>
         <div class="s-cart__actions d-flex justify-end pt-4">
-            <vs-button type="flat">
+            <vs-button type="flat" @click="cartStore.clearCart">
                 Очистить
             </vs-button>
             <vs-button @click="navigateTo('/deliver')">
@@ -92,6 +82,10 @@
 </template>
 
 <style scoped lang="scss">
+    .link {
+        color: $primary;
+    }
+
     .s-cart {
         display: flex;
         position: fixed;
@@ -151,7 +145,7 @@
             width: 100%;
             justify-content: space-between;
         }
-    
+
     }
 
     .cart-item {

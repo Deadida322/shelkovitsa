@@ -1,0 +1,277 @@
+<script setup>
+import { useCartStore } from '@/stores/cart';
+import { notification } from 'vuesax-alpha/lib/components/notification/src/notify.js';
+
+const route = useRoute();
+const shopItem = ref({
+    title: 'Некоторый элемент',
+    info: 'Lorem ipsum dolor sit amet consectetur. Vitae tincidunt tempor sed velit blandit nibh sed eu. Etiam mollis et maecenas nibh neque id nulla orci cursus. Eget aliquam quis purus et egestas elementum ut id adipiscing. Enim penatibus risus nisl dui ipsum.',
+    images: [
+        '/mock-shop.jpg',
+        '/mock-shop-2.jpg',
+    ],
+    sizes: [
+        '65A',
+        '65B',
+        '75C',
+        '70D',
+    ],
+    colors: [
+        'Бежевый',
+        'Чёрный',
+    ],
+    available: 4,
+    price: 1232,
+});
+const cartStore = useCartStore();
+
+const { $api } = useNuxtApp();
+
+const cartInfo = ref({
+    amount: 1,
+});
+
+const payload = ref({});
+const displayedImage = ref(shopItem.value.images[0]);
+const showImage = ref(false);
+
+function addToCart() {
+    const item = {
+        productId: cartInfo.value.productId,
+        productSizeId: cartInfo.value.size,
+        productColorId: cartInfo.value.color,
+        name: shopItem.value.name,
+        price: shopItem.value.price,
+        amount: cartInfo.value.amount,
+        maxAmount: shopItem.value.available,
+    };
+    cartStore.updateCart(item);
+    notification({
+        title: 'Добавлено!',
+        content: `Отличный выбор! Товар добавлен в корзину`,
+        position: 'bottom-center',
+    });
+};
+
+watch(() => cartInfo.value.size, (val) => {
+    payload.value = {
+        ...payload.value,
+        productSizeId: val,
+    };
+
+    delete cartInfo.value.color;
+});
+
+watch(() => cartInfo.value.color, (val) => {
+    payload.value = {
+        ...payload.value,
+        productColorId: val,
+    };
+});
+
+watch(cartInfo, async () => {
+    await nextTick();
+    if (cartInfo.value.color && cartInfo.value.size) {
+        console.log('else');
+        $api(`/api/product/get`, {
+            method: 'POST',
+            body: {
+                ...payload.value,
+                productArticleId: +route.params.id,
+            },
+        }).then(({ amount, id }) => {
+            cartInfo.value.productId = id;
+            shopItem.value.available = amount;
+        });
+    }
+    else {
+        console.log('if');
+        $api(`/api/product-article/${route.params.id}`, { method: 'POST', body: payload.value }).then((res) => {
+            shopItem.value = res;
+            console.log(shopItem.value);
+        });
+    }
+}, { immediate: true, deep: true });
+</script>
+
+<template>
+    <div class="catalog-item-page catalog-item">
+        <div
+            v-if="showImage"
+            class="image-preview"
+            @click="showImage = false"
+        >
+            <v-img
+                :src="displayedImage"
+                width="90%"
+                height="90%"
+            />
+        </div>
+        <h1 class="text-h6">
+            {{ shopItem.name }}
+        </h1>
+        <div class="catalog-item__container d-flex">
+            <div class="catalog-item__images mt-4">
+                <v-img
+                    cover
+                    class="image-main"
+                    height="200px"
+                    :src="displayedImage"
+                    @click="showImage = true"
+                />
+                <s-carousel
+                    class="images-carousel mt-4"
+                    :items-per-page="1.8"
+                >
+                    <s-slide
+                        v-for="(image, key) in shopItem.images"
+                        :key="key"
+                    >
+                        <v-img
+                            cover
+                            class="carousel-image"
+                            height="100px"
+                            :src="image"
+                            @click="displayedImage = image"
+                        />
+                    </s-slide>
+                </s-carousel>
+            </div>
+            <s-validate v-slot="{ submit }" class="catalog-item__info mt-2" @submit="addToCart">
+                <h3 class="text-h6">
+                    Описание товара
+                </h3>
+                <div class="item-info__description text-body1">
+                    {{ shopItem.description }}
+                </div>
+                <h3 class="text-h6 mt-4">
+                    Размеры в сетке Российских размеров
+                </h3>
+                <div class="item-info__description text-body1  mt-4">
+                    {{ shopItem.sizes?.join(", ") }}
+                </div>
+                <div class="item-info__to-cart mt-4 d-flex flex-column align-end">
+                    <div class="item-info__select-container">
+                        <client-only>
+                            <div class="item-info__select">
+                                <s-select
+                                    v-model="cartInfo.size"
+                                    required
+                                    label="Размер"
+                                    class="item-info__select"
+                                    placeholder="Укажите размер"
+                                    :options="shopItem.productSizes"
+                                    label-key="name"
+                                />
+                            </div>
+                            <div class="item-info__select">
+                                <s-select
+                                    v-model="cartInfo.color"
+                                    :disabled="!cartInfo.size"
+                                    required
+                                    class="item-info__select"
+                                    placeholder="Укажите цвет"
+                                    label="Цвет"
+                                    label-key="name"
+                                    :options="shopItem.productColors"
+                                />
+                            </div>
+                        </client-only>
+                    </div>
+                    <s-count-input
+                        v-model="cartInfo.amount"
+                        :max="shopItem.available || 1"
+                        class="mt-4"
+                        label="Количество"
+                    />
+                    <div v-if="shopItem.available" class="item-info__count-caption">
+                        На складе <span>{{ shopItem.available }}</span> шт.
+                    </div>
+                    <div class="item-info__actions d-flex mt-4">
+                        <vs-button
+                            disabled
+                            type="flat"
+                        >
+                            {{ shopItem.price }} ₽
+                        </vs-button>
+                        <vs-button @click="submit">
+                            Добавить в корзину  <v-icon class="ml-1">
+                                mdi-cart-outline
+                            </v-icon>
+                        </vs-button>
+                    </div>
+                </div>
+            </s-validate>
+        </div>
+    </div>
+</template>
+
+<style lang="scss">
+    .catalog-item {
+        &__container {
+            width: 100%;
+            justify-content: space-between;
+        }
+        &__images {
+            width: 40%;
+
+        }
+        &__info {
+            width: 58%;
+        }
+    }
+    .item-info {
+        &__select {
+            width: 50% !important;
+            .vs-select {
+                max-width: 100%;
+            }
+        }
+        &__select-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+        }
+
+        &__count-caption {
+            font-size: 12px;
+            opacity: .8;
+            margin-top: 10px;
+            span {
+                color: $primary
+            }
+        }
+
+    }
+
+    .carousel-image {
+        border-radius: 12px;
+        cursor: pointer;
+    }
+
+    .images-carousel {
+        height: 100px !important;
+    }
+
+    .image-main {
+        border-radius: 12px;
+        cursor: pointer;
+    }
+
+    .image-preview {
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.168);
+        display: flex;
+        position: fixed;
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        top: 0;
+        left: 0;
+
+        .v-img {
+            border-radius: 12px !important;
+        }
+    }
+</style>

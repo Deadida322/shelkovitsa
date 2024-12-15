@@ -10,10 +10,10 @@ defineProps({
 <template>
     <vs-card>
         <template #title>
-            <h3>{{ item.title }}</h3>
+            <h3>{{ item.name }}</h3>
         </template>
         <template #img>
-            <img :src="item.logo" alt="">
+            <img src="/mock-shop.jpg" alt="">
         </template>
         <template #text>
             <p>{{ item.description }}</p>

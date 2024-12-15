@@ -1,5 +1,6 @@
 <script setup>
 import { helpers } from '@vuelidate/validators';
+import { VsNotification } from 'vuesax-alpha';
 
 const { $api } = useNuxtApp();
 const user = ref({});
@@ -8,7 +9,14 @@ const rePasswordValidation = computed(() => ({
 }));
 
 function onSubmit() {
-    $api('/api/auth/register', { method: 'POST', body: user.value });
+    $api('/api/auth/register', { method: 'POST', body: user.value }).catch(({ response }) => {
+        VsNotification({
+            title: 'Ошибка!',
+            content: response?._data?.error?.message,
+            position: 'bottom-center',
+            border: 'danger',
+        });
+    });
 }
 </script>
 

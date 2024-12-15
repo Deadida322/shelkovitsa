@@ -1,8 +1,18 @@
-<script setup lang="ts">
-import { useCategoriesStore } from '#imports';
+<script setup>
+import { useCategoriesStore, useFiltersStore } from '#imports';
 
 const categoriesStore = useCategoriesStore();
-const category = ref('');
+const filtersStore = useFiltersStore();
+const category = ref(filtersStore.filters.subcategory || '');
+watch(() => filtersStore.filters.subcategory, (val) => {
+    if (!val) {
+        category.value = '';
+    }
+});
+function navigate(item, nest) {
+    filtersStore.filters = { category: item.id, subcategory: nest.id };
+    navigateTo({ path: '/catalog', query: { ...filtersStore.filters } });
+}
 </script>
 
 <template>
@@ -10,14 +20,19 @@ const category = ref('');
         <template #logo>
             Женское бельё
         </template>
-        <vs-sidebar-group v-for="item in categoriesStore.categories" :id="item.name" :key="item.name">
+        <vs-sidebar-group v-for="item in categoriesStore.categories" :id="String(item.id)" :key="item.name">
             <template #header>
                 <vs-sidebar-item arrow>
                     {{ item.name }}
                 </vs-sidebar-item>
             </template>
 
-            <vs-sidebar-item v-for="nest in item.productSubcategories" :id="nest.name" :key="nest.name">
+            <vs-sidebar-item
+                v-for="nest in item.productSubcategories"
+                :id="nest.id"
+                :key="nest.name"
+                @click="navigate(item, nest)"
+            >
                 {{ nest.name }}
             </vs-sidebar-item>
         </vs-sidebar-group>

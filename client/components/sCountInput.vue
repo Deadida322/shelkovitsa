@@ -1,34 +1,34 @@
 <script setup>
-    const props = defineProps({
-        modelValue: {
-            type: Number,
-            default: 1
-        },
-        label: {
-            type: String,
-            default: ""
-        },
-        max: {
-            type: Number,
-            default: 1000
-        }
-    });
+const props = defineProps({
+    modelValue: {
+        type: Number,
+        default: 1,
+    },
+    label: {
+        type: String,
+        default: '',
+    },
+    max: {
+        type: Number,
+        default: 1000,
+    },
+});
 
-    const emit = defineEmits(['update:model-value'])
+const emit = defineEmits(['update:model-value']);
 
-    const count = computed({
-        get: () => props.modelValue,
-        set: (val) => emit('update:model-value', val > props.max ? props.max : val)
-    })
+const count = computed({
+    get: () => props.modelValue,
+    set: val => emit('update:model-value', val > props.max ? props.max : val),
+});
 </script>
 
 <template>
     <div class="s-count">
-        <div class="s-count__label">
-            {{  label  }}
+        <div v-if="label" class="s-count__label">
+            {{ label }}
         </div>
         <div class="s-count-input">
-            <vs-button 
+            <vs-button
                 size="small"
                 class="s-count-input__less"
                 @click="count ? count -= 1 : void 0"
@@ -37,16 +37,16 @@
             </vs-button>
             <client-only>
                 <vs-input
+                    v-model="count"
                     class="s-count-input__input"
                     type="number"
                     width="20px"
-                    v-model="count"
                 />
             </client-only>
-            <vs-button 
-                @click="count < max ? count += 1 : void 0" 
-                size="small" 
+            <vs-button
+                size="small"
                 class="s-count-input__more"
+                @click="count < max ? count += 1 : void 0"
             >
                 +
             </vs-button>
@@ -80,7 +80,7 @@
         position: absolute;
         top: 8px;
         right: 0;
-        transform: translateX(50%);
+        transform: translateX(35%);
     }
 
 }
@@ -90,6 +90,4 @@
     gap: 4px;
     align-items: center;
 }
-
-
-</style>    
+</style>

@@ -10,8 +10,29 @@ export const useCategoriesStore = defineStore('categories', () => {
                 categories.value = res;
             });
     };
+
+    const categoriesMap = computed(() => {
+        const res = {};
+        categories.value.forEach(({ id, name }) => {
+            res[id] = name;
+        });
+        return res;
+    });
+
+    const subcategoriesMap = computed(() => {
+        const res = {};
+        categories.value.forEach(({ productSubcategories }) => {
+            productSubcategories.forEach(({ id, name }) => {
+                res[id] = name;
+            });
+        });
+        return res;
+    });
+
     return {
         categories,
         getCategories,
+        categoriesMap,
+        subcategoriesMap,
     };
 });

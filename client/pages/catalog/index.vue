@@ -1,20 +1,39 @@
 <script setup>
+import { useCategoriesStore, useFiltersStore } from '#imports';
+
+const categoriesStore = useCategoriesStore();
+const filtersStore = useFiltersStore();
 const shopItems = ref([]);
-const route = useRoute();
 
 const { $api } = useNuxtApp();
 const page = ref(0);
 const pageSize = ref(6);
-const category = ref(route.query.category);
-console.log(category);
+
+const totalItems = ref(6);
 const payload = computed(() => ({
     page: page.value,
     itemsPerPage: pageSize.value,
+    ...(filtersStore.filters.subcategory
+        ? {
+                categoryId: +filtersStore.filters.category,
+                subcategoryId: +filtersStore.filters.subcategory,
+            }
+        : null),
 }));
 
+const breadcrumbs = computed(() => {
+    const result = ['Каталог'];
+    if (filtersStore.filters.category)
+        result.push(categoriesStore.categoriesMap[filtersStore.filters.category]);
+    if (filtersStore.filters.subcategory)
+        result.push(categoriesStore.subcategoriesMap[filtersStore.filters.subcategory]);
+    return result;
+});
+
 watch(payload, () => {
-    $api('/api/product', { method: 'POST', body: payload.value }).then((res) => {
+    $api('/api/product-article', { method: 'POST', body: payload.value }).then((res) => {
         shopItems.value = res.data;
+        totalItems.value = res.count;
     });
 }, { immediate: true, deep: true });
 </script>
@@ -35,14 +54,23 @@ watch(payload, () => {
                 </template>
             </vs-input>
         </client-only>
-        <v-breadcrumbs :items="['Каталог', 'Категория', 'Подкатегория']" />
-        <vs-alert color="#1A5CFF">
+        <div v-if="breadcrumbs.length > 1" class="d-flex align-center">
+            <v-breadcrumbs :items="breadcrumbs" />
+            <v-btn
+                v-tooltip="'Очистить фильтры'"
+                size="x-small"
+                icon="mdi-close"
+                variant="plain"
+                @click="filtersStore.clearFilters"
+            />
+        </div>
+        <vs-alert class="mt-2" color="#1A5CFF">
             <template #icon>
                 <v-icon size="40">
                     mdi-information
                 </v-icon>
             </template>
-            По вашему запросу найдено 120 вариантов!
+            По вашему запросу найдено {{ totalItems }} вариантов!
         </vs-alert>
         <div class="shops-container">
             <div
@@ -52,7 +80,7 @@ watch(payload, () => {
             >
                 <s-shop-item
                     :item="item"
-                    @click="navigateTo(`/catalog/${item.article}`)"
+                    @click="navigateTo(`/catalog/${item.id}`)"
                 />
             </div>
         </div>
@@ -60,8 +88,8 @@ watch(payload, () => {
             <vs-pagination
                 :model-value="page"
                 :layout="['prev', 'pager', 'next']"
-                :page-size="10"
-                :total="400"
+                :page-size="pageSize"
+                :total="totalItems"
                 @update:current-page="page = $event - 1"
             />
         </div>

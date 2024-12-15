@@ -21,6 +21,7 @@
         "nuxt-app": "file:",
         "pinia": "^2.2.5",
         "vue": "latest",
+        "vue-the-mask": "^0.11.1",
         "vue3-carousel": "^0.3.3",
         "vuesax": "^4.0.1-alpha.25",
         "vuesax-alpha": "^0.2.0-beta.78",

@@ -38,7 +38,7 @@ const componentValue = useComponentValue({ modelValue, emit });
 const rules = computed(() => ({
     required: required.value ? helpers.withMessage('Укажите поле', requiredFunc) : true,
     email: email.value ? helpers.withMessage('Неверный формат почты', emailFunc) : true,
-    minLength: minLength.value ? helpers.withMessage(`Минимальная длина поля ${minLength.value} поля`, minLengthFunc(minLength)) : true,
+    minLength: minLength.value ? helpers.withMessage(`Слишком короткое значение`, minLengthFunc(minLength)) : true,
     ...customRules.value,
 }));
 

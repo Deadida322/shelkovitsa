@@ -1,32 +1,31 @@
 <script setup>
+import { useCartStore, useMappingStore, useOrderStore } from '#imports';
+import { mask as vMask } from 'vue-the-mask';
+
 definePageMeta({
     middleware: [
-        'auth',
+        // 'auth',
     ],
 });
-const mockItems = ref([
-    {
-        title: 'item 1',
-        description: 'description of item 1',
-        count: 2,
-        img: '/mock-shop.jpg',
-        color: 'Белый',
-        size: 12,
-        price: 1023,
-    },
-    {
-        title: 'item 1',
-        description: 'description of item 1',
-        count: 2,
-        img: '/mock-shop.jpg',
-        color: 'Бежевый',
-        size: 11,
-        price: 1232,
-    },
-]);
+
+const { $api } = useNuxtApp();
+const deliveryTypes = ref([]);
+$api(`/api/delivery-type`).then((res) => {
+    deliveryTypes.value = res;
+});
+
+const orderStore = useOrderStore();
+const cartStore = useCartStore();
+const mappingStore = useMappingStore();
+
+function onCountDown(count, index) {
+    if (!count)
+        cartStore.removeItem(index);
+}
 
 const step = ref(1);
-const clearCart = () => mockItems.value = [];
+
+const nextStep = () => step.value++;
 </script>
 
 <template>
@@ -48,9 +47,9 @@ const clearCart = () => mockItems.value = [];
         </vs-alert>
         <div
             class="deliver__table"
-            :class="{ 'pa-4': !mockItems.length }"
+            :class="{ 'pa-4': !cartStore.cart.length }"
         >
-            <vs-table v-if="mockItems.length">
+            <vs-table v-if="cartStore.cart.length">
                 <template #thead>
                     <vs-tr>
                         <vs-th />
@@ -74,7 +73,7 @@ const clearCart = () => mockItems.value = [];
                 </template>
                 <template #tbody>
                     <vs-tr
-                        v-for="(tr, i) in mockItems"
+                        v-for="(tr, i) in cartStore.cart"
                         :key="i"
                         :data="tr"
                     >
@@ -84,19 +83,22 @@ const clearCart = () => mockItems.value = [];
                                 cover
                                 width="64px"
                                 height="64px"
-                                :src="tr.img"
+                                src="/mock-shop.jpg"
                             />
                         </vs-td>
                         <vs-td>
-                            {{ tr.title }}
+                            {{ tr.name }}
                         </vs-td>
                         <vs-td>
-                            {{ tr.color }}
+                            {{ mappingStore.colors[tr.productColorId] }}
                         </vs-td>
                         <vs-td>
-                            {{ tr.size }}
+                            {{ mappingStore.sizes[tr.productSizeId] }}
                         </vs-td>
                         <vs-td>
+                            <s-count-input v-model="tr.amount" @update:model-value="onCountDown($event, i)" />
+                        </vs-td>
+                        <vs-td width="110px">
                             <vs-button
                                 disabled
                                 type="flat"
@@ -105,13 +107,11 @@ const clearCart = () => mockItems.value = [];
                             </vs-button>
                         </vs-td>
                         <vs-td>
-                            <s-count-input v-model="tr.count" />
-                        </vs-td>
-                        <vs-td>
                             <vs-button
                                 circle
                                 icon
                                 floating
+                                @click="cartStore.removeItem(i)"
                             >
                                 <i class="mdi-close mdi v-icon" />
                             </vs-button>
@@ -119,7 +119,7 @@ const clearCart = () => mockItems.value = [];
                     </vs-tr>
                 </template>
             </vs-table>
-            <div v-else>
+            <div v-else @click="navigateTo('/catalog')">
                 <vs-alert
                     class="mt-4 alert"
                     color="success"
@@ -129,7 +129,8 @@ const clearCart = () => mockItems.value = [];
                             mdi-cart-outline
                         </v-icon>
                     </template>
-                    В вашей корзине нет товаров <nuxt-link to="/catalog">
+                    В вашей корзине нет товаров
+                    <nuxt-link to="/catalog">
                         перейти в каталог
                     </nuxt-link>
                 </vs-alert>
@@ -143,9 +144,9 @@ const clearCart = () => mockItems.value = [];
                     disabled
                     type="flat"
                 >
-                    {{ mockItems.reduce((a, item) => a += item.price * item.count, 0) }} ₽
+                    {{ cartStore.cart.reduce((a, item) => a += item.price * item.amount, 0) }} ₽
                 </vs-button>
-                <vs-button @click="clearCart">
+                <vs-button @click="cartStore.clearCart">
                     Очистить
                 </vs-button>
             </div>
@@ -153,12 +154,11 @@ const clearCart = () => mockItems.value = [];
         <h2 class="text-h6 mt-4">
             Оформление заказа
         </h2>
-
-        <v-stepper
-            v-model="step"
-            class="deliver__stepper"
-        >
-            <template #default="{ next }">
+        <s-validate v-slot="{ submit }" @submit="nextStep">
+            <v-stepper
+                v-model="step"
+                class="deliver__stepper"
+            >
                 <v-stepper-header>
                     <v-stepper-item
                         step="Step {{ 0 }}"
@@ -166,15 +166,15 @@ const clearCart = () => mockItems.value = [];
                         title="Данные получателя"
                         edit-icon="mdi-alert-outline"
                         complete-icon="mdi-check"
+                        :editable="step > 1"
                         :complete="step > 1"
-                        editable
                     />
                     <v-stepper-item
                         step="Step {{ 1 }}"
                         :value="2"
+                        :editable="step > 2"
                         :complete="step > 2"
                         title="Данные доставки"
-                        editable
                         edit-icon="mdi-package"
                     />
                     <v-stepper-item
@@ -182,7 +182,6 @@ const clearCart = () => mockItems.value = [];
                         :value="3"
                         :complete="step > 3"
                         title="Варианты оплаты"
-                        editable
                         edit-icon="mdi-credit-card-outline"
                     />
                 </v-stepper-header>
@@ -191,75 +190,74 @@ const clearCart = () => mockItems.value = [];
                         :value="1"
                     >
                         <div class="deliver__form">
-                            <vs-input
+                            <s-input
+                                v-model="orderStore.order.mail"
+                                required
+                                email
                                 class="s-input"
                                 type="email"
                                 placeholder="email"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-email</v-icon>
-                                </template>
-                            </vs-input>
-                            <vs-input
+                                icon="email"
+                            />
+                            <s-input
+                                v-model="orderStore.order.fio"
                                 class="s-input"
-                                type="email"
                                 placeholder="ФИО"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-account-outline</v-icon>
-                                </template>
-                            </vs-input>
+                                icon="account-outline"
+                                required
+                            />
 
-                            <vs-input
+                            <s-input
+                                v-model="orderStore.order.tel"
+                                v-mask="'+7(###)###-##-##'"
                                 class="s-input"
                                 type="phone"
                                 placeholder="Номер телефона"
+                                icon="phone"
+                                :min-length="16"
+                                required
                             >
                                 <template #icon>
                                     <v-icon>mdi-phone</v-icon>
                                 </template>
-                            </vs-input>
-                            <vs-input
+                            </s-input>
+                            <s-input
+                                v-model="orderStore.order.description"
                                 class="s-input"
                                 placeholder="Дополнительная информация"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-text-box-outline</v-icon>
-                                </template>
-                            </vs-input>
+                                icon="text-box-outline"
+                            />
                         </div>
                     </v-stepper-window-item>
                     <v-stepper-window-item
                         :value="2"
                     >
                         <div class="deliver__form">
-                            <vs-input
+                            <s-input
+                                v-model="orderStore.order.region"
+                                required
                                 class="s-input"
                                 type="email"
                                 placeholder="Регион"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-map</v-icon>
-                                </template>
-                            </vs-input>
-                            <vs-input
+                                icon="map"
+                            />
+                            <s-input
+                                v-model="orderStore.order.address"
                                 class="s-input"
-                                type="email"
-                                placeholder="Населённый пункт"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-map-marker</v-icon>
-                                </template>
-                            </vs-input>
+                                placeholder="Адрес"
+                                icon="map-marker"
+                                required
+                            />
 
-                            <vs-select
+                            <s-select
+                                v-model="orderStore.order.deliveryTypeId"
+                                required
                                 class="s-input"
+                                :options="deliveryTypes"
+                                label-key="name"
+                                value-key="id"
                                 placeholder="Варианты доставки"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-text-box-outline</v-icon>
-                                </template>
-                            </vs-select>
+                            />
                         </div>
                     </v-stepper-window-item>
                     <v-stepper-window-item
@@ -292,8 +290,11 @@ const clearCart = () => mockItems.value = [];
                                     <v-icon>mdi-office-building</v-icon>
                                 </template>
                             </vs-input>
-                            <vs-select
+                            <s-select
                                 class="s-input"
+                                :options="deliveryTypes"
+                                label-key="name"
+                                value-key="id"
                                 placeholder="Варианты доставки"
                             />
                         </div>
@@ -302,7 +303,7 @@ const clearCart = () => mockItems.value = [];
                 <div class="d-flex pa-4 justify-end">
                     <vs-button
                         v-if="step !== 3"
-                        @click="next"
+                        @click="submit"
                     >
                         Далее
                     </vs-button>
@@ -313,8 +314,8 @@ const clearCart = () => mockItems.value = [];
                         Отправить
                     </vs-button>
                 </div>
-            </template>
-        </v-stepper>
+            </v-stepper>
+        </s-validate>
 
         <vs-alert
             class="mt-4 alert"
