@@ -4,6 +4,7 @@ import { UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from './middleware/errorMiddleware';
 import { errorFormatter } from './helpers/errorHelper';
 import { initDiskStorage } from './helpers/storageHelper';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
 	initDiskStorage();
@@ -33,8 +34,13 @@ async function bootstrap() {
 			stopAtFirstError: true
 		})
 	);
-	app.enableCors();
+	app.enableCors({
+		credentials: true,
+		origin: '*'
+		// origin: process.env.CORS
+	});
 	app.useGlobalFilters(new HttpExceptionFilter());
+	app.use(cookieParser());
 	await app.listen(process.env.PORT);
 
 	console.log(`App started at http://localhost:${process.env.PORT}`);

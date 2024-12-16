@@ -14,7 +14,7 @@ export class AuthService {
 		private jwtService: JwtService
 	) {}
 
-	async signIn(loginDto: LoginDto): Promise<UserDto> {
+	async signIn(loginDto: LoginDto) {
 		const user = await this.userService.findOneByMailAndPass(
 			loginDto.mail,
 			loginDto.password
@@ -27,10 +27,12 @@ export class AuthService {
 			throw new UnauthorizedException('Аккаунт удален!');
 		}
 		const payload: UserInRequest = { id: user.id, mail: user.mail };
-		return convertToJson(UserDto, {
-			...user,
+		return {
+			user: convertToJson(UserDto, {
+				...user
+			}),
 			access_token: await this.jwtService.signAsync(payload)
-		});
+		};
 	}
 	async generateAccess(user: User): Promise<{ access_token: string }> {
 		const payload: UserInRequest = { id: user.id, mail: user.mail };
