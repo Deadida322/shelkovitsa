@@ -31,9 +31,10 @@ import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import * as moment from 'moment';
 import { UploadImageDto } from './dto/UploadImageDto';
-import { moveFileToStatic } from 'src/helpers/storageHelper';
+import { moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
+import { CommonImageDto } from './dto/CommonImageDto';
 @Injectable()
 export class ProductArticleService {
 	constructor(
@@ -76,6 +77,13 @@ export class ProductArticleService {
 			throw new NotFoundException('Артикул продукта не найден');
 		}
 		let filterProducts = p.products;
+
+		if (!isAdmin) {
+			filterProducts = filterProducts.filter(
+				(product) =>
+					!product.productColor.is_deleted && !product.productSize.is_deleted
+			);
+		}
 		let currentProductSize = undefined;
 		if (payload.productSizeId) {
 			filterProducts = p.products.filter(
@@ -428,6 +436,62 @@ export class ProductArticleService {
 			image,
 			isLogo,
 			product: productArticle
+		});
+	}
+
+	async deleteImage(payload: CommonImageDto) {
+		const file = await this.productFileRepository.findOne({
+			where: {
+				id: payload.productFileId
+			}
+		});
+
+		if (!file) {
+			throw new BadRequestException('Не найдено такого файла');
+		}
+
+		await removeFile(file.image);
+
+		await this.productFileRepository.delete({
+			id: file.id
+		});
+	}
+
+	async changeLogo(payload: CommonImageDto) {
+		const productArticle = await this.productArticleRepository.findOne({
+			where: {
+				productFiles: {
+					id: payload.productFileId
+				}
+			},
+			relations: {
+				productFiles: true
+			}
+		});
+
+		if (
+			!productArticle ||
+			!productArticle.productFiles ||
+			!productArticle.productFiles.length
+		) {
+			throw new BadRequestException('Не найдено такого файла');
+		}
+
+		const productFiles = await this.productFileRepository.find({
+			where: {
+				product: {
+					id: productArticle.id
+				}
+			}
+		});
+		await this.productFileRepository.update(
+			productFiles.map((el) => el.id).filter((el) => el != payload.productFileId),
+			{
+				isLogo: false
+			}
+		);
+		await this.productFileRepository.update(payload.productFileId, {
+			isLogo: true
 		});
 	}
 }
