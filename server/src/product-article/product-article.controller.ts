@@ -2,8 +2,10 @@ import { ProductArticleService } from './product-article.service';
 import {
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Param,
+	Patch,
 	Post,
 	Put,
 	Req,
@@ -30,6 +32,7 @@ import { GetProductArticleListDto } from '../product-article/dto/GetProductArtic
 import { GetDetailProductArticleDto } from '../product-article/dto/GetDetailProductArticleDto';
 import { FormDataRequest } from 'nestjs-form-data';
 import { UploadImageDto } from './dto/UploadImageDto';
+import { CommonImageDto } from './dto/CommonImageDto';
 
 @Controller('product-article')
 export class ProductArticleController {
@@ -85,11 +88,25 @@ export class ProductArticleController {
 	}
 
 	@AdminAuth()
-	@Post('admin/uploadImage')
+	@Post('admin/image')
 	@FormDataRequest()
 	async uploadImage(@Body() payload: UploadImageDto) {
 		await this.productArticleService.uploadImage(payload);
 
+		return '';
+	}
+
+	@AdminAuth()
+	@Delete('admin/image')
+	async deleteImage(@Body() payload: CommonImageDto) {
+		await this.productArticleService.deleteImage(payload);
+		return '';
+	}
+
+	@AdminAuth()
+	@Patch('admin/image')
+	async changeLogoImage(@Body() payload: CommonImageDto) {
+		await this.productArticleService.changeLogo(payload);
 		return '';
 	}
 

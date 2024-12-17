@@ -13,5 +13,8 @@ export class UploadImageDto {
 	@Expose()
 	@IsNumberString()
 	@IsNotEmpty()
+	@Min(0, {
+		message: 'Должно быть >= 0'
+	})
 	productArticleId: number;
 }
