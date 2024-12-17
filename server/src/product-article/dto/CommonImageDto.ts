@@ -6,5 +6,8 @@ export class CommonImageDto {
 	@Expose()
 	@IsInt()
 	@IsNotEmpty()
+	@Min(0, {
+		message: 'Должно быть >= 0'
+	})
 	productFileId: number;
 }
