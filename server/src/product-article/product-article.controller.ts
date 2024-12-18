@@ -33,6 +33,7 @@ import { GetDetailProductArticleDto } from '../product-article/dto/GetDetailProd
 import { FormDataRequest } from 'nestjs-form-data';
 import { UploadImageDto } from './dto/UploadImageDto';
 import { CommonImageDto } from './dto/CommonImageDto';
+import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 
 @Controller('product-article')
 export class ProductArticleController {
@@ -114,6 +115,14 @@ export class ProductArticleController {
 	@Post('admin/getList')
 	async getAdminList(@Body() getListDto: GetProductArticleListDto) {
 		return this.productArticleService.getList(getListDto, true);
+	}
+
+	@AdminAuth()
+	@Patch('admin/productArticle')
+	async updateProductArticle(@Body() payload: UpdateProductArticleDto) {
+		const res = await this.productArticleService.updateProductArticle(payload);
+
+		return res;
 	}
 
 	@AdminAuth()

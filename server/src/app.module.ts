@@ -19,6 +19,7 @@ import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 import { ProductSizeModule } from './product-size/product-size.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { TelegrafModule } from 'nestjs-telegraf';
 @Module({
 	imports: [
 		configuration,
@@ -41,6 +42,9 @@ import { join } from 'path';
 		}),
 		ServeStaticModule.forRoot({
 			rootPath: join(__dirname, '..', 'temp/dist')
+		}),
+		TelegrafModule.forRoot({
+			token: process.env.TELEGRAM_TOKEN
 		}),
 		ProductModule,
 		AuthModule,
