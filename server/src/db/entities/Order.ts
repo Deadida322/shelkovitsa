@@ -38,7 +38,9 @@ export class Order extends BaseEntity {
 	@Column()
 	address!: string;
 
-	@Column()
+	@Column({
+		type: 'decimal'
+	})
 	price!: number;
 
 	@Type(() => DeliveryType)
@@ -55,9 +57,10 @@ export class Order extends BaseEntity {
 
 	@Type(() => User)
 	@ManyToOne(() => User, (user) => user.orders, {
-		eager: true
+		eager: true,
+		nullable: true
 	})
-	user!: User;
+	user?: User;
 
 	@Column({
 		type: 'enum',

@@ -22,6 +22,8 @@ import { OrderAdminDto } from './dto/OrderAdminDto';
 import { User } from 'src/db/entities/User';
 import { DeliveryType } from 'src/db/entities/DeliveryType';
 import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
+import { InjectBot } from 'nestjs-telegraf';
+import { Telegraf } from 'telegraf';
 
 const orderRelations = {
 	orderProducts: {
@@ -39,9 +41,8 @@ export class OrderService {
 		private orderRepository: Repository<Order>,
 		@InjectRepository(Product)
 		private productRepository: Repository<Product>,
-		@InjectRepository(OrderProduct)
-		private orderProductRepository: Repository<OrderProduct>,
-		private dataSource: DataSource
+		private dataSource: DataSource,
+		@InjectBot() private bot: Telegraf
 	) {}
 
 	async create(createOrderDto: CreateOrderDto, userId?: number) {
@@ -87,15 +88,18 @@ export class OrderService {
 			}
 			return {
 				amount: el.amount,
-				price: +product.productArticle.price,
+				price: Number(product.productArticle.price),
 				product
 			};
 		});
-		const price = ops.reduce((acc, currentValue) => acc + currentValue.price, 0);
+		const price = ops.reduce(
+			(acc, currentValue) => acc + currentValue.price * currentValue.amount,
+			0
+		);
 
 		let payload = {
 			...createOrderDto,
-			price,
+			price: Number(price),
 			user: undefined,
 			deliveryType: undefined
 		};
@@ -127,6 +131,8 @@ export class OrderService {
 			}
 			payload.deliveryType = deliveryType;
 
+			console.log(payload);
+
 			const order = await queryRunner.manager.save(Order, payload);
 			ops = ops.map((el) => {
 				return {
@@ -145,9 +151,11 @@ export class OrderService {
 				relations: orderRelations
 			});
 
+			this.sendTgCreateOrder(newOrder);
 			return convertToJson(OrderDto, newOrder);
 		} catch (err) {
 			await queryRunner.rollbackTransaction();
+			console.log(err);
 
 			throw new InternalServerErrorException(err);
 		} finally {
@@ -198,5 +206,18 @@ export class OrderService {
 			status: payload.status as OrderStatus
 		});
 		return convertToJson(OrderDto, updatedOrder);
+	}
+
+	async sendTgCreateOrder(newOrder: Order) {
+		const html = [
+			`<u>Новый заказ #${newOrder.id}:</u>\n`,
+			`<strong>Сумма:</strong> ${newOrder.price}\n`,
+			`<strong>Кол-во позиций:</strong> ${newOrder.orderProducts.length}\n`
+		];
+
+		const parse_html = html.join('');
+		this.bot.telegram.sendMessage(process.env.ADMIN_TG_ID, parse_html, {
+			parse_mode: 'HTML'
+		});
 	}
 }

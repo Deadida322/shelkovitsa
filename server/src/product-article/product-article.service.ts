@@ -517,7 +517,7 @@ export class ProductArticleService {
 			typeof payload.isVisible == 'boolean' &&
 			payload.isVisible
 		) {
-			if (!productArticle.name) {
+			if (!productArticle.name && !payload.name) {
 				throw new BadRequestException('Нельзя выводить продукт, отсутствует имя');
 			}
 
