@@ -131,8 +131,6 @@ export class OrderService {
 			}
 			payload.deliveryType = deliveryType;
 
-			console.log(payload);
-
 			const order = await queryRunner.manager.save(Order, payload);
 			ops = ops.map((el) => {
 				return {

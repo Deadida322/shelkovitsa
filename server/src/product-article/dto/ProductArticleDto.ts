@@ -1,6 +1,7 @@
 import { Expose, Type } from 'class-transformer';
 import 'reflect-metadata';
 import { ProductFileDto } from './ProductFileDto';
+import { ProductSubcategoryDto } from 'src/product-category/dto/ProductSubcategoryDto';
 
 export class ProductArticleDto {
 	@Expose()
@@ -21,4 +22,8 @@ export class ProductArticleDto {
 	@Expose()
 	@Type(() => ProductFileDto)
 	productFiles?: ProductFileDto[];
+
+	@Expose()
+	@Type(() => ProductSubcategoryDto)
+	productSubcategory: ProductSubcategoryDto;
 }

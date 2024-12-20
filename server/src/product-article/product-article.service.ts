@@ -13,7 +13,7 @@ import {
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { Between, In, Like, Repository } from 'typeorm';
+import { Between, ILike, In, Like, Repository } from 'typeorm';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 import { Product } from 'src/db/entities/Product';
@@ -153,7 +153,7 @@ export class ProductArticleService {
 			};
 		}
 		if (payload.name) {
-			wherePayload = { ...wherePayload, name: Like(payload.name) };
+			wherePayload = { ...wherePayload, name: ILike(payload.name) };
 		}
 		if (!isAdmin) {
 			wherePayload = { ...wherePayload, ...baseProductWhere };
