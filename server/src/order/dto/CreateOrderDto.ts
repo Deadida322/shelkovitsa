@@ -9,6 +9,7 @@ import {
 	IsOptional,
 	IsPhoneNumber,
 	IsString,
+	Min,
 	ValidateNested
 } from 'class-validator';
 import 'reflect-metadata';
@@ -69,6 +70,9 @@ export class CreateOrderDto {
 	})
 	@IsNotEmpty({
 		message: 'Поле не может быть пустым'
+	})
+	@Min(1, {
+		message: 'Поле должно быть > 0'
 	})
 	deliveryTypeId!: number;
 

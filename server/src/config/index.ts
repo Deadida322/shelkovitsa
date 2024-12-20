@@ -24,7 +24,8 @@ export default ConfigModule.forRoot({
 			TEMP_PATH: process.env.TEMP_PATH,
 			DEST_PATH: process.env.DEST_PATH,
 			CORS: process.env.CORS,
-			TELEGRAM_TOKEN: process.env.TELEGRAM_TOKEN
+			TELEGRAM_TOKEN: process.env.TELEGRAM_TOKEN,
+			ADMIN_TG_ID: process.env.ADMIN_TG_ID
 		})
 	],
 	isGlobal: true

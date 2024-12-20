@@ -7,7 +7,9 @@ import { User } from './User';
 
 export enum OrderStatus {
 	CREATE = 'create',
+	IN_WORK = 'in_work',
 	PAYMENT = 'payment',
+	DELIVERY = 'delivery',
 	CLOSE = 'close'
 }
 
@@ -36,7 +38,9 @@ export class Order extends BaseEntity {
 	@Column()
 	address!: string;
 
-	@Column()
+	@Column({
+		type: 'decimal'
+	})
 	price!: number;
 
 	@Type(() => DeliveryType)
@@ -52,10 +56,11 @@ export class Order extends BaseEntity {
 	orderProducts?: OrderProduct[];
 
 	@Type(() => User)
-	@OneToMany(() => User, (user) => user.orders, {
-		eager: true
+	@ManyToOne(() => User, (user) => user.orders, {
+		eager: true,
+		nullable: true
 	})
-	user!: User;
+	user?: User;
 
 	@Column({
 		type: 'enum',

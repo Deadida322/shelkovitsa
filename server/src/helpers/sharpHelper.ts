@@ -12,8 +12,6 @@ export class SharpPipe
 		const originalName = path.parse(image.originalname).name;
 		const filename = Date.now() + '-' + originalName + '.webp';
 
-		console.log(image.buffer);
-
 		await sharp(image.buffer)
 			.resize(800)
 			.webp({ effort: 3 })

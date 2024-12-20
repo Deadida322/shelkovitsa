@@ -13,7 +13,7 @@ import {
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { Between, In, Like, Repository } from 'typeorm';
+import { Between, ILike, In, Like, Repository } from 'typeorm';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 import { Product } from 'src/db/entities/Product';
@@ -153,7 +153,7 @@ export class ProductArticleService {
 			};
 		}
 		if (payload.name) {
-			wherePayload = { ...wherePayload, name: Like(payload.name) };
+			wherePayload = { ...wherePayload, name: ILike(payload.name) };
 		}
 		if (!isAdmin) {
 			wherePayload = { ...wherePayload, ...baseProductWhere };
@@ -163,8 +163,6 @@ export class ProductArticleService {
 			...getPaginateWhere(payload),
 			where: wherePayload
 		});
-
-		console.log(isAdmin);
 
 		return getPaginateResult(
 			isAdmin ? ProductArticleAdminDto : ProductArticleDto,
@@ -501,7 +499,6 @@ export class ProductArticleService {
 		Object.keys(payload).forEach(
 			(key) => payload[key] === undefined && delete payload[key]
 		);
-		console.log(payload);
 
 		const productArticle = await this.productArticleRepository.findOne({
 			where: {
@@ -520,7 +517,7 @@ export class ProductArticleService {
 			typeof payload.isVisible == 'boolean' &&
 			payload.isVisible
 		) {
-			if (!productArticle.name) {
+			if (!productArticle.name && !payload.name) {
 				throw new BadRequestException('Нельзя выводить продукт, отсутствует имя');
 			}
 
