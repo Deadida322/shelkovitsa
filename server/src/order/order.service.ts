@@ -4,7 +4,7 @@ import {
 	InternalServerErrorException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Order } from 'src/db/entities/Order';
+import { Order, OrderStatus } from 'src/db/entities/Order';
 import { DataSource, In, Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/CreateOrderDto';
 import { OrderProduct } from 'src/db/entities/OrderProduct';
@@ -21,7 +21,17 @@ import {
 import { OrderAdminDto } from './dto/OrderAdminDto';
 import { User } from 'src/db/entities/User';
 import { DeliveryType } from 'src/db/entities/DeliveryType';
+import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
 
+const orderRelations = {
+	orderProducts: {
+		product: {
+			productArticle: true,
+			productColor: true,
+			productSize: true
+		}
+	}
+};
 @Injectable()
 export class OrderService {
 	constructor(
@@ -116,6 +126,7 @@ export class OrderService {
 				throw new BadRequestException('Не найден тип доставки');
 			}
 			payload.deliveryType = deliveryType;
+
 			const order = await queryRunner.manager.save(Order, payload);
 			ops = ops.map((el) => {
 				return {
@@ -126,19 +137,18 @@ export class OrderService {
 			await queryRunner.manager.save(OrderProduct, ops);
 
 			await queryRunner.commitTransaction();
+
 			const newOrder = await queryRunner.manager.findOne(Order, {
 				where: {
 					id: order.id
 				},
-				relations: {
-					orderProducts: {
-						product: true
-					}
-				}
+				relations: orderRelations
 			});
+
 			return convertToJson(OrderDto, newOrder);
 		} catch (err) {
 			await queryRunner.rollbackTransaction();
+
 			throw new InternalServerErrorException(err);
 		} finally {
 			await queryRunner.release();
@@ -156,6 +166,7 @@ export class OrderService {
 				},
 				...baseWhere
 			},
+			relations: orderRelations,
 			...getPaginateWhere(getListDto)
 		});
 
@@ -169,9 +180,23 @@ export class OrderService {
 			where: {
 				...baseWhere
 			},
+			relations: orderRelations,
 			...getPaginateWhere(getListDto)
 		});
 
 		return getPaginateResult(OrderAdminDto, result, total, getListDto);
+	}
+
+	async changeOrderStatus(payload: ChangeOrderStatusDto) {
+		const order = await this.orderRepository.findOne({
+			where: {
+				id: payload.orderId
+			}
+		});
+		const updatedOrder = await this.orderRepository.save({
+			...order,
+			status: payload.status as OrderStatus
+		});
+		return convertToJson(OrderDto, updatedOrder);
 	}
 }

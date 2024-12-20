@@ -1,7 +1,8 @@
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import 'reflect-metadata';
 import { DeliveryTypeDto } from 'src/delivery-type/dto/DeliveryTypeDto';
 import { OrderProductDto } from './OrderProductDto';
+import { OrderStatus } from 'src/db/entities/Order';
 
 export class OrderDto {
 	@Expose()
@@ -32,4 +33,12 @@ export class OrderDto {
 	@Expose()
 	@Type(() => OrderProductDto)
 	orderProducts?: OrderProductDto[];
+
+	@Expose()
+	@Transform((status) => convertConferenceUserStatus(status.value))
+	status: string;
+}
+
+function convertConferenceUserStatus(type: any): string {
+	return OrderStatus[+type] ?? type + '';
 }

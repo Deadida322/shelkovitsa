@@ -164,8 +164,6 @@ export class ProductArticleService {
 			where: wherePayload
 		});
 
-		console.log(isAdmin);
-
 		return getPaginateResult(
 			isAdmin ? ProductArticleAdminDto : ProductArticleDto,
 			result.map((el) => {
@@ -501,7 +499,6 @@ export class ProductArticleService {
 		Object.keys(payload).forEach(
 			(key) => payload[key] === undefined && delete payload[key]
 		);
-		console.log(payload);
 
 		const productArticle = await this.productArticleRepository.findOne({
 			where: {

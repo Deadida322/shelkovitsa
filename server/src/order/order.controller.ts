@@ -1,4 +1,12 @@
-import { Body, Controller, ExecutionContext, Get, Post, Req } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	ExecutionContext,
+	Get,
+	Patch,
+	Post,
+	Req
+} from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/CreateOrderDto';
 import { GetListDto } from 'src/common/dto/GetListDto';
@@ -7,6 +15,7 @@ import { Request } from 'express';
 import { Auth } from 'src/decorators/auth';
 import { IPaginateResult } from 'src/helpers/paginateHelper';
 import { AdminAuth } from 'src/decorators/adminAuth';
+import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
 
 @Controller('order')
 export class OrderController {
@@ -20,6 +29,11 @@ export class OrderController {
 	): Promise<IPaginateResult<OrderDto>> {
 		const userId = request.user.id;
 		return this.orderService.getOrderList(getListDto, userId);
+	}
+	@Patch('admin/changeStatus')
+	@AdminAuth()
+	async ChangeOrderStatus(@Body() payload: ChangeOrderStatusDto) {
+		return this.orderService.changeOrderStatus(payload);
 	}
 
 	@Post('admin')
