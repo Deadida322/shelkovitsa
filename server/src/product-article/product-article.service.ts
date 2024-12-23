@@ -13,7 +13,7 @@ import {
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { Between, In, Like, Repository } from 'typeorm';
+import { Between, ILike, In, Like, Repository } from 'typeorm';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 import { Product } from 'src/db/entities/Product';
@@ -31,9 +31,11 @@ import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import * as moment from 'moment';
 import { UploadImageDto } from './dto/UploadImageDto';
-import { moveFileToStatic } from 'src/helpers/storageHelper';
+import { moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
+import { CommonImageDto } from './dto/CommonImageDto';
+import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 @Injectable()
 export class ProductArticleService {
 	constructor(
@@ -76,6 +78,13 @@ export class ProductArticleService {
 			throw new NotFoundException('Артикул продукта не найден');
 		}
 		let filterProducts = p.products;
+
+		if (!isAdmin) {
+			filterProducts = filterProducts.filter(
+				(product) =>
+					!product.productColor.is_deleted && !product.productSize.is_deleted
+			);
+		}
 		let currentProductSize = undefined;
 		if (payload.productSizeId) {
 			filterProducts = p.products.filter(
@@ -144,7 +153,7 @@ export class ProductArticleService {
 			};
 		}
 		if (payload.name) {
-			wherePayload = { ...wherePayload, name: Like(payload.name) };
+			wherePayload = { ...wherePayload, name: ILike(payload.name) };
 		}
 		if (!isAdmin) {
 			wherePayload = { ...wherePayload, ...baseProductWhere };
@@ -154,8 +163,6 @@ export class ProductArticleService {
 			...getPaginateWhere(payload),
 			where: wherePayload
 		});
-
-		console.log(isAdmin);
 
 		return getPaginateResult(
 			isAdmin ? ProductArticleAdminDto : ProductArticleDto,
@@ -429,5 +436,134 @@ export class ProductArticleService {
 			isLogo,
 			product: productArticle
 		});
+	}
+
+	async deleteImage(payload: CommonImageDto) {
+		const file = await this.productFileRepository.findOne({
+			where: {
+				id: payload.productFileId
+			}
+		});
+
+		if (!file) {
+			throw new BadRequestException('Не найдено такого файла');
+		}
+
+		await removeFile(file.image);
+
+		await this.productFileRepository.delete({
+			id: file.id
+		});
+	}
+
+	async changeLogo(payload: CommonImageDto) {
+		const productArticle = await this.productArticleRepository.findOne({
+			where: {
+				productFiles: {
+					id: payload.productFileId
+				}
+			},
+			relations: {
+				productFiles: true
+			}
+		});
+
+		if (
+			!productArticle ||
+			!productArticle.productFiles ||
+			!productArticle.productFiles.length
+		) {
+			throw new BadRequestException('Не найдено такого файла');
+		}
+
+		const productFiles = await this.productFileRepository.find({
+			where: {
+				product: {
+					id: productArticle.id
+				}
+			}
+		});
+		await this.productFileRepository.update(
+			productFiles.map((el) => el.id).filter((el) => el != payload.productFileId),
+			{
+				isLogo: false
+			}
+		);
+		await this.productFileRepository.update(payload.productFileId, {
+			isLogo: true
+		});
+	}
+
+	async updateProductArticle(payload: UpdateProductArticleDto) {
+		//удаляем все нулевые свойста у payload
+		Object.keys(payload).forEach(
+			(key) => payload[key] === undefined && delete payload[key]
+		);
+
+		const productArticle = await this.productArticleRepository.findOne({
+			where: {
+				id: payload.id
+			},
+			relations: {
+				products: true
+			}
+		});
+		if (!productArticle) {
+			throw new BadRequestException('Не найден такой артикул!');
+		}
+
+		if (
+			payload.isVisible &&
+			typeof payload.isVisible == 'boolean' &&
+			payload.isVisible
+		) {
+			if (!productArticle.name && !payload.name) {
+				throw new BadRequestException('Нельзя выводить продукт, отсутствует имя');
+			}
+
+			const validFiles = productArticle.productFiles.filter((el) => !el.is_deleted);
+			if (!validFiles || !validFiles.length) {
+				throw new BadRequestException(
+					'Нельзя выводить продукт, отсутствуют файлы'
+				);
+			}
+
+			if (
+				!productArticle.productSubcategory ||
+				!productArticle.productSubcategory.id ||
+				productArticle.productSubcategory.is_deleted
+			) {
+				throw new BadRequestException(
+					'Нельзя выводить продукт, отсутствует привязка к подкатегории'
+				);
+			}
+
+			const validProducts = productArticle.products.filter((el) => !el.is_deleted);
+			if (!validProducts || !validProducts.length) {
+				throw new BadRequestException(
+					'Нельзя выводить продукт, отсутствуют цвета или размеры продукта'
+				);
+			}
+		}
+
+		const updateProductArticle = await this.productArticleRepository.save({
+			...productArticle,
+			...payload
+		});
+
+		const res = convertToClass(FullProductArticleAdminDto, updateProductArticle);
+
+		const mappedColors = updateProductArticle.products.map((el) =>
+			convertToClass(ProductColorDto, el.productColor)
+		);
+		res.productColors = filterDuplicateObjectById<ProductColorDto>(mappedColors);
+
+		const mappedSizes = updateProductArticle.products.map((el) =>
+			convertToClass(ProductSizeDto, el.productSize)
+		);
+
+		res.productSizes = filterDuplicateObjectById<ProductSizeDto>(mappedSizes);
+
+		return convertToJson(FullProductArticleAdminDto, res);
 	}
 }

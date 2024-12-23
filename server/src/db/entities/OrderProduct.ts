@@ -9,7 +9,9 @@ export class OrderProduct extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
-	@Column()
+	@Column({
+		type: 'decimal'
+	})
 	price!: number;
 
 	@Column()

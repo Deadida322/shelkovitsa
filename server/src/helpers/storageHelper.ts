@@ -106,6 +106,11 @@ export async function moveFileToStatic(image: MemoryStoredFile) {
 	return fileName;
 }
 
+export async function removeFile(fileName: string) {
+	const destPath = getDestPath(fileName);
+	await fsPromises.unlink(destPath);
+}
+
 export const mimeTypes = {
 	images: ['image/jpeg', 'image/png', 'image/webp']
 };

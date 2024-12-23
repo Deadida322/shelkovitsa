@@ -38,7 +38,7 @@ export class AuthGuard implements CanActivate {
 		}
 
 		const request = context.switchToHttp().getRequest<Request>();
-		const token = this.extractTokenFromHeader(request);
+		const token = this.extractTokenFromCookie(request);
 
 		const ownerId = this.configService.getOrThrow<number>('OWNER_ID');
 
@@ -79,9 +79,15 @@ export class AuthGuard implements CanActivate {
 		return true;
 	}
 
-	private extractTokenFromHeader(request: Request): string | undefined {
-		if (!request.headers.access_token || request.headers.access_token.length < 5)
+	// private extractTokenFromHeader(request: Request): string | undefined {
+	// 	if (!request.headers.access_token || request.headers.access_token.length < 5)
+	// 		return undefined;
+	// 	return String(request.headers.access_token ?? '') ?? undefined;
+	// }
+
+	private extractTokenFromCookie(request: Request): string | undefined {
+		if (!request.cookies.access_token || request.cookies.access_token.length < 5)
 			return undefined;
-		return String(request.headers.access_token ?? '') ?? undefined;
+		return String(request.cookies.access_token ?? '') ?? undefined;
 	}
 }
