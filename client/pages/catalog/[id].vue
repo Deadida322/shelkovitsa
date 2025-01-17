@@ -23,6 +23,7 @@ const shopItem = ref({
     available: 4,
     price: 1232,
 });
+// const config = useRuntimeConfig();
 const cartStore = useCartStore();
 
 const { $api } = useNuxtApp();
@@ -72,7 +73,6 @@ watch(() => cartInfo.value.color, (val) => {
 watch(cartInfo, async () => {
     await nextTick();
     if (cartInfo.value.color && cartInfo.value.size) {
-        console.log('else');
         $api(`/api/product/get`, {
             method: 'POST',
             body: {
@@ -85,10 +85,8 @@ watch(cartInfo, async () => {
         });
     }
     else {
-        console.log('if');
         $api(`/api/product-article/${route.params.id}`, { method: 'POST', body: payload.value }).then((res) => {
             shopItem.value = res;
-            console.log(shopItem.value);
         });
     }
 }, { immediate: true, deep: true });
@@ -207,6 +205,10 @@ watch(cartInfo, async () => {
 </template>
 
 <style lang="scss">
+    .vs-pager__aria-active {
+        z-index: 1 !important;
+    }
+
     .catalog-item {
         &__container {
             width: 100%;
@@ -220,6 +222,7 @@ watch(cartInfo, async () => {
             width: 58%;
         }
     }
+
     .item-info {
         &__select {
             width: 50% !important;

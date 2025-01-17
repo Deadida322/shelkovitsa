@@ -12,13 +12,11 @@ const mobileMenuVisible = ref(false);
 const router = useRouter();
 
 watch(active, (val) => {
-    console.log(route, 'route');
     router.push(val);
 });
 
 watch(() => route.path, (val) => {
     active.value = val;
-    console.log(val, 'route path');
 });
 </script>
 
@@ -38,7 +36,7 @@ watch(() => route.path, (val) => {
             <div>{{ item.title }} </div>
         </vs-navbar-item>
         <template #right>
-            <template v-if="!bp.isSmallMobile && !authStore.accessToken">
+            <template v-if="!bp.isSmallMobile && !authStore.user">
                 <vs-button type="flat">
                     <nuxt-link to="/signin">
                         Войти

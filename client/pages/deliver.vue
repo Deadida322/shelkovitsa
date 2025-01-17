@@ -1,6 +1,7 @@
 <script setup>
 import { useCartStore, useMappingStore, useOrderStore } from '#imports';
 import { mask as vMask } from 'vue-the-mask';
+import { VsNotification } from 'vuesax-alpha';
 
 definePageMeta({
     middleware: [
@@ -25,11 +26,27 @@ function onCountDown(count, index) {
 
 const step = ref(1);
 
-const nextStep = () => step.value++;
+function nextStep() {
+    if (step.value < 2)
+        return step.value++;
+    $api('/api/order/create', { method: 'POST', body: { ...orderStore.order, orderProducts: cartStore.cart } }).then(() => {
+        VsNotification({
+            title: 'Отправлено!',
+            content: 'Заказ отправлен, ожидайте связи',
+            position: 'bottom-center',
+            border: 'success',
+        });
+        cartStore.clearCart();
+    });
+}
 </script>
 
 <template>
     <div class="deliver-page">
+        <Head>
+            <Title>Корзина</Title>
+            <Meta name="description" content="Корзина товаров магазина Шелковица" />
+        </Head>
         <h2 class="text-h6 mt-4">
             Ваша корзина
         </h2>
@@ -151,171 +168,127 @@ const nextStep = () => step.value++;
                 </vs-button>
             </div>
         </div>
-        <h2 class="text-h6 mt-4">
-            Оформление заказа
-        </h2>
-        <s-validate v-slot="{ submit }" @submit="nextStep">
-            <v-stepper
-                v-model="step"
-                class="deliver__stepper"
-            >
-                <v-stepper-header>
-                    <v-stepper-item
-                        step="Step {{ 0 }}"
-                        :value="1"
-                        title="Данные получателя"
-                        edit-icon="mdi-alert-outline"
-                        complete-icon="mdi-check"
-                        :editable="step > 1"
-                        :complete="step > 1"
-                    />
-                    <v-stepper-item
-                        step="Step {{ 1 }}"
-                        :value="2"
-                        :editable="step > 2"
-                        :complete="step > 2"
-                        title="Данные доставки"
-                        edit-icon="mdi-package"
-                    />
-                    <v-stepper-item
-                        step="Step {{ 2 }}"
-                        :value="3"
-                        :complete="step > 3"
-                        title="Варианты оплаты"
-                        edit-icon="mdi-credit-card-outline"
-                    />
-                </v-stepper-header>
-                <v-stepper-window>
-                    <v-stepper-window-item
-                        :value="1"
-                    >
-                        <div class="deliver__form">
-                            <s-input
-                                v-model="orderStore.order.mail"
-                                required
-                                email
-                                class="s-input"
-                                type="email"
-                                placeholder="email"
-                                icon="email"
-                            />
-                            <s-input
-                                v-model="orderStore.order.fio"
-                                class="s-input"
-                                placeholder="ФИО"
-                                icon="account-outline"
-                                required
-                            />
+        <template v-if="cartStore.cart.length">
+            <h2 class="text-h6 mt-4">
+                Оформление заказа
+            </h2>
+            <s-validate v-slot="{ submit }" @submit="nextStep">
+                <v-stepper
+                    v-model="step"
+                    class="deliver__stepper"
+                >
+                    <v-stepper-header>
+                        <v-stepper-item
+                            step="Step {{ 0 }}"
+                            :value="1"
+                            title="Данные получателя"
+                            edit-icon="mdi-alert-outline"
+                            complete-icon="mdi-check"
+                            :editable="step > 1"
+                            :complete="step > 1"
+                        />
+                        <v-stepper-item
+                            step="Step {{ 1 }}"
+                            :value="2"
+                            :editable="step > 2"
+                            :complete="step > 2"
+                            title="Данные доставки"
+                            edit-icon="mdi-package"
+                        />
+                    </v-stepper-header>
+                    <v-stepper-window>
+                        <v-stepper-window-item
+                            :value="1"
+                        >
+                            <div class="deliver__form">
+                                <s-input
+                                    v-model="orderStore.order.mail"
+                                    required
+                                    email
+                                    class="s-input"
+                                    type="email"
+                                    placeholder="email"
+                                    icon="email"
+                                />
+                                <s-input
+                                    v-model="orderStore.order.fio"
+                                    class="s-input"
+                                    placeholder="ФИО"
+                                    icon="account-outline"
+                                    required
+                                />
 
-                            <s-input
-                                v-model="orderStore.order.tel"
-                                v-mask="'+7(###)###-##-##'"
-                                class="s-input"
-                                type="phone"
-                                placeholder="Номер телефона"
-                                icon="phone"
-                                :min-length="16"
-                                required
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-phone</v-icon>
-                                </template>
-                            </s-input>
-                            <s-input
-                                v-model="orderStore.order.description"
-                                class="s-input"
-                                placeholder="Дополнительная информация"
-                                icon="text-box-outline"
-                            />
-                        </div>
-                    </v-stepper-window-item>
-                    <v-stepper-window-item
-                        :value="2"
-                    >
-                        <div class="deliver__form">
-                            <s-input
-                                v-model="orderStore.order.region"
-                                required
-                                class="s-input"
-                                type="email"
-                                placeholder="Регион"
-                                icon="map"
-                            />
-                            <s-input
-                                v-model="orderStore.order.address"
-                                class="s-input"
-                                placeholder="Адрес"
-                                icon="map-marker"
-                                required
-                            />
+                                <s-input
+                                    v-model="orderStore.order.tel"
+                                    v-mask="'+7(###)###-##-##'"
+                                    class="s-input"
+                                    type="phone"
+                                    placeholder="Номер телефона"
+                                    icon="phone"
+                                    :min-length="16"
+                                    required
+                                >
+                                    <template #icon>
+                                        <v-icon>mdi-phone</v-icon>
+                                    </template>
+                                </s-input>
+                                <s-input
+                                    v-model="orderStore.order.description"
+                                    class="s-input"
+                                    placeholder="Дополнительная информация"
+                                    icon="text-box-outline"
+                                />
+                            </div>
+                        </v-stepper-window-item>
+                        <v-stepper-window-item
+                            :value="2"
+                        >
+                            <div class="deliver__form">
+                                <s-input
+                                    v-model="orderStore.order.region"
+                                    required
+                                    class="s-input"
+                                    type="email"
+                                    placeholder="Регион"
+                                    icon="map"
+                                />
+                                <s-input
+                                    v-model="orderStore.order.address"
+                                    class="s-input"
+                                    placeholder="Адрес"
+                                    icon="map-marker"
+                                    required
+                                />
 
-                            <s-select
-                                v-model="orderStore.order.deliveryTypeId"
-                                required
-                                class="s-input"
-                                :options="deliveryTypes"
-                                label-key="name"
-                                value-key="id"
-                                placeholder="Варианты доставки"
-                            />
-                        </div>
-                    </v-stepper-window-item>
-                    <v-stepper-window-item
-                        :value="3"
-                    >
-                        <div class="deliver__form">
-                            <vs-input
-                                class="s-input"
-                                placeholder="Улица"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-map-marker-radius</v-icon>
-                                </template>
-                            </vs-input>
-                            <vs-input
-                                class="s-input"
-                                placeholder="Дом"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-home-account</v-icon>
-                                </template>
-                            </vs-input>
-
-                            <vs-input
-                                class="s-input"
-                                type="phone"
-                                placeholder="Квартира/офис"
-                            >
-                                <template #icon>
-                                    <v-icon>mdi-office-building</v-icon>
-                                </template>
-                            </vs-input>
-                            <s-select
-                                class="s-input"
-                                :options="deliveryTypes"
-                                label-key="name"
-                                value-key="id"
-                                placeholder="Варианты доставки"
-                            />
-                        </div>
-                    </v-stepper-window-item>
-                </v-stepper-window>
-                <div class="d-flex pa-4 justify-end">
-                    <vs-button
-                        v-if="step !== 3"
-                        @click="submit"
-                    >
-                        Далее
-                    </vs-button>
-                    <vs-button
-                        v-else
-                        @click="send"
-                    >
-                        Отправить
-                    </vs-button>
-                </div>
-            </v-stepper>
-        </s-validate>
+                                <s-select
+                                    v-model="orderStore.order.deliveryTypeId"
+                                    required
+                                    class="s-input"
+                                    :options="deliveryTypes"
+                                    label-key="name"
+                                    value-key="id"
+                                    placeholder="Варианты доставки"
+                                />
+                            </div>
+                        </v-stepper-window-item>
+                    </v-stepper-window>
+                    <div class="d-flex pa-4 justify-end">
+                        <vs-button
+                            v-if="step !== 2"
+                            @click="submit"
+                        >
+                            Далее
+                        </vs-button>
+                        <vs-button
+                            v-else
+                            @click="submit"
+                        >
+                            Отправить
+                        </vs-button>
+                    </div>
+                </v-stepper>
+            </s-validate>
+        </template>
 
         <vs-alert
             class="mt-4 alert"

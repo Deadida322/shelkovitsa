@@ -1,10 +1,11 @@
 export default defineNuxtPlugin(async () => {
-    const { useAuthStore } = await import('#imports');
-    const authStore = useAuthStore();
+    const config = useRuntimeConfig();
     const api = $fetch.create({
-        baseURL: 'http://localhost:8000',
-        headers: {
-            Authorization: `Bearer ${authStore.accessToken}`,
+        baseURL: config.public.apiBase,
+        async onResponse({ response }) {
+            if (response.status === 401) {
+                navigateTo('/signin');
+            }
         },
     });
 

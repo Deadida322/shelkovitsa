@@ -1,14 +1,14 @@
 <script setup>
 import adminCategories from '@/components/admin/categories';
+import adminOrders from '@/components/admin/orders';
 import adminProducts from '@/components/admin/products';
-import adminSizes from '@/components/admin/sizes';
 
 const tab = ref('products');
-const tabs = ['products', 'sizes', 'categories'];
+const tabs = ['products', 'orders', 'categories'];
 const componentsMap = {
     products: adminProducts,
-    sizes: adminSizes,
     categories: adminCategories,
+    orders: adminOrders,
 };
 </script>
 
@@ -29,8 +29,8 @@ const componentsMap = {
                 <v-tab value="categories">
                     Категории
                 </v-tab>
-                <v-tab value="sizes">
-                    Размеры
+                <v-tab value="orders">
+                    Заказы
                 </v-tab>
             </v-tabs>
             <v-card-text>

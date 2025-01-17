@@ -31,7 +31,7 @@ const breadcrumbs = computed(() => {
 });
 
 watch(payload, () => {
-    $api('/api/product-article', { method: 'POST', body: payload.value }).then((res) => {
+    $api('/api/product-article/getList', { method: 'POST', body: payload.value }).then((res) => {
         shopItems.value = res.data;
         totalItems.value = res.count;
     });
@@ -40,6 +40,10 @@ watch(payload, () => {
 
 <template>
     <div class="catalog-page">
+        <Head>
+            <Title>Каталог</Title>
+            <Meta name="description" content="Каталог товаров магазина Шелковица" />
+        </Head>
         <h2 class="text-h6 mt-sm-4 mb-4">
             Каталог
         </h2>

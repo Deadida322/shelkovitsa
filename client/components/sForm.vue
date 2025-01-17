@@ -2,7 +2,7 @@
 import useVuelidate from '@vuelidate/core';
 import { VsNotification } from 'vuesax-alpha';
 
-const props = defineProps({
+defineProps({
     buttonLabel: {
         type: String,
         default: 'Отправить',

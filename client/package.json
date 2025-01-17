@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "build": "nuxt build",
-        "dev": "nuxt dev",
+        "dev": "nuxt dev --dotenv .env.dev",
         "generate": "nuxt generate",
         "preview": "nuxt preview",
         "postinstall": "nuxt prepare"
@@ -26,7 +26,7 @@
         "vuesax": "^4.0.1-alpha.25",
         "vuesax-alpha": "^0.2.0-beta.78",
         "vuesax3": "^4.2.1",
-        "vuetify": "^3.7.5",
+        "vuetify": "^3.7.6",
         "vuetify-nuxt-module": "^0.16.1"
     },
     "devDependencies": {
