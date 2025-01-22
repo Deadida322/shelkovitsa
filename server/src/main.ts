@@ -29,8 +29,8 @@ async function bootstrap() {
 	);
 	app.enableCors({
 		credentials: true,
-		origin: '*'
-		// origin: process.env.CORS
+		// origin: '*'
+		origin: process.env.CORS
 	});
 	app.useGlobalFilters(new HttpExceptionFilter());
 	app.use(cookieParser());
