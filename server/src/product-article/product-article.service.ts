@@ -36,6 +36,7 @@ import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { CommonImageDto } from './dto/CommonImageDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
+import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 @Injectable()
 export class ProductArticleService {
 	constructor(
@@ -197,6 +198,7 @@ export class ProductArticleService {
 		);
 	}
 
+	//!!!!недоделано
 	async createArticleProduct(
 		createProductDto: CreateProductArticleDto,
 		images?: File[]
@@ -278,7 +280,7 @@ export class ProductArticleService {
 					errorRows.push(row.map((el) => String(el)));
 				} else {
 					product.article = String(product.article).trim();
-					product.color = String(product.color).trim();
+					product.color = capitalizeFirstLetter(String(product.color).trim());
 					product.size = String(product.size).trim();
 					await this.parseArticleProduct(product);
 				}
@@ -346,9 +348,9 @@ export class ProductArticleService {
 				}
 			});
 			if (!productColor) {
-				productColor = await this.productColorRepository.save({
-					name: color
-				});
+				throw new Error(
+					`Нельзя распарсить строку из-за цвета ${Object.values(productDto).join(', ')}`
+				);
 			} else {
 				await this.productColorRepository.update(
 					{

@@ -3,12 +3,7 @@ import * as fs from 'node:fs';
 import * as fsPromises from 'fs/promises';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import {
-	HttpStatus,
-	ParseFilePipeBuilder,
-	UnprocessableEntityException
-} from '@nestjs/common';
-import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
+import { HttpStatus, ParseFilePipeBuilder } from '@nestjs/common';
 import { MemoryStoredFile } from 'nestjs-form-data';
 
 const baseSrcPath = () => path.join(process.cwd(), process.env.TEMP_PATH);
