@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+	BadRequestException,
+	Injectable,
+	InternalServerErrorException,
+	NotFoundException
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { baseWhere, filterDuplicateObjectById } from 'src/common/utils';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
@@ -13,7 +18,7 @@ import {
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { Between, ILike, In, Like, Repository } from 'typeorm';
+import { Between, DataSource, ILike, In, Like, Repository } from 'typeorm';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 import { Product } from 'src/db/entities/Product';
@@ -31,15 +36,23 @@ import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import * as moment from 'moment';
 import { UploadImageDto } from './dto/UploadImageDto';
-import { moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
+import {
+	existsFile,
+	getColorsPath,
+	moveFileToStatic,
+	removeFile
+} from 'src/helpers/storageHelper';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { CommonImageDto } from './dto/CommonImageDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
+
 @Injectable()
 export class ProductArticleService {
 	constructor(
+		private dataSource: DataSource,
+
 		@InjectRepository(Product)
 		private productRepository: Repository<Product>,
 
@@ -265,7 +278,9 @@ export class ProductArticleService {
 			await this.clearArticleProducts();
 		}
 		const errorRows: string[][] = [];
-		data.forEach(async (row) => {
+		const colorMap = await this.getColorMap();
+		for (let i = 0; i < data.length; i++) {
+			const row = data[i];
 			try {
 				const product: ParseProductArticleDto = {
 					article: row[1] ?? '',
@@ -282,13 +297,15 @@ export class ProductArticleService {
 					product.article = String(product.article).trim();
 					product.color = capitalizeFirstLetter(String(product.color).trim());
 					product.size = String(product.size).trim();
-					await this.parseArticleProduct(product);
+					await this.parseArticleProduct(product, colorMap);
 				}
 			} catch (err) {
-				errorRows.push([String(err)]);
+				const errRow = [...row, '', String(err)];
+				errorRows.push(errRow);
 			}
-		});
-		if (errorRows.length) {
+		}
+
+		if (errorRows.length > 0) {
 			const buffer = xlsx.build([
 				{ name: 'myFirstSheet', data: errorRows, options: {} }
 			]);
@@ -298,96 +315,133 @@ export class ProductArticleService {
 		return undefined;
 	}
 
-	private async parseArticleProduct(productDto: ParseProductArticleDto): Promise<void> {
+	private async getColorMap(): Promise<Map<string, string>> {
+		const colorsPath = await getColorsPath();
+		const workSheetsFromFile = xlsx.parse(colorsPath);
+		const data = workSheetsFromFile[1].data;
+
+		const colorMap = new Map();
+		data.forEach((el) => {
+			colorMap.set(capitalizeFirstLetter(el[0]), capitalizeFirstLetter(el[1]));
+		});
+		return colorMap;
+	}
+
+	private async parseArticleProduct(
+		productDto: ParseProductArticleDto,
+		colorMap: Map<string, string>
+	): Promise<void> {
 		const { amount, article, color, price, size } = productDto;
 
-		let productArticle = await this.productArticleRepository.findOne({
-			where: {
-				article
-			}
-		});
-		if (!productArticle) {
-			productArticle = await this.productArticleRepository.save({
-				article,
-				price
-			});
-		} else {
-			await this.productArticleRepository.update(
-				{ id: productArticle.id },
-				{
-					is_deleted: false
-				}
-			);
-		}
+		const queryRunner = this.dataSource.createQueryRunner();
+		await queryRunner.connect();
+		await queryRunner.startTransaction();
 
-		let existProduct = await this.productRepository.findOne({
-			where: {
-				productArticle: {
+		try {
+			const productArticleRepository =
+				queryRunner.manager.getRepository(ProductArticle);
+			let productArticle = await productArticleRepository.findOne({
+				where: {
 					article
-				},
-				productColor: {
-					name: color
-				},
-				productSize: {
-					name: size
-				}
-			}
-		});
-
-		if (existProduct) {
-			await this.productRepository.update(
-				{
-					id: existProduct.id
-				},
-				{ is_deleted: false, amount }
-			);
-		} else {
-			let productColor = await this.productColorRepository.findOne({
-				where: {
-					name: color
 				}
 			});
-			if (!productColor) {
-				throw new Error(
-					`Нельзя распарсить строку из-за цвета ${Object.values(productDto).join(', ')}`
-				);
-			} else {
-				await this.productColorRepository.update(
-					{
-						id: productColor.id
-					},
-					{ is_deleted: false }
-				);
-			}
-			//секция с парсингом размеров
-
-			let productSize = await this.productSizeRepository.findOne({
-				where: {
-					name: size
-				}
-			});
-
-			if (!productSize) {
-				productSize = await this.productSizeRepository.save({
-					name: size
+			if (!productArticle) {
+				productArticle = await productArticleRepository.save({
+					article,
+					price
 				});
 			} else {
-				await this.productSizeRepository.update(
+				await productArticleRepository.update(
+					{ id: productArticle.id },
 					{
-						id: productSize.id
-					},
-					{ is_deleted: false }
+						is_deleted: false
+					}
 				);
 			}
 
-			const productPayload = {
-				amount,
-				productColor,
-				productSize,
-				productArticle
-			};
+			const productRepository = queryRunner.manager.getRepository(Product);
+			let existProduct = await productRepository.findOne({
+				where: {
+					productArticle: {
+						article
+					},
+					productColor: {
+						name: color
+					},
+					productSize: {
+						name: size
+					}
+				}
+			});
 
-			existProduct = await this.productRepository.save(productPayload);
+			const productColorRepository =
+				queryRunner.manager.getRepository(ProductColor);
+			const productSizeRepository = queryRunner.manager.getRepository(ProductSize);
+
+			if (existProduct) {
+				await productRepository.update(
+					{
+						id: existProduct.id
+					},
+					{ is_deleted: false, amount }
+				);
+			} else {
+				const mappedColor = colorMap.get(color);
+				if (!mappedColor) {
+					throw new Error(`Нет такого цвета в файле преобразования`);
+				}
+				let productColor = await productColorRepository.findOne({
+					where: {
+						name: mappedColor
+					}
+				});
+				if (!productColor) {
+					throw new Error(`В БД не найден такой цвет`);
+				} else {
+					await productColorRepository.update(
+						{
+							id: productColor.id
+						},
+						{ is_deleted: false }
+					);
+				}
+				//секция с парсингом размеров
+
+				let productSize = await productSizeRepository.findOne({
+					where: {
+						name: size
+					}
+				});
+
+				if (!productSize) {
+					productSize = await productSizeRepository.save({
+						name: size
+					});
+				} else {
+					await productSizeRepository.update(
+						{
+							id: productSize.id
+						},
+						{ is_deleted: false }
+					);
+				}
+
+				const productPayload = {
+					amount,
+					productColor,
+					productSize,
+					productArticle
+				};
+
+				existProduct = await productRepository.save(productPayload);
+			}
+
+			await queryRunner.commitTransaction();
+		} catch (err) {
+			await queryRunner.rollbackTransaction();
+			throw err;
+		} finally {
+			await queryRunner.release();
 		}
 	}
 
