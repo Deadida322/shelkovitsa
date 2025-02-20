@@ -292,7 +292,11 @@ export class ProductArticleService {
 
 				const values = Object.values(product);
 				if (values.includes('') || values.includes(-1)) {
-					errorRows.push(row.map((el) => String(el)));
+					errorRows.push([
+						...row,
+						'',
+						'В строке пустые или отрицательные значения'
+					]);
 				} else {
 					product.article = String(product.article).trim();
 					product.color = capitalizeFirstLetter(String(product.color).trim());
@@ -333,6 +337,11 @@ export class ProductArticleService {
 	): Promise<void> {
 		const { amount, article, color, price, size } = productDto;
 
+		const mappedColor = colorMap.get(color);
+		if (!mappedColor) {
+			throw new Error(`Нет такого цвета в файле преобразования`);
+		}
+
 		const queryRunner = this.dataSource.createQueryRunner();
 		await queryRunner.connect();
 		await queryRunner.startTransaction();
@@ -366,7 +375,7 @@ export class ProductArticleService {
 						article
 					},
 					productColor: {
-						name: color
+						name: mappedColor
 					},
 					productSize: {
 						name: size
@@ -386,10 +395,6 @@ export class ProductArticleService {
 					{ is_deleted: false, amount }
 				);
 			} else {
-				const mappedColor = colorMap.get(color);
-				if (!mappedColor) {
-					throw new Error(`Нет такого цвета в файле преобразования`);
-				}
 				let productColor = await productColorRepository.findOne({
 					where: {
 						name: mappedColor
