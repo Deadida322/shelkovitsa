@@ -39,5 +39,5 @@ export class GetProductArticleListDto extends GetListDto {
 	@Expose()
 	@IsOptional()
 	@IsString()
-	name: string;
+	search: string;
 }

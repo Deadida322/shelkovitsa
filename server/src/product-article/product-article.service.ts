@@ -1,9 +1,4 @@
-import {
-	BadRequestException,
-	Injectable,
-	InternalServerErrorException,
-	NotFoundException
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { baseWhere, filterDuplicateObjectById } from 'src/common/utils';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
@@ -18,7 +13,7 @@ import {
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { Between, DataSource, ILike, In, Like, Repository } from 'typeorm';
+import { Between, DataSource, ILike, In, Repository } from 'typeorm';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 import { Product } from 'src/db/entities/Product';
@@ -36,12 +31,7 @@ import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import * as moment from 'moment';
 import { UploadImageDto } from './dto/UploadImageDto';
-import {
-	existsFile,
-	getColorsPath,
-	moveFileToStatic,
-	removeFile
-} from 'src/helpers/storageHelper';
+import { getColorsPath, moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { CommonImageDto } from './dto/CommonImageDto';
@@ -166,8 +156,8 @@ export class ProductArticleService {
 				)
 			};
 		}
-		if (payload.name) {
-			wherePayload = { ...wherePayload, name: ILike(payload.name) };
+		if (payload.search) {
+			wherePayload = { ...wherePayload, name: ILike(payload.search) };
 		}
 		if (!isAdmin) {
 			wherePayload = { ...wherePayload, ...baseProductWhere };
@@ -194,6 +184,54 @@ export class ProductArticleService {
 				page: payload.page
 			}
 		);
+	}
+
+	async getList2(payload: GetProductArticleListDto, isAdmin: boolean) {
+		const queryBuilder = this.productArticleRepository.createQueryBuilder('pa');
+
+		payload.subcategoryId &&
+			queryBuilder.andWhere('pa.productSubcategoryId = :subcategoryId', {
+				subcategoryId: payload.subcategoryId
+			});
+
+		payload.categoryId &&
+			queryBuilder
+				.leftJoin('pa.product_category', 'pc')
+				.andWhere('pc.id = :categoryId', { categoryId: payload.categoryId });
+
+		payload.subcategoryId &&
+			queryBuilder.andWhere('pa.price BETWEEN :minPrice AND :maxPrice', {
+				minPrice: payload.minPrice ?? 0,
+				maxPrice: payload.maxPrice ?? Number.MAX_VALUE
+			});
+
+		if (!isAdmin) {
+			queryBuilder.andWhere('pa.isVisible = true');
+			queryBuilder.andWhere('pa.is_deleted = false');
+		}
+
+		return '';
+		// const [result, total] = await this.productArticleRepository.findAndCount({
+		// 	...getPaginateWhere(payload),
+		// 	where: wherePayload
+		// });
+
+		// return getPaginateResult(
+		// 	isAdmin ? ProductArticleAdminDto : ProductArticleDto,
+		// 	result.map((el) => {
+		// 		return {
+		// 			...el,
+		// 			productFiles: el.productFiles.filter(
+		// 				(file) => file.isLogo && !file.is_deleted
+		// 			)
+		// 		};
+		// 	}),
+		// 	total,
+		// 	{
+		// 		itemsPerPage: payload.itemsPerPage,
+		// 		page: payload.page
+		// 	}
+		// );
 	}
 
 	private async clearArticleProducts() {
