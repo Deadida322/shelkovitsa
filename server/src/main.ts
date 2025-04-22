@@ -5,6 +5,7 @@ import { HttpExceptionFilter } from './middleware/errorMiddleware';
 import { errorFormatter } from './helpers/errorHelper';
 import { initDiskStorage } from './helpers/storageHelper';
 import * as cookieParser from 'cookie-parser';
+import { InitService } from './init/init.service';
 
 async function bootstrap() {
 	initDiskStorage();
@@ -35,6 +36,9 @@ async function bootstrap() {
 	app.useGlobalFilters(new HttpExceptionFilter());
 	app.use(cookieParser());
 	await app.listen(process.env.PORT);
+
+	const initService = app.get(InitService);
+	initService.initColors();
 
 	console.log(`App started at http://localhost:${process.env.PORT}`);
 }

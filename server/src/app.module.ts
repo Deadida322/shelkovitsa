@@ -20,6 +20,7 @@ import { ProductSizeModule } from './product-size/product-size.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TelegrafModule } from 'nestjs-telegraf';
+import { InitModule } from './init/init.module';
 @Module({
 	imports: [
 		configuration,
@@ -57,7 +58,8 @@ import { TelegrafModule } from 'nestjs-telegraf';
 		OrderModule,
 		DeliveryTypeModule,
 		ProductArticleModule,
-		ProductSizeModule
+		ProductSizeModule,
+		InitModule
 	]
 })
 export class AppModule {

@@ -5,11 +5,12 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import {
 	HttpStatus,
-	ParseFilePipeBuilder,
-	UnprocessableEntityException
+	InternalServerErrorException,
+	ParseFilePipeBuilder
 } from '@nestjs/common';
-import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 import { MemoryStoredFile } from 'nestjs-form-data';
+
+const COLORS_PATH = path.join(process.cwd(), 'docs', 'colors.xlsx');
 
 const baseSrcPath = () => path.join(process.cwd(), process.env.TEMP_PATH);
 const baseDestPath = () => path.join(process.cwd(), process.env.DEST_PATH);
@@ -111,6 +112,24 @@ export async function removeFile(fileName: string) {
 	await fsPromises.unlink(destPath);
 }
 
+export async function existsFile(f: string) {
+	try {
+		await fs.promises.stat(f);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 export const mimeTypes = {
 	images: ['image/jpeg', 'image/png', 'image/webp']
 };
+
+export async function getColorsPath() {
+	if (!(await existsFile(COLORS_PATH))) {
+		throw new InternalServerErrorException(
+			'Файл для преобразования цветов не найден'
+		);
+	}
+	return COLORS_PATH;
+}

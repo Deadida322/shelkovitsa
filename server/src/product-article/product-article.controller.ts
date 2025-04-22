@@ -4,30 +4,27 @@ import {
 	Controller,
 	Delete,
 	Get,
+	InternalServerErrorException,
 	Param,
 	Patch,
 	Post,
 	Put,
-	Req,
 	StreamableFile,
 	UploadedFile,
-	UploadedFiles,
 	UseInterceptors
 } from '@nestjs/common';
 import { FullProductArticleDto } from '../product-article/dto/FullProductArticleDto';
 
 import { UploadProductArticleFileDto } from '../product-article/dto/UploadProductArticleFileDto';
-import { excelFileType, imageFileType } from '../product-article/product-article.types';
+import { excelFileType } from '../product-article/product-article.types';
 import { convertToClass } from 'src/helpers/convertHelper';
 import { AdminAuth } from 'src/decorators/adminAuth';
-import { Request } from 'express';
 import {
+	existsFile,
 	fileInterceptor,
 	getSrcPath,
-	imagesInterceptor,
 	parseFileBuilder
 } from 'src/helpers/storageHelper';
-import { CreateProductArticleDto } from '../product-article/dto/CreateProductArticleDto';
 import { GetProductArticleListDto } from '../product-article/dto/GetProductArticleListDto';
 import { GetDetailProductArticleDto } from '../product-article/dto/GetDetailProductArticleDto';
 import { FormDataRequest } from 'nestjs-form-data';
@@ -145,6 +142,9 @@ export class ProductArticleController {
 		const uploadFileDto = convertToClass(UploadProductArticleFileDto, body);
 
 		const filePath = getSrcPath(file.filename);
+		if (!(await existsFile(filePath))) {
+			throw new InternalServerErrorException('Файл не найден');
+		}
 		const errorFile = await this.productArticleService.parseExcelFile(
 			filePath,
 			uploadFileDto
