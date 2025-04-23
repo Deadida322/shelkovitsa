@@ -1,23 +1,31 @@
+<script setup>
+defineProps({
+    item: {
+        type: Object,
+        default: () => {},
+    },
+});
+</script>
+
 <template>
     <div class="advantage__item">
         <div class="advantage__icon">
-            <v-icon size="64px">mdi-wallet-outline</v-icon>
+            <v-icon
+                size="64px" color="red-darken-4"
+            >
+                {{ item.icon }}
+            </v-icon>
         </div>
         <div class="advantage__description">
-            <div class="advantage__title">{{item.title}}</div>
-            <div class="advantage__text">{{item.text}}</div>
+            <div class="advantage__title">
+                {{ item.title }}
+            </div>
+            <div class="advantage__text">
+                {{ item.text }}
+            </div>
         </div>
     </div>
 </template>
-
-<script setup>
-    defineProps({
-        item: {
-            type: Object,
-            default: () => {}
-        }
-    })
-</script>
 
 <style lang="scss">
     .advantage {

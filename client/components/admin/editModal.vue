@@ -1,4 +1,5 @@
 <script setup>
+import { useCategoriesStore } from '#imports';
 import { VsNotification } from 'vuesax-alpha';
 import { VFileUpload } from 'vuetify/labs/VFileUpload';
 
@@ -13,11 +14,13 @@ const props = defineProps({
     },
 });
 const emit = defineEmits(['update:visible', 'update:model-value']);
+const categoriesStore = useCategoriesStore();
 const config = useRuntimeConfig();
 const { $api } = useNuxtApp();
 const loading = ref(false);
-
 const item = ref({ ...props.modelValue });
+const category = ref(item.value.productSubcategory?.productCategory.id);
+const subcategory = ref(item.value.productSubcategory);
 
 async function updateImage(image) {
     const formData = new FormData();
@@ -32,6 +35,7 @@ async function updateImage(image) {
             position: 'bottom-center',
             border: 'success',
         });
+        getProduct();
     }).catch(() => {
         VsNotification({
             title: 'Ошибка!',
@@ -52,6 +56,7 @@ async function updateProduct() {
             position: 'bottom-center',
             border: 'success',
         });
+        getProduct();
     }).catch(() => {
         VsNotification({
             title: 'Ошибка!',
@@ -71,27 +76,50 @@ function deleteImage(productFileId) {
             position: 'bottom-center',
             border: 'success',
         });
-    }); ;
+        getProduct();
+    });
 }
 
 function changeLogo(productFileId) {
     $api('/api/product-article/admin/image', { method: 'PATCH', body: { productFileId } }).then(() => {
         loading.value = false;
+        getProduct();
         VsNotification({
             title: 'Отлично!',
             content: 'Логотип обновлён',
             position: 'bottom-center',
             border: 'success',
         });
-    }); ;
+    });
+}
+
+function bindSubcategory(id) {
+    $api('/api/product-category/subcategory/bindProduct', { method: 'POST', body: {
+        productArticleId: item.value.id,
+        subcategoryId: id,
+    } }).then(() => {
+        loading.value = false;
+        VsNotification({
+            title: 'Отлично!',
+            content: 'Категория обновлена',
+            position: 'bottom-center',
+            border: 'success',
+        });
+    });
+}
+
+async function getProduct() {
+    await $api(`/api/product-article/admin/${item.value.id}`, { method: 'POST' }).then((res) => {
+        loading.value = false;
+        item.value = res;
+        category.value = item.value.productSubcategory?.productCategory.id;
+        subcategory.value = item.value.productSubcategory;
+    });
 }
 
 watch(() => props.visible, async () => {
     item.value = props.modelValue;
-    await $api(`/api/product-article/admin/${item.value.id}`, { method: 'POST' }).then((res) => {
-        loading.value = false;
-        item.value = res;
-    });
+    getProduct();
 });
 </script>
 
@@ -124,6 +152,21 @@ watch(() => props.visible, async () => {
                     hide-details="auto"
                     label="Описание"
                     @blur="updateProduct"
+                />
+                <v-select
+                    v-model="category"
+                    label="Категория"
+                    item-title="name"
+                    item-value="id"
+                    :items="categoriesStore.categories"
+                />
+                <v-select
+                    v-model="subcategory"
+                    label="Подкатегория"
+                    item-title="name"
+                    item-value="id"
+                    :items="categoriesStore.categories.find(item => item.id === category)?.productSubcategories || []"
+                    @update:model-value="bindSubcategory"
                 />
                 <v-switch
                     v-model="item.isVisible"

@@ -75,7 +75,7 @@ function onSubAdd(category) {
         <div class="mt-4 d-flex justify-center">
             <template v-if="editableCategory.isAdd">
                 <s-validate v-slot="{ submit }" class="d-flex flex-column w-100" @submit="onSave">
-                    <s-input v-model="editableCategory.name" placeholder="Подкатегория" required density="compact" variant="solo" />
+                    <s-input v-model="editableCategory.name" placeholder="Категория" required density="compact" variant="solo" />
                     <v-btn class="mt-2" prepend-icon="mdi-ыфму" color="red" @click="submit">
                         Сохранить
                     </v-btn>

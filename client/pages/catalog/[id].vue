@@ -3,27 +3,9 @@ import { useCartStore } from '@/stores/cart';
 import { notification } from 'vuesax-alpha/lib/components/notification/src/notify.js';
 
 const route = useRoute();
-const shopItem = ref({
-    title: 'Некоторый элемент',
-    info: 'Lorem ipsum dolor sit amet consectetur. Vitae tincidunt tempor sed velit blandit nibh sed eu. Etiam mollis et maecenas nibh neque id nulla orci cursus. Eget aliquam quis purus et egestas elementum ut id adipiscing. Enim penatibus risus nisl dui ipsum.',
-    images: [
-        '/mock-shop.jpg',
-        '/mock-shop-2.jpg',
-    ],
-    sizes: [
-        '65A',
-        '65B',
-        '75C',
-        '70D',
-    ],
-    colors: [
-        'Бежевый',
-        'Чёрный',
-    ],
-    available: 4,
-    price: 1232,
-});
-// const config = useRuntimeConfig();
+const shopItem = ref({});
+const config = useRuntimeConfig();
+const base = config.public.apiBase;
 const cartStore = useCartStore();
 
 const { $api } = useNuxtApp();
@@ -33,7 +15,7 @@ const cartInfo = ref({
 });
 
 const payload = ref({});
-const displayedImage = ref(shopItem.value.images[0]);
+const displayedImage = ref(``);
 const showImage = ref(false);
 
 function addToCart() {
@@ -45,6 +27,7 @@ function addToCart() {
         price: shopItem.value.price,
         amount: cartInfo.value.amount,
         maxAmount: shopItem.value.available,
+        logo: shopItem.value.productFiles.find(item => item.isLogo).image,
     };
     cartStore.updateCart(item);
     notification({
@@ -53,6 +36,11 @@ function addToCart() {
         position: 'bottom-center',
     });
 };
+
+const logo = computed(() => {
+    const logo = shopItem.value.productFiles.find(item => item.isLogo)?.image || shopItem.value.productFiles[0];
+    return `${base}/${logo}`;
+});
 
 watch(() => cartInfo.value.size, (val) => {
     payload.value = {
@@ -87,6 +75,7 @@ watch(cartInfo, async () => {
     else {
         $api(`/api/product-article/${route.params.id}`, { method: 'POST', body: payload.value }).then((res) => {
             shopItem.value = res;
+            displayedImage.value = logo.value;
         });
     }
 }, { immediate: true, deep: true });
@@ -122,15 +111,15 @@ watch(cartInfo, async () => {
                     :items-per-page="1.8"
                 >
                     <s-slide
-                        v-for="(image, key) in shopItem.images"
+                        v-for="({ image }, key) in shopItem.productFiles"
                         :key="key"
                     >
                         <v-img
                             cover
                             class="carousel-image"
                             height="100px"
-                            :src="image"
-                            @click="displayedImage = image"
+                            :src="`${base}/${image}`"
+                            @click="displayedImage = `${base}/${image}`"
                         />
                     </s-slide>
                 </s-carousel>

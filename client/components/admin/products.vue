@@ -17,7 +17,6 @@ function getProducts() {
     } }).then((res) => {
         products.value = res.data;
         totalItems.value = res.count;
-        console.log(res);
         loading.value = false;
     });
 }

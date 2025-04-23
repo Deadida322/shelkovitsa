@@ -1,28 +1,6 @@
 <script setup>
 import advantages from '~/assets/js/advantages';
 import mockShops from '~/assets/js/mockShops';
-
-const toDisplay = ref(4);
-
-function toggle() {
-    if (toDisplay.value !== 4) {
-        toDisplay.value = 4;
-    }
-    else {
-        toDisplay.value = advantages.length;
-    }
-}
-
-const computedAdvantages = computed(() => advantages.slice(0, toDisplay.value));
-
-const buttonLabel = computed(() => {
-    if (toDisplay.value !== 4) {
-        return 'Смотреть меньше';
-    }
-    else {
-        return 'Смотреть ещё';
-    }
-});
 </script>
 
 <template>
@@ -31,7 +9,7 @@ const buttonLabel = computed(() => {
             <v-img
                 gradient="to top right, rgba(100,115,201,.33), rgba(25,32,72,.7)"
                 class="header__image"
-                src="/about-header.jpg"
+                src="/main.webp"
                 cover
                 height="400px"
             >
@@ -40,45 +18,42 @@ const buttonLabel = computed(() => {
                         SHELKOVITSA
                     </div>
                     <div class="text-caption mt-4 text-center text-white">
-                        Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras fermentum duis. Egestas urna fermentum urna pulvinar et. Urna platea enim volutpat elementum faucibus. Nunc vel sed viverra et at leo. Neque euismod ultricies a vitae. Sed eget sed gravida id nibh. Ipsum fermentum fusce phasellus duis congue blandit elementum sit aliquet.
+                        Присутствуем на российском рынке с 2009 года и являемся одним и «пионеров» первой волны интернет шоппинга
+                        в сегменте нижнего белья и предпостельной одежды. Нашим ориентиром является представление исключительно оригинальных фабричных
+                        высококачественных товаров, соответствующих всем установленным параметрам качества, безопасности и функциональности,
+                        с сохранением демократического уровня цен, доступного практически каждому покупателю.
                     </div>
                 </div>
             </v-img>
         </div>
 
-        <h2 class="text-h6 mt-4">
+        <h2 class="text-h6 mt-4 text-center">
             Наши преимущества
         </h2>
         <div class="about-page__advantages mt-6">
             <about-advantage
-                v-for="(item, key) in computedAdvantages"
+                v-for="(item, key) in advantages"
                 :key="key"
                 :item="item"
             />
         </div>
-        <div class="d-flex justify-center mt-4 mb-4">
-            <vs-button
-                type="flat"
-                @click="toggle"
-            >
-                {{ buttonLabel }}
-            </vs-button>
+        <div class="h2 text-h6 text-center mt-4">
+            Обмен и возврат
         </div>
         <div class="about-page__description mt-4 mb-4">
-            Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras fermentum duis. Egestas urna fermentum urna pulvinar et. Urna platea enim volutpat elementum faucibus. Nunc vel sed viverra et at leo. Neque euismod ultricies a vitae. Sed eget sed gravida id nibh. Ipsum fermentum fusce phasellus duis congue blandit elementum sit aliquet.
+            В интересах сохранения здоровья и безопасности наших клиентов, ставя во главу угла этические принципы и нормы действующего законодательства, мы строго соблюдаем установленный запрет на возврат и обмен швейных и трикотажных изделий (изделия швейные и трикотажные бельевые, изделия чулочно-носочные), переданных покупателю после оплаты, в соответствии с «Перечнем непродовольственных товаров надлежащего качества, не подлежащих обмену», утвержденным постановлением Правительства Российской Федерации от 31 декабря 2020 г. № 2463.
+            Тем самым мы <b>гарантируем</b>, что купленный Вами товар не был в употреблении и не примерялся.
         </div>
 
         <div class="h2 text-h6 text-center">
             Популярно сейчас
         </div>
         <div class="s-shop-carousel">
-            <client-only>
-                <s-shop-item
-                    v-for="(item, key) in mockShops.splice(0, 3)"
-                    :key="key"
-                    :item="item"
-                />
-            </client-only>
+            <s-shop-item
+                v-for="(item, key) in mockShops.splice(0, 3)"
+                :key="key"
+                :item="item"
+            />
         </div>
         <div class="d-flex justify-center mt-4 mb-4">
             <vs-button
