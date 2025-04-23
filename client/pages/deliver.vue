@@ -8,7 +8,8 @@ definePageMeta({
         // 'auth',
     ],
 });
-
+const config = useRuntimeConfig();
+const base = config.public.apiBase;
 const { $api } = useNuxtApp();
 const deliveryTypes = ref([]);
 $api(`/api/delivery-type`).then((res) => {
@@ -100,7 +101,7 @@ function nextStep() {
                                 cover
                                 width="64px"
                                 height="64px"
-                                src="/mock-shop.jpg"
+                                :src="`${base}/${tr.logo}`"
                             />
                         </vs-td>
                         <vs-td>

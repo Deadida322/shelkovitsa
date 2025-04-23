@@ -1,10 +1,14 @@
 <script setup>
-defineProps({
+const props = defineProps({
     item: {
         type: Object,
         default: () => {},
     },
 });
+
+const config = useRuntimeConfig();
+const base = config.public.apiBase;
+const getLogo = props.item.productFiles?.find(item => item.isLogo)?.image || props.item.productFiles?.[0];
 </script>
 
 <template>
@@ -13,7 +17,7 @@ defineProps({
             <h3>{{ item.name }}</h3>
         </template>
         <template #img>
-            <img src="/mock-shop.jpg" alt="">
+            <img :src="`${base}/${getLogo}`" alt="">
         </template>
         <template #text>
             <p>{{ item.description }}</p>

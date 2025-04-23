@@ -1,37 +1,22 @@
 export default [
     {
-        icon: "mdi",
-        title: "Гарантия цены",
-        text: "Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras"
+        icon: 'mdi-human-queue',
+        title: 'Эксклюзивная линейка брендов и товаров',
+        text: 'Наши специалисты отслеживают актуальные тренды моды и новинки производителей. Отбирают к размещению только зарекомендовавшие себя модели, соответствующие пониманию эстетики и красоты.',
     },
     {
-        icon: "mdi",
-        title: "Гарантия цены",
-        text: "Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras"
+        icon: 'mdi-heart-plus',
+        title: 'Гарантированные качество и безопасность',
+        text: 'Исключительно новый сертифицированный фабричный товар известных брендов, не бывший в употреблении, обменянным, примеренным. Никаких noname производителей без информации и четкого понимания о параметрах моделей. Контроль качества обеспечивается нашими специалистами-приемщиками и контроллерами при передаче товара на наш склад от поставщика. Каждый товар осмотрен и сфотографирован до передачи его на отправку покупателю.',
     },
     {
-        icon: "mdi",
-        title: "Гарантия цены",
-        text: "Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras"
+        icon: 'mdi-store',
+        title: 'Работа напрямую с авторизированными дистрибьюторами',
+        text: 'Работа напрямую с оптовыми складами позволяет нам быть уверенными в товаре на всем пути от производства до Ваших рук, при этом исключая из цепочки продажи всех лишних посредников. Бескомпромиссно оригинальный товар.',
     },
     {
-        icon: "mdi",
-        title: "Гарантия цены",
-        text: "Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras"
+        icon: 'mdi-brightness-percent',
+        title: 'Демократичные цены. Удобство оплаты и доставки',
+        text: 'Специалисты нашей компании осуществляют постоянный мониторинг и корректировку уровня цен на наиболее известных торговых площадках, а также отслеживают колебания курсов и ситуацию на рынке. Вы можете быть уверены, что цена покупки у нас будет демократична, выгодна и обоснована. Безналичные формы оплаты гарантируют прозрачность всех финансовых операций и обязательность сторон. Широкая сеть пунктов выдачи и вариантов доставки, а также репутация поставщика услуг, обеспечивает уверенность, что с вашим товаром в дороге ничего не случится.',
     },
-    {
-        icon: "mdi",
-        title: "Гарантия цены",
-        text: "Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras"
-    },
-    {
-        icon: "mdi",
-        title: "Гарантия цены",
-        text: "Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras"
-    },
-    {
-        icon: "mdi",
-        title: "Гарантия цены",
-        text: "Lorem ipsum dolor sit amet consectetur. Nulla dignissim dolor pharetra non accumsan tincidunt sed feugiat. Id lacus diam eget euismod sed. Tincidunt vel vel eget sed congue gravida habitant morbi lorem. In pharetra non nec tortor. Lacinia a ultrices in hac donec diam dui enim viverra. Vitae massa enim sed lacus sit. Congue ac cras"
-    }
-]
+];
