@@ -10,10 +10,19 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/LoginDto';
 import { Response } from 'express';
 
-const cookieOptions = {
-	secure: false,
-	httpOnly: true
+interface ICookieOptions {
+	secure: boolean,
+	httpOnly: boolean,
+	sameSite: "none" | "lax" | "strict" | boolean,
+	path: string
+}
+const cookieOptions: ICookieOptions = {
+	secure: process.env.NODE_ENV === 'production',
+	httpOnly: true,
+	sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+	path: '/'
 };
+
 @Controller('auth')
 export class AuthController {
 	constructor(

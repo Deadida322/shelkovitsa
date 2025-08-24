@@ -44,8 +44,13 @@ import { InitModule } from './init/init.module';
 		ServeStaticModule.forRoot({
 			rootPath: join(__dirname, '..', 'temp/dist')
 		}),
-		TelegrafModule.forRoot({
-			token: process.env.TELEGRAM_TOKEN
+		// TelegrafModule.forRoot({
+		// 	token: process.env.TELEGRAM_TOKEN
+		// }),
+		TelegrafModule.forRootAsync({
+			useFactory: () => ({
+				token: process.env.TELEGRAM_TOKEN
+			})
 		}),
 		ProductModule,
 		AuthModule,

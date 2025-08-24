@@ -42,7 +42,8 @@ export class OrderService {
 		@InjectRepository(Product)
 		private productRepository: Repository<Product>,
 		private dataSource: DataSource,
-		@InjectBot() private bot: Telegraf
+		@InjectBot()
+		private bot: Telegraf
 	) {}
 
 	async create(createOrderDto: CreateOrderDto, userId?: number) {
