@@ -5,7 +5,7 @@ export class ProductFileDto {
 	id!: number;
 
 	@Expose()
-	image!: string;
+	name!: string;
 
 	@Expose()
 	isLogo!: boolean;

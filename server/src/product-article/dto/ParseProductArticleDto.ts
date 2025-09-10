@@ -1,11 +1,13 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { ParseProductColorDto } from './ParseProductColorDto';
 
 export class ParseProductArticleDto {
 	@Expose()
 	article: string;
 
 	@Expose()
-	color: string;
+	@Type(() => ParseProductArticleDto)
+	color: ParseProductColorDto;
 
 	@Expose()
 	size: string;
@@ -15,4 +17,10 @@ export class ParseProductArticleDto {
 
 	@Expose()
 	price: number;
+
+	@Expose()
+	country?: string;
+
+	@Expose()
+	description?: string;
 }

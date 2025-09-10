@@ -6,4 +6,10 @@ export class ProductColorDto {
 
 	@Expose()
 	name!: string;
+
+	@Expose()
+	url?: string;
+
+	@Expose()
+	image?: string;
 }

@@ -23,7 +23,10 @@ export class InitService {
 			const data = workSheetsFromFile[1].data;
 			//отбираем 2 колонку
 			const allColors = Array.from(new Set(data.map((el) => el[1])));
-			const allColorsLower = allColors.map((el) => el.toLowerCase());
+
+			const allColorsLower = allColors
+				.filter((el) => typeof el === 'string' && !!el)
+				.map((el) => el.toLowerCase());
 
 			const existColors = await this.productColorRepository.find({});
 			const existColorNamesLower = existColors.map((el) => {
