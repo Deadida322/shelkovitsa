@@ -4,7 +4,7 @@ import { Request } from 'express';
 
 @Controller('product-size')
 export class ProductSizeController {
-	constructor(private productSizeService: ProductSizeService) {}
+	constructor(private readonly productSizeService: ProductSizeService) {}
 
 	@Get()
 	async getProductSizes(@Req() request: Request) {

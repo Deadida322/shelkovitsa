@@ -14,13 +14,16 @@ import { IS_AUTH } from 'src/decorators/auth';
 import { UserInRequest } from 'src/types/express/custom';
 import 'dotenv/config';
 import { ConfigService } from '@nestjs/config';
+import { UserService } from '../user/user.service';
+import { convertToClass } from 'src/helpers/convertHelper';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
 	constructor(
-		private jwtService: JwtService,
-		private reflector: Reflector,
-		private configService: ConfigService
+		private readonly jwtService: JwtService,
+		private readonly reflector: Reflector,
+		private readonly configService: ConfigService,
+		private readonly userService: UserService
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -49,14 +52,22 @@ export class AuthGuard implements CanActivate {
 		}
 
 		let payload: UserInRequest;
-		if (!!token) {
+		if (token) {
 			try {
 				payload = await this.jwtService.verifyAsync(token, {
 					secret: process.env.JWT_PUBLIC_KEY
 				});
+				const existUser = await this.userService.findOneByMailAndId(
+					payload.mail,
+					payload.id
+				);
+				if (!existUser) {
+					throw new Error('Нет такого пользователя');
+				}
+				payload = convertToClass(UserInRequest, existUser);
 			} catch (err) {
 				if (isAuth || isAdminAuth) {
-					throw new UnauthorizedException();
+					throw new UnauthorizedException(err);
 				}
 			}
 		}
@@ -73,21 +84,14 @@ export class AuthGuard implements CanActivate {
 			throw new UnauthorizedException();
 		} else if (!!isAdminAuth && !request.isAdmin) {
 			throw new ForbiddenException('У Вас нет доступа!');
-		} else {
 		}
 
 		return true;
 	}
 
-	// private extractTokenFromHeader(request: Request): string | undefined {
-	// 	if (!request.headers.access_token || request.headers.access_token.length < 5)
-	// 		return undefined;
-	// 	return String(request.headers.access_token ?? '') ?? undefined;
-	// }
-
 	private extractTokenFromCookie(request: Request): string | undefined {
 		if (!request.cookies.access_token || request.cookies.access_token.length < 5)
 			return undefined;
-		return String(request.cookies.access_token ?? '') ?? undefined;
+		return String(request?.cookies?.access_token ?? '') ?? undefined;
 	}
 }

@@ -12,7 +12,7 @@ import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSu
 
 @Controller('product-category')
 export class ProductCategoryController {
-	constructor(private productCategoryService: ProductCategoryService) {}
+	constructor(private readonly productCategoryService: ProductCategoryService) {}
 	@Get()
 	async getList(): Promise<ListProductCategoryDto[]> {
 		return this.productCategoryService.getList();

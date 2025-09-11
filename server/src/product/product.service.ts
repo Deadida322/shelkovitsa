@@ -6,26 +6,28 @@ import { baseWhere } from 'src/common/utils';
 import { GetDetailProductDto } from './dto/GetDetailProductDto';
 import { ProductDto } from './dto/ProductDto';
 import { convertToJson } from 'src/helpers/convertHelper';
+import { ProductAdminDto } from './dto/ProductAdminDto';
 
 @Injectable()
 export class ProductService {
 	constructor(
 		@InjectRepository(Product)
-		private productRepository: Repository<Product>
+		private readonly productRepository: Repository<Product>
 	) {}
 
-	async getProduct({
-		productArticleId,
-		productColorId,
-		productSizeId
-	}: GetDetailProductDto) {
+	async getProduct(
+		{ productArticleId, productColorId, productSizeId }: GetDetailProductDto,
+		isAdmin: boolean = false
+	) {
+		const productArticlePayload = {
+			id: productArticleId,
+			...baseWhere,
+			isVisible: !isAdmin && true
+		};
 		const p = await this.productRepository.findOne({
 			where: {
 				...baseWhere,
-				productArticle: {
-					id: productArticleId,
-					...baseWhere
-				},
+				productArticle: productArticlePayload,
 				productColor: {
 					id: productColorId,
 					...baseWhere
@@ -42,6 +44,9 @@ export class ProductService {
 
 		if (!p) {
 			throw new NotFoundException('Продукт не найден');
+		}
+		if (isAdmin) {
+			return convertToJson(ProductAdminDto, p);
 		}
 		return convertToJson(ProductDto, p);
 	}
