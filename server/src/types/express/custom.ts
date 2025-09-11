@@ -6,4 +6,6 @@ export class UserInRequest {
 	id!: number;
 	@Expose()
 	mail!: string;
+	@Expose()
+	fio!: string;
 }

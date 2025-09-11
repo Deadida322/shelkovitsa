@@ -34,7 +34,7 @@ import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 
 @Controller('product-article')
 export class ProductArticleController {
-	constructor(private productArticleService: ProductArticleService) {}
+	constructor(private readonly productArticleService: ProductArticleService) {}
 
 	// @AdminAuth()
 	// @Post('create')

@@ -10,8 +10,8 @@ import { convertToJson } from 'src/helpers/convertHelper';
 @Injectable()
 export class AuthService {
 	constructor(
-		private userService: UserService,
-		private jwtService: JwtService
+		private readonly userService: UserService,
+		private readonly jwtService: JwtService
 	) {}
 
 	async signIn(loginDto: LoginDto) {
@@ -26,7 +26,11 @@ export class AuthService {
 		if (user.is_deleted) {
 			throw new UnauthorizedException('Аккаунт удален!');
 		}
-		const payload: UserInRequest = { id: user.id, mail: user.mail };
+		const payload: UserInRequest = {
+			id: user.id,
+			mail: user.mail,
+			fio: user.fio
+		};
 		return {
 			user: convertToJson(UserDto, {
 				...user
@@ -35,7 +39,11 @@ export class AuthService {
 		};
 	}
 	async generateAccess(user: User): Promise<{ access_token: string }> {
-		const payload: UserInRequest = { id: user.id, mail: user.mail };
+		const payload: UserInRequest = {
+			id: user.id,
+			mail: user.mail,
+			fio: user.fio
+		};
 		return {
 			access_token: await this.jwtService.signAsync(payload)
 		};

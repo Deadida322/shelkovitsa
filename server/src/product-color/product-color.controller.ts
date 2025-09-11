@@ -6,7 +6,7 @@ import { AdminAuth } from 'src/decorators/adminAuth';
 
 @Controller('product-color')
 export class ProductColorController {
-	constructor(private productService: ProductColorService) {}
+	constructor(private readonly productService: ProductColorService) {}
 
 	@Get()
 	async getList(): Promise<ProductColorDto[]> {
