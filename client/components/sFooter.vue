@@ -1,21 +1,41 @@
 <template>
     <div class="s-footer">
         <div class="s-footer__col">
-            <div class="s-footer__title">SHELKOVITSA.RU</div>
-            <div class="s-footer__item">ОГРН: 10255323423423472</div>
-            <div class="s-footer__item">ООО “Магма”</div>
+            <div class="s-footer__title">
+                SHELKOVITSA.RU
+            </div>
+            <div class="s-footer__item">
+                ОГРН: 10255323423423472
+            </div>
+            <div class="s-footer__item">
+                ООО “Магма”
+            </div>
         </div>
         <div class="s-footer__col">
-            <div class="s-footer__title">КОНТАКТЫ</div>
-            <div class="s-footer__item">8 999 723 38 09</div>
-            <div class="s-footer__item">8 999 723 38 09</div>
+            <div class="s-footer__title">
+                КОНТАКТЫ
+            </div>
+            <div class="s-footer__item">
+                8 999 723 38 09
+            </div>
+            <div class="s-footer__item">
+                8 999 723 38 09
+            </div>
         </div>
         <div class="s-footer__col">
-            <div class="s-footer__title">ПРАВИЛА</div>
-            <div class="s-footer__item">Условия возврата товара</div>
-            <div class="s-footer__item">Политика конфиденциальности</div>
+            <div class="s-footer__title">
+                ПРАВИЛА
+            </div>
+            <div class="s-footer__item">
+                Условия возврата товара
+            </div>
+            <div class="s-footer__item">
+                Политика конфиденциальности
+            </div>
         </div>
-        <div class="s-footer__watermark">© Webgib 2024</div>
+        <div class="s-footer__watermark">
+            © Webgib 2024
+        </div>
     </div>
 </template>
 
@@ -27,7 +47,7 @@
         padding: 40px 160px;
         padding-bottom: 80px;
         position: relative;
-        
+
         @media screen and (max-width: 1000px) {
             padding: 40px;
             padding-bottom: 80px;
@@ -58,7 +78,7 @@
             border-bottom: 2px solid $primary;
             margin-bottom: 40px;
             padding-bottom: 4px;
-            
+
             @media screen and (max-width: 600px) {
                 font-size: 14px;
                 margin-bottom: 20px;

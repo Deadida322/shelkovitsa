@@ -137,7 +137,7 @@ function nextStep() {
                     </vs-tr>
                 </template>
             </vs-table>
-            <div v-else @click="navigateTo('/catalog')">
+            <div v-else class="link" @click="navigateTo('/catalog')">
                 <vs-alert
                     class="mt-4 alert"
                     color="success"
@@ -326,6 +326,9 @@ function nextStep() {
 </template>
 
 <style lang="scss">
+    .link {
+        cursor: pointer;
+    }
     .about-page {
         &__advantages {
             display: flex;

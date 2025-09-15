@@ -1,9 +1,10 @@
 <script setup>
-import { useCategoriesStore, useFiltersStore } from '#imports';
+import { useCategoriesStore, useFiltersStore, useRouter } from '#imports';
 
 const categoriesStore = useCategoriesStore();
 const filtersStore = useFiltersStore();
 const shopItems = ref([]);
+const router = useRouter();
 
 const { $api } = useNuxtApp();
 const page = ref(0);
@@ -20,6 +21,13 @@ const payload = computed(() => ({
             }
         : null),
 }));
+
+function clearFilters() {
+    filtersStore.filters = {};
+    filtersStore.clearFilters();
+    page.value = 0;
+    router.replace({ path: router.currentRoute.value.path });
+}
 
 const breadcrumbs = computed(() => {
     const result = ['Каталог'];
@@ -65,7 +73,7 @@ watch(payload, () => {
                 size="x-small"
                 icon="mdi-close"
                 variant="plain"
-                @click="filtersStore.clearFilters"
+                @click="clearFilters()"
             />
         </div>
         <vs-alert class="mt-2" color="#1A5CFF">
@@ -79,7 +87,7 @@ watch(payload, () => {
         <div class="shops-container">
             <div
                 v-for="(item, key) in shopItems"
-                :key="key"
+                :key="item.id + key"
                 class="shop-item"
             >
                 <s-shop-item
