@@ -23,15 +23,17 @@ watch(() => route.path, (val) => {
 <template>
     <vs-navbar v-model="active" shadow :center-collapsed="bp.isTablet || bp.isMobile || bp.isSmallMobile" padding-scroll>
         <template #left>
-            <div class="logo">
-                SHELKOVITSA
-            </div>
+            <nuxt-link to="/">
+                <div class="logo">
+                    SHELKOVITSA
+                </div>
+            </nuxt-link>
         </template>
         <vs-navbar-item
             v-for="item in menu"
             :id="item.to"
             :key="item.to"
-            :active="active == item.to"
+            :active="active === item.to"
         >
             <div>{{ item.title }} </div>
         </vs-navbar-item>

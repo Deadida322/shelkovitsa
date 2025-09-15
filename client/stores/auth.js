@@ -1,21 +1,32 @@
-import { defineStore } from "pinia";
+import { defineStore } from 'pinia';
 
-export const useAuthStore = defineStore("auth", () => {
-    const user = useCookie("user");
+export const useAuthStore = defineStore('auth', () => {
+    const user = useCookie('user');
 
     const api = $fetch.create({
-        baseURL: "http://localhost:8000",
-        credentials: "include"
+        baseURL: 'http://localhost:8000',
+        credentials: 'include',
     });
 
     const login = (body) => {
-        api("/api/auth/login", { method: "POST", body }).then((res) => {
+        api('/api/auth/login', { method: 'POST', body }).then((res) => {
             user.value = { ...res };
-            navigateTo({ path: "/deliver" });
+            navigateTo({ path: '/deliver' });
         });
+    };
+
+    const getMe = async () => {
+        if (user.value && user.value.fio) {
+            api('/api/auth/me').then((res) => {
+                user.value = { ...res };
+            }).catch(() => {
+                user.value = null;
+            });
+        }
     };
     return {
         user,
-        login
+        login,
+        getMe,
     };
 });
