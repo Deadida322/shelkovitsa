@@ -62,9 +62,6 @@ function onSubmit() {
                         <nuxt-link to="/signup">
                             Ещё нет аккаунта?
                         </nuxt-link>
-                        <nuxt-link to="/recover">
-                            Забыли пароль?
-                        </nuxt-link>
                     </div>
                 </template>
             </s-form>

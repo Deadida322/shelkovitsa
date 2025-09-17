@@ -1,9 +1,9 @@
 <script setup>
 import useBreakpoints from '@/composables/breakpoints';
 
+const emit = defineEmits(['update:open']);
 const bp = useBreakpoints();
 const attrs = useAttrs();
-
 // Force update after hydration to ensure correct breakpoint values
 onMounted(() => {
     // Trigger a reflow to ensure breakpoints are updated
@@ -15,7 +15,7 @@ onMounted(() => {
 
 <template>
     <vs-sidebar class="sidebar" v-bind="attrs" absolute>
-        <vs-sidebar-item id="/about" class="mr-4">
+        <vs-sidebar-item id="/" class="mr-4">
             <template #icon>
                 <v-icon size="small">
                     mdi-home-outline
@@ -50,13 +50,13 @@ onMounted(() => {
         <template #footer>
             <div class="footer d-flex flex-column">
                 <div v-if="bp.isSmallMobile" class="d-flex">
-                    <vs-button type="flat">
+                    <vs-button type="flat" @click="emit('update:open', false)">
                         <nuxt-link to="/signin">
                             Войти
                         </nuxt-link>
                     </vs-button>
                     <vs-button>
-                        <nuxt-link to="/signup">
+                        <nuxt-link to="/signup" @click="emit('update:open', false)">
                             Регистрация
                         </nuxt-link>
                     </vs-button>
