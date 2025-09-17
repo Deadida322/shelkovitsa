@@ -1,5 +1,25 @@
 <script setup>
-
+useHead({
+  title: 'Контакты - Шелковица',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Контактная информация интернет-магазина нижнего белья "Шелковица" - телефоны, адрес, карта проезда.' 
+    },
+    { 
+      name: 'keywords', 
+      content: 'контакты, телефоны, адрес, карта проезда, шелковица, интернет магазин белья' 
+    },
+    { property: 'og:title', content: 'Контакты - Шелковица' },
+    { property: 'og:description', content: 'Контактная информация интернет-магазина нижнего белья "Шелковица" - телефоны, адрес, карта проезда.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://ваш-сайт.рф/contacts' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://ваш-сайт.рф/contacts' }
+  ]
+});
 </script>
 
 <template>
@@ -34,6 +54,7 @@
                 width="100%"
                 height="500"
                 frameborder="0"
+                title="Карта проезда до Шелковица"
             />
         </div>
     </div>

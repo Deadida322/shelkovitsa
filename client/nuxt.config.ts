@@ -10,6 +10,17 @@ export default defineNuxtConfig({
                 { rel: 'apple-touch-icon', sizes: '180x180', href: './favs/apple-touch-icon.png' },
                 { rel: 'manifest', href: './favs/site.webmanifest' },
             ],
+            meta: [
+                { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+                { name: 'keywords', content: 'нижнее белье, купить белье, женское белье, интернет магазин белья, белье оптом, нижнее белье купить, нижнее белье интернет магазин' },
+                { name: 'author', content: 'Шелковица' },
+                { name: 'yandex-verification', content: '' },
+                { name: 'google-site-verification', content: '' },
+            ],
+            title: 'Шелковица - интернет-магазин нижнего белья',
+            htmlAttrs: {
+                lang: 'ru',
+            },
         },
     },
     modules: ['vuetify-nuxt-module', '@nuxt/eslint', '@pinia/nuxt'],
@@ -47,6 +58,31 @@ export default defineNuxtConfig({
         public: {
             apiBase: require('node:process').env.BASE_URL, // can be overridden by NUXT_PUBLIC_API_BASE environment variable
         },
+    },
+    routeRules: {
+        '/': {
+            prerender: true,
+            swr: true,
+        },
+        '/catalog': {
+            prerender: true,
+            swr: true,
+        },
+        '/catalog/**': {
+            swr: 3600,
+        },
+        '/about': {
+            prerender: true,
+        },
+        '/contacts': {
+            prerender: true,
+        },
+        '/deliver': {
+            prerender: true,
+        },
+    },
+    experimental: {
+        payloadExtraction: false,
     },
 
 });
