@@ -21,7 +21,12 @@ watch(() => route.path, (val) => {
 </script>
 
 <template>
-    <vs-navbar v-model="active" shadow :center-collapsed="bp.isTablet || bp.isMobile || bp.isSmallMobile" padding-scroll>
+    <vs-navbar
+        v-model="active"
+        shadow
+        :center-collapsed="bp.isTablet || bp.isMobile || bp.isSmallMobile"
+        padding-scroll
+    >
         <template #left>
             <nuxt-link to="/">
                 <div class="logo">
@@ -33,32 +38,38 @@ watch(() => route.path, (val) => {
             v-for="item in menu"
             :id="item.to"
             :key="item.to"
+            class="d-none d-sm-flex"
             :active="active === item.to"
         >
             <div>{{ item.title }} </div>
         </vs-navbar-item>
         <template #right>
-            <template v-if="!bp.isSmallMobile && !authStore.user">
-                <vs-button type="flat">
+            <template v-if="authStore.user">
+                <nuxt-link class="d-sm-none" to="/deliver">
+                    <v-btn variant="tonal" size="small" icon="mdi-cart-outline" />
+                </nuxt-link>
+            </template>
+            <template v-else>
+                <vs-button class="d-none d-sm-block" type="flat">
                     <nuxt-link to="/signin">
                         Войти
                     </nuxt-link>
                 </vs-button>
-                <vs-button>
+                <vs-button class="d-none d-sm-block">
                     <nuxt-link to="/signup">
                         Регистрация
                     </nuxt-link>
                 </vs-button>
             </template>
-            <template v-else>
-                <nuxt-link to="/deliver">
-                    <v-btn variant="tonal" append-icon="mdi-cart-outline">
-                        Профиль
-                    </v-btn>
-                </nuxt-link>
-            </template>
 
-            <v-btn v-if="bp.isTablet || bp.isMobile || bp.isSmallMobile" size="small" variant="tonal" class="ml-6" icon @click="mobileMenuVisible = !mobileMenuVisible">
+            <v-btn
+                v-if="bp.isTablet || bp.isMobile || bp.isSmallMobile"
+                size="small"
+                variant="tonal"
+                class="ml-6"
+                icon
+                @click="mobileMenuVisible = !mobileMenuVisible"
+            >
                 <v-icon>mdi-menu</v-icon>
             </v-btn>
         </template>

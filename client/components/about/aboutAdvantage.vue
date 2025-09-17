@@ -39,6 +39,8 @@ defineProps({
 
             @media screen and (max-width: 600px) {
                 padding: 12px;
+                flex-direction: column;
+                text-align: center;
             }
         }
 

@@ -9,7 +9,18 @@ const rePasswordValidation = computed(() => ({
 }));
 
 function onSubmit() {
-    $api('/api/auth/register', { method: 'POST', body: user.value }).catch(({ response }) => {
+    $api('/api/auth/register', { method: 'POST', body: user.value }).then(() => {
+        VsNotification({
+            title: 'Успех!',
+            content: 'Вы зарегистрированы!',
+            position: 'bottom-center',
+            border: 'success',
+            duration: 2000,
+        });
+        setTimeout(() => {
+            navigateTo('/signin');
+        }, 1000);
+    }).catch(({ response }) => {
         VsNotification({
             title: 'Ошибка!',
             content: response?._data?.error?.message,

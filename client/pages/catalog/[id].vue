@@ -16,7 +16,8 @@ const cartInfo = ref({
 
 const payload = ref({});
 const displayedImage = ref(``);
-const showImage = ref(false);
+const showImageViewer = ref(false);
+const imageViewerIndex = ref(0);
 
 function addToCart() {
     const item = {
@@ -27,7 +28,7 @@ function addToCart() {
         price: shopItem.value.price,
         amount: cartInfo.value.amount,
         maxAmount: shopItem.value.available,
-        logo: shopItem.value.productFiles.find(item => item.isLogo).image,
+        logo: shopItem.value.productFiles.find(item => item.isLogo).name,
     };
     cartStore.updateCart(item);
     notification({
@@ -38,8 +39,12 @@ function addToCart() {
 };
 
 const logo = computed(() => {
-    const logo = shopItem.value.productFiles.find(item => item.isLogo)?.image || shopItem.value.productFiles[0];
-    return `${base}/${logo}`;
+    const logo = shopItem.value.productFiles?.find(item => item.isLogo)?.name || shopItem.value.productFiles?.[0]?.name;
+    return logo ? `${base}/${logo}` : '';
+});
+
+const productImages = computed(() => {
+    return shopItem.value.productFiles?.map(file => `${base}/${file.name}`) || [];
 });
 
 watch(() => cartInfo.value.size, (val) => {
@@ -79,24 +84,26 @@ watch(cartInfo, async () => {
         });
     }
 }, { immediate: true, deep: true });
+
+function handleImageClick(image, index) {
+    displayedImage.value = image;
+    if (!showImageViewer.value) {
+        imageViewerIndex.value = index;
+        showImageViewer.value = true;
+    }
+};
 </script>
 
 <template>
     <div class="catalog-item-page catalog-item">
-        <div
-            v-if="showImage"
-            class="image-preview"
-            @click="showImage = false"
-        >
-            <v-img
-                :src="displayedImage"
-                width="90%"
-                height="90%"
-            />
-        </div>
         <h1 class="text-h6">
             {{ shopItem.name }}
         </h1>
+        <SImageViewer
+            v-model="showImageViewer"
+            :images="productImages"
+            :initial-index="imageViewerIndex"
+        />
         <div class="catalog-item__container d-flex">
             <div class="catalog-item__images mt-4">
                 <v-img
@@ -104,22 +111,22 @@ watch(cartInfo, async () => {
                     class="image-main"
                     height="200px"
                     :src="displayedImage"
-                    @click="showImage = true"
+                    @click="showImageViewer = true"
                 />
                 <s-carousel
                     class="images-carousel mt-4"
                     :items-per-page="1.8"
                 >
                     <s-slide
-                        v-for="({ image }, key) in shopItem.productFiles"
+                        v-for="({ name }, key) in shopItem.productFiles"
                         :key="key"
                     >
                         <v-img
                             cover
                             class="carousel-image"
                             height="100px"
-                            :src="`${base}/${image}`"
-                            @click="displayedImage = `${base}/${image}`"
+                            :src="`${base}/${name}`"
+                            @click="handleImageClick(`${base}/${name}`, key)"
                         />
                     </s-slide>
                 </s-carousel>
@@ -202,13 +209,26 @@ watch(cartInfo, async () => {
         &__container {
             width: 100%;
             justify-content: space-between;
+
+            @media screen and (max-width: 600px) {
+                flex-direction: column;
+            }
         }
         &__images {
             width: 40%;
 
+            @media screen and (max-width: 600px) {
+                width: 100%;
+            }
+
         }
         &__info {
             width: 58%;
+
+            @media screen and (max-width: 600px) {
+                width: 100%;
+            }
+
         }
     }
 
