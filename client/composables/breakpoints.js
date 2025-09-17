@@ -1,3 +1,5 @@
+// eslint-disable-next-line unicorn/prefer-node-protocol
+import process from 'process';
 import { useBreakpoints as bp } from '@vueuse/core';
 
 export default function useBreakpoints() {

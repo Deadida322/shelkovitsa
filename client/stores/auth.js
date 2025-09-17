@@ -1,18 +1,21 @@
+import { useCartStore } from '#imports';
 import { defineStore } from 'pinia';
 
 export const useAuthStore = defineStore('auth', () => {
     const user = useCookie('user');
     const config = useRuntimeConfig();
+    const cart = useCartStore();
     const api = $fetch.create({
         baseURL: config.public.apiBase,
         credentials: 'include',
     });
 
-    const login = (body) => {
-        api('/api/auth/login', { method: 'POST', body }).then((res) => {
+    const login = async (body) => {
+        await api('/api/auth/login', { method: 'POST', body }).then((res) => {
             user.value = { ...res };
             navigateTo({ path: '/deliver' });
         });
+        cart.mergeCartWithBackend();
     };
 
     const getMe = async () => {

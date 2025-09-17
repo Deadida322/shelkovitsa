@@ -15,7 +15,6 @@ export const useCartStore = defineStore('cart', () => {
             try {
                 const backendCart = await $api('/api/user/basket');
                 cart.value = Array.isArray(backendCart) ? backendCart : [];
-                cartCookie.value = [];
             }
             catch (error) {
                 console.error('Failed to fetch cart from backend:', error);
