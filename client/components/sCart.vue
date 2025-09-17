@@ -102,7 +102,7 @@ function onDelete(index) {
         transform: translateY(calc(100% - 60px));
 
         @media screen and (max-width: 1200px) {
-            width: 300px;
+            width: 400px;
         }
 
         @media screen and (max-width: 800px) {

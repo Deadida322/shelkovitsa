@@ -3,6 +3,12 @@ import adminCategories from '@/components/admin/categories';
 import adminOrders from '@/components/admin/orders';
 import adminProducts from '@/components/admin/products';
 
+definePageMeta({
+    middleware: [
+        'auth',
+    ],
+});
+
 const tab = ref('products');
 const tabs = ['products', 'orders', 'categories'];
 const componentsMap = {

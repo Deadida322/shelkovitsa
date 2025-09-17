@@ -22,6 +22,8 @@ const payload = computed(() => ({
         : null),
 }));
 
+const isProductsLoading = ref(true);
+
 function clearFilters() {
     filtersStore.filters = {};
     filtersStore.clearFilters();
@@ -39,9 +41,11 @@ const breadcrumbs = computed(() => {
 });
 
 watch(payload, () => {
+    isProductsLoading.value = true;
     $api('/api/product-article/getList', { method: 'POST', body: payload.value }).then((res) => {
         shopItems.value = res.data;
         totalItems.value = res.count;
+        isProductsLoading.value = false;
     });
 }, { immediate: true, deep: true });
 </script>
@@ -55,17 +59,17 @@ watch(payload, () => {
         <h2 class="text-h6 mt-sm-4 mb-4">
             Каталог
         </h2>
-        <client-only>
-            <vs-input
-                class="s-input"
-                placeholder="Поиск в категории"
-                icon-after
-            >
-                <template #icon>
-                    <v-icon>mdi-magnify</v-icon>
-                </template>
-            </vs-input>
-        </client-only>
+        <s-search-input-skeleton v-if="isProductsLoading" />
+        <vs-input
+            v-else
+            class="s-input"
+            placeholder="Поиск в категории"
+            icon-after
+        >
+            <template #icon>
+                <v-icon>mdi-magnify</v-icon>
+            </template>
+        </vs-input>
         <div v-if="breadcrumbs.length > 1" class="d-flex align-center">
             <v-breadcrumbs :items="breadcrumbs" />
             <v-btn
@@ -76,7 +80,7 @@ watch(payload, () => {
                 @click="clearFilters()"
             />
         </div>
-        <vs-alert class="mt-2" color="#1A5CFF">
+        <vs-alert v-if="!isProductsLoading" class="mt-2" color="#1A5CFF">
             <template #icon>
                 <v-icon size="40">
                     mdi-information
@@ -85,8 +89,21 @@ watch(payload, () => {
             По вашему запросу найдено {{ totalItems }} вариантов!
         </vs-alert>
         <div class="shops-container">
+            <template
+                v-if="isProductsLoading"
+            >
+                <div
+                    v-for="i in 6"
+                    :key="`skeleton-${i}`"
+                    class="shop-item"
+                >
+                    <s-shop-item-skeleton />
+                </div>
+            </template>
+
             <div
                 v-for="(item, key) in shopItems"
+                v-else
                 :key="item.id + key"
                 class="shop-item"
             >
@@ -98,6 +115,7 @@ watch(payload, () => {
         </div>
         <div class="d-flex justify-end mt-10">
             <vs-pagination
+                v-if="!isProductsLoading"
                 :model-value="page"
                 :layout="['prev', 'pager', 'next']"
                 :page-size="pageSize"
@@ -114,16 +132,19 @@ watch(payload, () => {
         gap: 14px;
         margin-top: 30px;
         grid-template-columns: repeat(3, 1fr);
-        .shop-item {
-            flex: 0 0 calc(33.3333% - 10px);
-            margin-bottom: 14px;
+        @media screen and (max-width: 800px) {
+            grid-template-columns: repeat(2, 1fr);
+        }
 
-            @media screen and (max-width: 800px) {
-                flex: 0 0 calc(50% - 10px);
+        @media screen and (max-width: 450px) {
+            grid-template-columns: repeat(1, 1fr);
+            .vs-card {
+                max-width: 100%;
             }
-
+        }
+        .shop-item {
+            margin-bottom: 14px;
             @media screen and (max-width: 450px) {
-                flex: 0 0 100%;
                 .vs-card {
                     max-width: 100%;
                 }
@@ -149,7 +170,7 @@ watch(payload, () => {
             border-radius: 12px;
 
             &-container {
-                height: 100%;
+                 height: 100%;
                 padding: 20px;
             }
         }

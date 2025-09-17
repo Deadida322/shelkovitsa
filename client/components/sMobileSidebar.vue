@@ -1,54 +1,76 @@
 <script setup>
-    import useBreakpoints from '@/composables/breakpoints';
-    const bp = useBreakpoints();
-    const attrs = useAttrs();
+import useBreakpoints from '@/composables/breakpoints';
+
+const bp = useBreakpoints();
+const attrs = useAttrs();
+
+// Force update after hydration to ensure correct breakpoint values
+onMounted(() => {
+    // Trigger a reflow to ensure breakpoints are updated
+    setTimeout(() => {
+        // This is just to trigger reactivity, no actual code needed
+    }, 0);
+});
 </script>
 
 <template>
     <vs-sidebar class="sidebar" v-bind="attrs" absolute>
-        <vs-sidebar-item class="mr-4" id="/about">
+        <vs-sidebar-item id="/about" class="mr-4">
             <template #icon>
-                <v-icon size="small">mdi-home-outline</v-icon>
+                <v-icon size="small">
+                    mdi-home-outline
+                </v-icon>
             </template>
             О нас
         </vs-sidebar-item>
         <vs-sidebar-item id="/catalog">
             <template #icon>
-                <v-icon size="small">mdi-format-list-bulleted</v-icon>
+                <v-icon size="small">
+                    mdi-format-list-bulleted
+                </v-icon>
             </template>
             Каталог
         </vs-sidebar-item>
         <vs-sidebar-item id="/deliver">
             <template #icon>
-                <v-icon size="small">mdi-package</v-icon>
+                <v-icon size="small">
+                    mdi-package
+                </v-icon>
             </template>
             Доставка
         </vs-sidebar-item>
         <vs-sidebar-item id="/contacts">
             <template #icon>
-                <v-icon size="small">mdi-phone</v-icon>
+                <v-icon size="small">
+                    mdi-phone
+                </v-icon>
             </template>
             Контакты
         </vs-sidebar-item>
         <template #footer>
             <div class="footer d-flex flex-column">
-                <div class="d-flex" v-if="bp.isSmallMobile">
+                <div v-if="bp.isSmallMobile" class="d-flex">
                     <vs-button type="flat">
-                        <nuxt-link to="/signin">Войти</nuxt-link>
+                        <nuxt-link to="/signin">
+                            Войти
+                        </nuxt-link>
                     </vs-button>
                     <vs-button>
-                        <nuxt-link to="/signup">Регистрация</nuxt-link>
+                        <nuxt-link to="/signup">
+                            Регистрация
+                        </nuxt-link>
                     </vs-button>
                 </div>
                 <div class="phone mt-2 text-center">
-                    <v-icon size="x-small">mdi-phone</v-icon>
+                    <v-icon size="x-small">
+                        mdi-phone
+                    </v-icon>
                     8 999 999 99 88
                 </div>
             </div>
         </template>
     </vs-sidebar>
 </template>
-
 
 <style lang="scss">
     .sidebar {

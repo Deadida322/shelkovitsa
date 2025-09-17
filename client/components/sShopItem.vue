@@ -8,7 +8,7 @@ const props = defineProps({
 
 const config = useRuntimeConfig();
 const base = config.public.apiBase;
-const getLogo = props.item.productFiles?.find(item => item.isLogo)?.image || props.item.productFiles?.[0];
+const getLogo = props.item.productFiles?.find(item => item.isLogo)?.name || props.item.productFiles?.[0];
 </script>
 
 <template>

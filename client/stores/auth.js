@@ -2,9 +2,9 @@ import { defineStore } from 'pinia';
 
 export const useAuthStore = defineStore('auth', () => {
     const user = useCookie('user');
-
+    const config = useRuntimeConfig();
     const api = $fetch.create({
-        baseURL: 'http://localhost:8000',
+        baseURL: config.public.apiBase,
         credentials: 'include',
     });
 

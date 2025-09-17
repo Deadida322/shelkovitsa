@@ -1,22 +1,25 @@
 import { useBreakpoints as bp } from '@vueuse/core';
-import { computed } from 'vue';
 
 export default function useBreakpoints() {
-    const breakpoints = bp({
-        smallMobile: 0,
-        mobile: 450,
-        tablet: 600,
-        laptop: 1000,
-        desktop: 1200,
-    });
+    const breakpoints = bp(
+        {
+            smallMobile: 0,
+            mobile: 450,
+            tablet: 600,
+            laptop: 1000,
+            desktop: 1200,
+        },
+        {
+            ssrWidth: process.server ? 1024 : undefined,
+        },
+    );
 
-    const active = breakpoints.active();
-
-    return computed(() => ({
-        isSmallMobile: active.value === 'smallMobile',
-        isMobile: active.value === 'mobile',
-        isTablet: active.value === 'tablet',
-        isLaptop: active.value === 'laptop',
-        isDesktop: active.value === 'desktop',
-    }));
-};
+    return {
+        isSmallMobile: breakpoints.smaller('mobile'),
+        isMobile: breakpoints.between('mobile', 'tablet'),
+        isTablet: breakpoints.between('tablet', 'laptop'),
+        isLaptop: breakpoints.between('laptop', 'desktop'),
+        isDesktop: breakpoints.greater('laptop'),
+        active: breakpoints.active(),
+    };
+}

@@ -40,7 +40,7 @@ import mockShops from '~/assets/js/mockShops';
         <div class="h2 text-h6 text-center mt-4">
             Обмен и возврат
         </div>
-        <div class="about-page__description mt-4 mb-4">
+        <div class="about-page__description text-center text-sm-left mt-4 mb-4">
             В интересах сохранения здоровья и безопасности наших клиентов, ставя во главу угла этические принципы и нормы действующего законодательства, мы строго соблюдаем установленный запрет на возврат и обмен швейных и трикотажных изделий (изделия швейные и трикотажные бельевые, изделия чулочно-носочные), переданных покупателю после оплаты, в соответствии с «Перечнем непродовольственных товаров надлежащего качества, не подлежащих обмену», утвержденным постановлением Правительства Российской Федерации от 31 декабря 2020 г. № 2463.
             Тем самым мы <b>гарантируем</b>, что купленный Вами товар не был в употреблении и не примерялся.
         </div>
@@ -66,7 +66,7 @@ import mockShops from '~/assets/js/mockShops';
     </div>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
 .s-shop-carousel {
         margin-top: 40px;
         display: flex;
@@ -84,7 +84,9 @@ import mockShops from '~/assets/js/mockShops';
     .header {
         &__title {
             color: $primary;
-
+            @media screen and (max-width: 768px) {
+                font-size: 50px !important;
+            }
         }
 
         &__image {
