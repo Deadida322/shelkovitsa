@@ -1,6 +1,29 @@
 <script setup>
 import advantages from '~/assets/js/advantages';
 import mockShops from '~/assets/js/mockShops';
+
+useHead({
+  title: 'О нас - Шелковица',
+  meta: [
+    { 
+      name: 'description', 
+      content: 'Информация о интернет-магазине нижнего белья "Шелковица" - история компании, наши преимущества, условия обмена и возврата товаров.' 
+    },
+    { 
+      name: 'keywords', 
+      content: 'о нас, шелковица, интернет магазин белья, история компании, преимущества, обмен и возврат' 
+    },
+    { property: 'og:title', content: 'О нас - Шелковица' },
+    { property: 'og:description', content: 'Информация о интернет-магазине нижнего белья "Шелковица" - история компании, наши преимущества, условия обмена и возврата товаров.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://ваш-сайт.рф/about' },
+    { property: 'og:image', content: '/main.webp' },
+    { name: 'twitter:card', content: 'summary_large_image' },
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://ваш-сайт.рф/about' }
+  ]
+});
 </script>
 
 <template>
@@ -12,6 +35,7 @@ import mockShops from '~/assets/js/mockShops';
                 src="/main.webp"
                 cover
                 height="400px"
+                alt="Шелковица - интернет-магазин нижнего белья"
             >
                 <div class="d-flex flex-column justify-center align-center header__image-container">
                     <div class="text-h2 header__title">

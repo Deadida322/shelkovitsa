@@ -40,6 +40,29 @@ function nextStep() {
         cartStore.clearCart();
     });
 }
+
+// Добавляем SEO улучшения без удаления существующего кода
+useHead({
+    title: 'Корзина и доставка - Шелковица',
+    meta: [
+        {
+            name: 'description',
+            content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.',
+        },
+        {
+            name: 'keywords',
+            content: 'корзина, заказ, доставка, оформление заказа, шелковица, интернет магазин белья',
+        },
+        { property: 'og:title', content: 'Корзина и доставка - Шелковица' },
+        { property: 'og:description', content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: 'https://ваш-сайт.рф/deliver' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+    ],
+    link: [
+        { rel: 'canonical', href: 'https://ваш-сайт.рф/deliver' },
+    ],
+});
 </script>
 
 <template>

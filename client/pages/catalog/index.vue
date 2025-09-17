@@ -48,6 +48,29 @@ watch(payload, () => {
         isProductsLoading.value = false;
     });
 }, { immediate: true, deep: true });
+
+// Добавляем SEO улучшения без удаления существующего кода
+useHead({
+    title: 'Каталог товаров - Шелковица',
+    meta: [
+        {
+            name: 'description',
+            content: 'Каталог товаров интернет-магазина нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества.',
+        },
+        {
+            name: 'keywords',
+            content: 'каталог, товары, нижнее белье, женское белье, мужское белье, белье купить, каталог белья',
+        },
+        { property: 'og:title', content: 'Каталог товаров - Шелковица' },
+        { property: 'og:description', content: 'Каталог товаров интернет-магазина нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества.' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: 'https://ваш-сайт.рф/catalog' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+    ],
+    link: [
+        { rel: 'canonical', href: 'https://ваш-сайт.рф/catalog' },
+    ],
+});
 </script>
 
 <template>
