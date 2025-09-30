@@ -25,6 +25,10 @@ function onCountDown(count, index) {
         cartStore.removeItem(index);
 }
 
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения на странице доставки:', event.target.src);
+}
+
 const step = ref(1);
 
 function nextStep() {
@@ -124,7 +128,8 @@ useHead({
                                 cover
                                 width="64px"
                                 height="64px"
-                                :src="`${base}/${tr.logo}`"
+                                :src="`${base}/static/${tr.logo}`"
+                                @error="handleImageError"
                             />
                         </vs-td>
                         <vs-td>

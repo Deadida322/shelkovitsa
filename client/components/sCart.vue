@@ -13,6 +13,10 @@ function onDelete(index) {
         cartStore.cart.splice(index, 1);
     }
 }
+
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения в корзине:', event.target.src);
+}
 </script>
 
 <template>
@@ -45,7 +49,7 @@ function onDelete(index) {
         <div class="s-cart__body">
             <template v-if="cartStore.cart.length">
                 <div v-for="(item, index) in cartStore.cart" :key="item.count" class="s-cart__item cart-item">
-                    <v-img max-width="64px" height="64px" cover width="64px" class="cart-item__image" :rounded="8" :src="`${base}/${item.logo}`" />
+                    <v-img max-width="64px" height="64px" cover width="64px" class="cart-item__image" :rounded="8" :src="`${base}/static/${item.logo}`" @error="handleImageError" />
                     <div class="cart-item__text">
                         <div class="cart-item__title">
                             {{ item.name }}

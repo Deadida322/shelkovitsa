@@ -46,6 +46,10 @@ async function updateImage(image) {
     });
 };
 
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения в админке:', event.target.src);
+}
+
 async function updateProduct() {
     await $api('/api/product-article/admin/productArticle', { method: 'PATCH', body: { productArticleId: item.value.id, ...item.value } },
     ).then(() => {
@@ -190,7 +194,8 @@ watch(() => props.visible, async () => {
                             cover
                             class="carousel-image"
                             height="200px"
-                            :src="`${config.public.apiBase}/${file.name}`"
+                            :src="`${config.public.apiBase}/static/${file.name}`"
+                            @error="handleImageError"
                         >
                             <div class="d-flex pa-2">
                                 <v-btn

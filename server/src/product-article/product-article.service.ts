@@ -526,10 +526,10 @@ export class ProductArticleService {
 			throw new BadRequestException('Не найдено такого продукта');
 		}
 		const isLogo = productArticle.productFiles.length == 0;
-		const image = await moveFileToStatic(payload.image);
+		const name = await moveFileToStatic(payload.image);
 
 		await this.productFileRepository.save({
-			image,
+			name,
 			isLogo,
 			product: productArticle
 		});
@@ -543,7 +543,7 @@ export class ProductArticleService {
 		});
 
 		if (!file) {
-			throw new BadRequestException('Не найдено такого файла');
+			throw new NotFoundException('Не найдено такого файла');
 		}
 
 		await removeFile(file.name);
