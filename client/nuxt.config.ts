@@ -71,8 +71,14 @@ export default defineNuxtConfig({
         '/catalog/**': {
             swr: 3600,
         },
-        '/about': {
-            prerender: true,
+        '/admin': {
+            ssr: false,
+        },
+        '/signin': {
+            ssr: false,
+        },
+        '/signup': {
+            ssr: false,
         },
         '/contacts': {
             prerender: true,

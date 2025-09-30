@@ -64,11 +64,11 @@ useHead({
         { property: 'og:title', content: 'Каталог товаров - Шелковица' },
         { property: 'og:description', content: 'Каталог товаров интернет-магазина нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества.' },
         { property: 'og:type', content: 'website' },
-        { property: 'og:url', content: 'https://ваш-сайт.рф/catalog' },
+        { property: 'og:url', content: 'https://shelkovitsa.ru/catalog' },
         { name: 'twitter:card', content: 'summary_large_image' },
     ],
     link: [
-        { rel: 'canonical', href: 'https://ваш-сайт.рф/catalog' },
+        { rel: 'canonical', href: 'https://shelkovitsa.ru/catalog' },
     ],
 });
 </script>

@@ -4,18 +4,14 @@ import useBreakpoints from '@/composables/breakpoints';
 const emit = defineEmits(['update:open']);
 const bp = useBreakpoints();
 const attrs = useAttrs();
-// Force update after hydration to ensure correct breakpoint values
-onMounted(() => {
-    // Trigger a reflow to ensure breakpoints are updated
-    setTimeout(() => {
-        // This is just to trigger reactivity, no actual code needed
-    }, 0);
-});
+function onItemClick() {
+    emit('update:open', false);
+}
 </script>
 
 <template>
     <vs-sidebar class="sidebar" v-bind="attrs" absolute>
-        <vs-sidebar-item id="/" class="mr-4">
+        <vs-sidebar-item id="/" class="mr-4" @click="onItemClick">
             <template #icon>
                 <v-icon size="small">
                     mdi-home-outline
@@ -23,7 +19,7 @@ onMounted(() => {
             </template>
             О нас
         </vs-sidebar-item>
-        <vs-sidebar-item id="/catalog">
+        <vs-sidebar-item id="/catalog" @click="onItemClick">
             <template #icon>
                 <v-icon size="small">
                     mdi-format-list-bulleted
@@ -31,7 +27,7 @@ onMounted(() => {
             </template>
             Каталог
         </vs-sidebar-item>
-        <vs-sidebar-item id="/deliver">
+        <vs-sidebar-item id="/deliver" @click="onItemClick">
             <template #icon>
                 <v-icon size="small">
                     mdi-package
@@ -39,7 +35,7 @@ onMounted(() => {
             </template>
             Доставка
         </vs-sidebar-item>
-        <vs-sidebar-item id="/contacts">
+        <vs-sidebar-item id="/contacts" @click="onItemClick">
             <template #icon>
                 <v-icon size="small">
                     mdi-phone

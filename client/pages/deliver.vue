@@ -1,6 +1,6 @@
 <script setup>
 import { useCartStore, useMappingStore, useOrderStore } from '#imports';
-import { mask as vMask } from 'vue-the-mask';
+import { VueMaskDirective as vMask } from 'v-mask';
 import { VsNotification } from 'vuesax-alpha';
 
 definePageMeta({
@@ -56,11 +56,11 @@ useHead({
         { property: 'og:title', content: 'Корзина и доставка - Шелковица' },
         { property: 'og:description', content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.' },
         { property: 'og:type', content: 'website' },
-        { property: 'og:url', content: 'https://ваш-сайт.рф/deliver' },
+        { property: 'og:url', content: 'https://shelkovitsa.ru/deliver' },
         { name: 'twitter:card', content: 'summary_large_image' },
     ],
     link: [
-        { rel: 'canonical', href: 'https://ваш-сайт.рф/deliver' },
+        { rel: 'canonical', href: 'https://shelkovitsa.ru/deliver' },
     ],
 });
 </script>

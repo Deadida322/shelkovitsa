@@ -99,9 +99,9 @@ function onSubmit() {
                         <nuxt-link to="/signin">
                             Уже есть аккаунт?
                         </nuxt-link>
-                        <nuxt-link to="/recover">
+                        <!-- <nuxt-link to="/recover">
                             Забыли пароль?
-                        </nuxt-link>
+                        </nuxt-link> -->
                     </div>
                 </template>
             </s-form>

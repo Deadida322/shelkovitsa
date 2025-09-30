@@ -67,14 +67,14 @@ function updateSEO() {
             { property: 'og:title', content: `${shopItem.value.name} - Шелковица` },
             { property: 'og:description', content: shopItem.value.description || `Купить ${shopItem.value.name} в интернет-магазине "Шелковица". Высокое качество, демократичные цены, доставка по всей России.` },
             { property: 'og:type', content: 'product' },
-            { property: 'og:url', content: `https://ваш-сайт.рф/catalog/${route.params.id}` },
+            { property: 'og:url', content: `https://shelkovitsa.ru/catalog/${route.params.id}` },
             { property: 'og:image', content: logo.value || '/main.webp' },
             { name: 'twitter:card', content: 'summary_large_image' },
             { name: 'product:price:amount', content: shopItem.value.price?.toString() || '0' },
             { name: 'product:price:currency', content: 'RUB' },
         ],
         link: [
-            { rel: 'canonical', href: `https://ваш-сайт.рф/catalog/${route.params.id}` },
+            { rel: 'canonical', href: `https://shelkovitsa.ru/catalog/${route.params.id}` },
         ],
     });
 }
