@@ -8,4 +8,6 @@ export class UserInRequest {
 	mail!: string;
 	@Expose()
 	fio!: string;
+	@Expose()
+	isAdmin?: boolean;
 }
