@@ -109,6 +109,11 @@ const headers = [
             show-expand
             @update:options="getOrders"
         >
+            <template #no-data>
+                <div class="text-center pa-4">
+                    Нет данных
+                </div>
+            </template>
             <template #expanded-row="{ item, columns }">
                 <tr>
                     <td :colspan="columns.length">

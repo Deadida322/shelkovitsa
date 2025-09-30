@@ -41,11 +41,11 @@ function addToCart() {
 
 const logo = computed(() => {
     const logo = shopItem.value.productFiles?.find(item => item.isLogo)?.name || shopItem.value.productFiles?.[0]?.name;
-    return logo ? `${base}/${logo}` : '';
+    return logo ? `${base}/static/${logo}` : '';
 });
 
 const productImages = computed(() => {
-    return shopItem.value.productFiles?.map(file => `${base}/${file.name}`) || [];
+    return shopItem.value.productFiles?.map(file => `${base}/static/${file.name}`) || [];
 });
 
 // Функция для обновления SEO информации
@@ -137,6 +137,12 @@ function handleImageClick(image, index) {
         showImageViewer.value = true;
     }
 };
+
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения:', event.target.src);
+    // Можно добавить fallback изображение
+    // event.target.src = '/placeholder.jpg';
+};
 </script>
 
 <template>
@@ -159,6 +165,7 @@ function handleImageClick(image, index) {
                         height="200px"
                         :src="displayedImage"
                         @click="showImageViewer = true"
+                        @error="handleImageError"
                     />
                     <s-carousel
                         class="images-carousel mt-4"
@@ -172,8 +179,9 @@ function handleImageClick(image, index) {
                                 cover
                                 class="carousel-image"
                                 height="100px"
-                                :src="`${base}/${name}`"
-                                @click="handleImageClick(`${base}/${name}`, key)"
+                                :src="`${base}/static/${name}`"
+                                @click="handleImageClick(`${base}/static/${name}`, key)"
+                                @error="handleImageError"
                             />
                         </s-slide>
                     </s-carousel>

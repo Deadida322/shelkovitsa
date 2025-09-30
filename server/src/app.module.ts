@@ -42,7 +42,8 @@ import { InitModule } from './init/init.module';
 			isGlobal: true
 		}),
 		ServeStaticModule.forRoot({
-			rootPath: join(__dirname, '..', 'temp/dist')
+			rootPath: join(__dirname, '..', 'temp/dist'),
+			serveRoot: '/static'
 		}),
 		// TelegrafModule.forRoot({
 		// 	token: process.env.TELEGRAM_TOKEN
