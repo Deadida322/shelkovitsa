@@ -16,12 +16,12 @@ useHead({
         { property: 'og:title', content: 'Шелковица - интернет-магазин нижнего белья' },
         { property: 'og:description', content: 'Интернет-магазин нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества, демократичные цены, доставка по всей России.' },
         { property: 'og:type', content: 'website' },
-        { property: 'og:url', content: 'https://ваш-сайт.рф' },
+        { property: 'og:url', content: 'https://shelkovitsa.ru' },
         { property: 'og:image', content: '/main.webp' },
         { name: 'twitter:card', content: 'summary_large_image' },
     ],
     link: [
-        { rel: 'canonical', href: 'https://ваш-сайт.рф/' },
+        { rel: 'canonical', href: 'https://shelkovitsa.ru/' },
     ],
 });
 </script>

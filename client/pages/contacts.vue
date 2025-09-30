@@ -13,11 +13,11 @@ useHead({
     { property: 'og:title', content: 'Контакты - Шелковица' },
     { property: 'og:description', content: 'Контактная информация интернет-магазина нижнего белья "Шелковица" - телефоны, адрес, карта проезда.' },
     { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://ваш-сайт.рф/contacts' },
+    { property: 'og:url', content: 'https://shelkovitsa.ru/contacts' },
     { name: 'twitter:card', content: 'summary_large_image' },
   ],
   link: [
-    { rel: 'canonical', href: 'https://ваш-сайт.рф/contacts' }
+    { rel: 'canonical', href: 'https://shelkovitsa.ru/contacts' }
   ]
 });
 </script>

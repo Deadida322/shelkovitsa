@@ -190,7 +190,7 @@ watch(() => props.visible, async () => {
                             cover
                             class="carousel-image"
                             height="200px"
-                            :src="`${config.public.apiBase}/${file.image}`"
+                            :src="`${config.public.apiBase}/${file.name}`"
                         >
                             <div class="d-flex pa-2">
                                 <v-btn

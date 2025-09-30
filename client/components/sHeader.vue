@@ -63,10 +63,9 @@ watch(() => route.path, (val) => {
             </template>
 
             <v-btn
-                v-if="bp.isTablet || bp.isMobile || bp.isSmallMobile"
+                class="d-sm-none d-block ml-6"
                 size="small"
                 variant="tonal"
-                class="ml-6"
                 icon
                 @click="mobileMenuVisible = !mobileMenuVisible"
             >

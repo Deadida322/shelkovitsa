@@ -7,6 +7,10 @@ defineProps({
         type: String,
         default: 'Отправить',
     },
+    loading: {
+        type: Boolean,
+        default: false,
+    },
 });
 const emit = defineEmits(['submit']);
 const $v = useVuelidate();
@@ -34,7 +38,7 @@ function submit() {
                 <slot name="actions-prepend" />
             </div>
             <div class="actions__append">
-                <vs-button @click="submit">
+                <vs-button :disabled="loading" :loading="loading" @click="submit">
                     {{ buttonLabel }}
                 </vs-button>
                 <slot name="actions-append" />
