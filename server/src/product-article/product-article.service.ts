@@ -36,12 +36,7 @@ import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import * as moment from 'moment';
 import { UploadImageDto } from './dto/UploadImageDto';
-import {
-	existsFile,
-	getColorsPath,
-	moveFileToStatic,
-	removeFile
-} from 'src/helpers/storageHelper';
+import { getColorsPath, moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { CommonImageDto } from './dto/CommonImageDto';
@@ -166,11 +161,22 @@ export class ProductArticleService {
 				)
 			};
 		}
-		if (payload.name) {
-			wherePayload = { ...wherePayload, name: ILike(payload.name) };
-		}
+
 		if (!isAdmin) {
 			wherePayload = { ...wherePayload, ...baseProductWhere };
+		}
+
+		if (payload.query) {
+			wherePayload = [
+				{
+					...wherePayload,
+					article: ILike(`%${payload.query}%`)
+				},
+				{
+					...wherePayload,
+					name: ILike(`%${payload.query}%`)
+				}
+			];
 		}
 
 		const [result, total] = await this.productArticleRepository.findAndCount({

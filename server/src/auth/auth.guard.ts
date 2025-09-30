@@ -81,7 +81,7 @@ export class AuthGuard implements CanActivate {
 
 		if (!!isAuth && !request.user) {
 			throw new UnauthorizedException();
-		} else if (!!isAdminAuth && !request.isAdmin) {
+		} else if (!!isAdminAuth && !request.user.isAdmin) {
 			throw new ForbiddenException('У Вас нет доступа!');
 		}
 
