@@ -85,8 +85,10 @@ export class AuthController {
 	@Auth()
 	async getMe(@Req() request: Request): Promise<UserDto> {
 		if (request.user) {
+			const isAdmin = await this.authService.isUserAdmin(request.user);
 			return convertToJson(UserDto, {
-				...request.user
+				...request.user,
+				isAdmin
 			});
 		}
 		return null;

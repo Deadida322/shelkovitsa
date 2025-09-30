@@ -6,4 +6,6 @@ export class UserDto {
 	mail: string;
 	@Expose()
 	fio: string;
+	@Expose()
+	isAdmin?: boolean;
 }

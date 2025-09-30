@@ -16,6 +16,7 @@ import 'dotenv/config';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { convertToClass } from 'src/helpers/convertHelper';
+import { AuthService } from './auth.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -23,7 +24,8 @@ export class AuthGuard implements CanActivate {
 		private readonly jwtService: JwtService,
 		private readonly reflector: Reflector,
 		private readonly configService: ConfigService,
-		private readonly userService: UserService
+		private readonly userService: UserService,
+		private readonly authService: AuthService
 	) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -74,15 +76,12 @@ export class AuthGuard implements CanActivate {
 
 		if (payload) {
 			request.user = payload;
-		}
-
-		if (payload?.id == ownerId) {
-			request.isAdmin = true;
+			request.user.isAdmin = await this.authService.isUserAdmin(payload);
 		}
 
 		if (!!isAuth && !request.user) {
 			throw new UnauthorizedException();
-		} else if (!!isAdminAuth && !request.isAdmin) {
+		} else if (!!isAdminAuth && !request.user.isAdmin) {
 			throw new ForbiddenException('У Вас нет доступа!');
 		}
 
