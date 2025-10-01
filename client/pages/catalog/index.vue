@@ -1,5 +1,6 @@
 <script setup>
 import { useCategoriesStore, useFiltersStore, useRouter } from '#imports';
+import { debounce } from 'lodash';
 
 const categoriesStore = useCategoriesStore();
 const filtersStore = useFiltersStore();
@@ -9,10 +10,18 @@ const router = useRouter();
 const { $api } = useNuxtApp();
 const page = ref(0);
 const pageSize = ref(6);
+const search = ref('');
+
+const updateSearch = debounce(() => {
+    filtersStore.filters.search = search.value;
+    page.value = 0;
+    router.replace({ path: router.currentRoute.value.path });
+}, 500);
 
 const totalItems = ref(6);
 const payload = computed(() => ({
     page: page.value,
+    search: filtersStore.filters.search,
     itemsPerPage: pageSize.value,
     ...(filtersStore.filters.subcategory
         ? {
@@ -21,6 +30,8 @@ const payload = computed(() => ({
             }
         : null),
 }));
+
+watch(search, updateSearch);
 
 const isProductsLoading = ref(true);
 
@@ -85,6 +96,7 @@ useHead({
         <s-search-input-skeleton v-if="isProductsLoading" />
         <vs-input
             v-else
+            v-model="search"
             class="s-input"
             placeholder="Поиск в категории"
             icon-after
