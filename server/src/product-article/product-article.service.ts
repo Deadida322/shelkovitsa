@@ -296,23 +296,62 @@ export class ProductArticleService {
 							url: row[5] ?? ''
 						},
 						size: row[6] ?? '',
-						amount: Number(row[18] ?? -1),
-						price: Number(row[7] ?? -1),
+						amount: Number(row[18] ?? 0),
+						price: Number(row[7] ?? 0),
 						country: row[9] ?? '',
 						description: row[10] ?? ''
 					};
 
-					// !!! TODO переделать функцию валидации
-					const values = Object.values(product);
-					if (values.filter((el) => !!el).length === 0) {
-					} else if (values.includes('') || values.includes(-1)) {
+					// Функция для проверки пустых значений на любом уровне вложенности
+					const hasEmptyValues = (obj: any): boolean => {
+						if (
+							obj === null ||
+							obj === undefined ||
+							obj === '' ||
+							obj === 0
+						) {
+							return true;
+						}
+						if (typeof obj === 'object') {
+							return Object.values(obj).some((value) =>
+								hasEmptyValues(value)
+							);
+						}
+						return false;
+					};
+
+					// Функция для проверки заполненных значений на любом уровне вложенности
+					const hasFilledValues = (obj: any): boolean => {
+						if (
+							obj === null ||
+							obj === undefined ||
+							obj === '' ||
+							obj === 0
+						) {
+							return false;
+						}
+						if (typeof obj === 'object') {
+							return Object.values(obj).some((value) =>
+								hasFilledValues(value)
+							);
+						}
+						return true;
+					};
+
+					const hasEmpty = hasEmptyValues(product);
+					const hasFilled = hasFilledValues(product);
+
+					if (!hasFilled) {
+						// Если все поля пустые - ничего не делаем
+					} else if (hasEmpty) {
+						// Если есть хотя бы одно заполненное, но есть и пустые - ошибка
 						errorRows.push([
 							...row,
 							'',
-							'В строке пустые или отрицательные значения'
+							'В строке есть пустые или нулевые значения'
 						]);
 					} else {
-						console.log(JSON.stringify(product));
+						console.log(`Спаршенный продукт: ${JSON.stringify(product)}`);
 						product.article = String(product.article).trim();
 						product.color.name = capitalizeFirstLetter(
 							String(product.color.name).trim()
