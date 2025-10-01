@@ -1,5 +1,6 @@
 <script setup>
 import { useCategoriesStore } from '#imports';
+
 import { VsNotification } from 'vuesax-alpha';
 import { VFileUpload } from 'vuetify/labs/VFileUpload';
 
@@ -13,7 +14,7 @@ const props = defineProps({
         default: false,
     },
 });
-const emit = defineEmits(['update:visible', 'update:model-value']);
+const emit = defineEmits(['update:visible', 'update:model-value', 'updateProduct']);
 const categoriesStore = useCategoriesStore();
 const config = useRuntimeConfig();
 const { $api } = useNuxtApp();
@@ -51,8 +52,10 @@ function handleImageError(event) {
 }
 
 async function updateProduct() {
-    await $api('/api/product-article/admin/productArticle', { method: 'PATCH', body: { productArticleId: item.value.id, ...item.value } },
-    ).then(() => {
+    await $api('/api/product-article/admin/productArticle', {
+        method: 'PATCH',
+        body: { productArticleId: item.value.id, ...item.value },
+    }).then(() => {
         loading.value = false;
         VsNotification({
             title: 'Отлично!',
@@ -61,7 +64,9 @@ async function updateProduct() {
             border: 'success',
         });
         getProduct();
+        emit('updateProduct');
     }).catch(() => {
+        getProduct();
         VsNotification({
             title: 'Ошибка!',
             content: 'Продукт не был обновлён',
@@ -121,7 +126,9 @@ async function getProduct() {
     });
 }
 
-watch(() => props.visible, async () => {
+watch(() => props.visible, async (value) => {
+    if (!value)
+        return;
     item.value = props.modelValue;
     getProduct();
 });
@@ -175,6 +182,13 @@ watch(() => props.visible, async () => {
                 <v-switch
                     v-model="item.isVisible"
                     label="Продукт видимый?"
+                    hide-details
+                    color="red"
+                    @update:model-value="updateProduct"
+                />
+                <v-switch
+                    v-model="item.is_deleted"
+                    label="Продукт удалён?"
                     hide-details
                     color="red"
                     @update:model-value="updateProduct"
