@@ -1,9 +1,4 @@
-import {
-	BadRequestException,
-	Injectable,
-	InternalServerErrorException,
-	NotFoundException
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { baseWhere, filterDuplicateObjectById } from 'src/common/utils';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
@@ -46,25 +41,25 @@ import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 @Injectable()
 export class ProductArticleService {
 	constructor(
-		private dataSource: DataSource,
+		private readonly dataSource: DataSource,
 
 		@InjectRepository(Product)
-		private productRepository: Repository<Product>,
+		private readonly productRepository: Repository<Product>,
 
 		@InjectRepository(ProductArticle)
-		private productArticleRepository: Repository<ProductArticle>,
+		private readonly productArticleRepository: Repository<ProductArticle>,
 
 		@InjectRepository(ProductColor)
-		private productColorRepository: Repository<ProductColor>,
+		private readonly productColorRepository: Repository<ProductColor>,
 
 		@InjectRepository(ProductSize)
-		private productSizeRepository: Repository<ProductSize>,
+		private readonly productSizeRepository: Repository<ProductSize>,
 
 		@InjectRepository(ProductSubcategory)
-		private productSubcategoryRepository: Repository<ProductSubcategory>,
+		private readonly productSubcategoryRepository: Repository<ProductSubcategory>,
 
 		@InjectRepository(ProductFile)
-		private productFileRepository: Repository<ProductFile>
+		private readonly productFileRepository: Repository<ProductFile>
 	) {}
 
 	async getProductArticle(
@@ -348,7 +343,7 @@ export class ProductArticleService {
 						errorRows.push([
 							...row,
 							'',
-							'В строке есть пустые или нулевые значения'
+							`В строке ${index + 1} есть пустые или нулевые значения`
 						]);
 					} else {
 						console.log(`Спаршенный продукт: ${JSON.stringify(product)}`);
