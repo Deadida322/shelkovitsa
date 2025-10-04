@@ -12,7 +12,10 @@
 - `step-by-step-setup.md` - пошаговая инструкция по настройке (рекомендуется)
 - `deployment-guide.md` - подробное руководство по развертыванию
 - `troubleshooting-ports.md` - решение проблем с портами nginx
+- `troubleshooting-acme.md` - решение проблем с ACME challenge (Let's Encrypt)
 - `fix-port-conflicts.sh` - скрипт для исправления конфликтов портов
+- `fix-acme-challenge.sh` - скрипт для исправления ACME challenge
+- `nginx-fixed-acme.conf` - конфигурация nginx с исправленным ACME challenge
 - `enable-https.sh` - скрипт для включения HTTPS редиректа после получения SSL
 
 ## Быстрый старт
