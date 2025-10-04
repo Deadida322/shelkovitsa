@@ -201,6 +201,28 @@ sudo apt install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d shelkovitsa.ru -d www.shelkovitsa.ru
 ```
 
+**Если возникает ошибка "Address already in use":**
+
+```bash
+# Остановка nginx
+sudo systemctl stop nginx
+
+# Проверка занятых портов
+sudo netstat -tlnp | grep :80
+
+# Использование исправленной конфигурации (без порта 8080)
+sudo cp nginx-http-only.conf /etc/nginx/nginx.conf
+
+# Проверка конфигурации
+sudo nginx -t
+
+# Запуск nginx
+sudo systemctl start nginx
+
+# Повторная попытка получения сертификата
+sudo certbot --nginx -d shelkovitsa.ru -d www.shelkovitsa.ru
+```
+
 Certbot автоматически:
 - Получит сертификат
 - Обновит конфигурацию nginx
