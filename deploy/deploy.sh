@@ -49,7 +49,8 @@ log_info "Начинаем развертывание проекта Shelkovitsa
 # 1. Обновление из Git
 log_info "Шаг 1: Обновление кода из Git"
 cd $PROJECT_DIR
-git pull origin main
+# git pull origin main
+git pull
 log_success "Код обновлен из Git"
 
 # 2. Создание резервной копии
