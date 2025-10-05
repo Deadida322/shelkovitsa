@@ -59,19 +59,28 @@ mkdir -p $BACKUP_DIR
 cp -r $PROJECT_DIR $BACKUP_DIR/ 2>/dev/null || log_warning "Резервная копия не создана (первое развертывание?)"
 log_success "Резервная копия создана: $BACKUP_DIR"
 
-# 3. Установка зависимостей Backend
-log_info "Шаг 3: Установка зависимостей Backend"
+# 3. Настройка прав доступа для npm
+log_info "Шаг 3: Настройка прав доступа для npm"
+chown -R www-data:www-data $PROJECT_DIR
+chmod -R 755 $PROJECT_DIR
+# Создаем директории для npm кэша
+mkdir -p /root/.npm
+chown -R root:root /root/.npm
+log_success "Права доступа настроены"
+
+# 4. Установка зависимостей Backend
+log_info "Шаг 4: Установка зависимостей Backend"
 cd $PROJECT_DIR/server
-npm i --production
+npm ci --omit=dev
 log_success "Зависимости Backend установлены"
 
-# 4. Сборка Backend
-log_info "Шаг 4: Сборка Backend"
+# 5. Сборка Backend
+log_info "Шаг 5: Сборка Backend"
 npm run build
 log_success "Backend собран"
 
-# 5. Временный запуск Backend для генерации Frontend
-log_info "Шаг 5: Временный запуск Backend для генерации Frontend"
+# 6. Временный запуск Backend для генерации Frontend
+log_info "Шаг 6: Временный запуск Backend для генерации Frontend"
 # Создаем временный процесс для Backend
 cd $PROJECT_DIR/server
 PORT=8000 nohup node dist/main.js > /tmp/backend-temp.log 2>&1 &
@@ -92,30 +101,24 @@ for i in {1..30}; do
     sleep 2
 done
 
-# 6. Установка зависимостей Frontend
-log_info "Шаг 6: Установка зависимостей Frontend"
+# 8. Установка зависимостей Frontend
+log_info "Шаг 8: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
 npm i --force
 log_success "Зависимости Frontend установлены"
 
-# 7. Сборка Frontend (с работающим Backend)
-log_info "Шаг 7: Сборка Frontend (Backend должен быть запущен)"
+# 9. Сборка Frontend (с работающим Backend)
+log_info "Шаг 9: Сборка Frontend (Backend должен быть запущен)"
 npm run build
 log_success "Frontend собран"
 
-# 8. Остановка временного Backend
-log_info "Шаг 8: Остановка временного Backend"
+# 10. Остановка временного Backend
+log_info "Шаг 10: Остановка временного Backend"
 kill $BACKEND_PID 2>/dev/null || log_warning "Backend процесс уже остановлен"
 log_success "Временный Backend остановлен"
 
-# 9. Настройка прав доступа
-log_info "Шаг 9: Настройка прав доступа"
-chown -R www-data:www-data $PROJECT_DIR
-chmod -R 755 $PROJECT_DIR
-log_success "Права доступа настроены"
-
-# 10. Настройка systemd сервисов
-log_info "Шаг 10: Настройка systemd сервисов"
+# 11. Настройка systemd сервисов
+log_info "Шаг 11: Настройка systemd сервисов"
 
 # Backend сервис
 cat > /etc/systemd/system/shelkovitsa-backend.service << EOF
@@ -162,8 +165,8 @@ EOF
 
 log_success "Systemd сервисы настроены"
 
-# 11. Перезапуск сервисов
-log_info "Шаг 11: Перезапуск сервисов"
+# 12. Перезапуск сервисов
+log_info "Шаг 12: Перезапуск сервисов"
 systemctl daemon-reload
 systemctl enable shelkovitsa-backend
 systemctl enable shelkovitsa-frontend
@@ -171,8 +174,8 @@ systemctl restart shelkovitsa-backend
 systemctl restart shelkovitsa-frontend
 log_success "Сервисы перезапущены"
 
-# 12. Настройка nginx
-log_info "Шаг 12: Настройка nginx"
+# 13. Настройка nginx
+log_info "Шаг 13: Настройка nginx"
 cp $PROJECT_DIR/deploy/nginx.conf /etc/nginx/nginx.conf
 
 # Проверка конфигурации nginx
@@ -185,8 +188,8 @@ else
     exit 1
 fi
 
-# 13. Проверка статуса
-log_info "Шаг 13: Проверка статуса сервисов"
+# 14. Проверка статуса
+log_info "Шаг 14: Проверка статуса сервисов"
 
 # Проверка Backend
 if systemctl is-active --quiet shelkovitsa-backend; then
@@ -212,12 +215,12 @@ else
     systemctl status nginx --no-pager
 fi
 
-# 14. Проверка портов
-log_info "Шаг 14: Проверка портов"
+# 15. Проверка портов
+log_info "Шаг 15: Проверка портов"
 netstat -tlnp | grep -E ':(8000|3000|80|443)' || log_warning "Некоторые порты не найдены"
 
-# 15. Тест доступности
-log_info "Шаг 15: Тест доступности"
+# 16. Тест доступности
+log_info "Шаг 16: Тест доступности"
 
 # Тест Backend
 if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/health | grep -q "200"; then
