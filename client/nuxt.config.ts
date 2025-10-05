@@ -56,35 +56,52 @@ export default defineNuxtConfig({
     runtimeConfig: {
         apiSecret: '', // can be overridden by NUXT_API_SECRET environment variable
         public: {
-            apiBase: require('node:process').env.BASE_URL, // can be overridden by NUXT_PUBLIC_API_BASE environment variable
+            apiBase: process.env.BASE_URL || '', // Базовый URL без /api префикса
         },
     },
     routeRules: {
-        '/': {
+        // Главная страница с популярными товарами (частое обновление)
+        '/': { 
             prerender: true,
-            swr: true,
+            swr: 1800, // Обновление каждые 30 минут
+            headers: { 'cache-control': 's-maxage=1800' }
         },
-        '/catalog': {
+        '/catalog': { 
             prerender: true,
-            swr: true,
+            swr: 1800, // Обновление каждые 30 минут
+            headers: { 'cache-control': 's-maxage=1800' }
         },
-        '/catalog/**': {
-            swr: 3600,
+        '/catalog/**': { 
+            prerender: true,
+            swr: 3600, // Обновление каждый час
+            headers: { 'cache-control': 's-maxage=3600' }
         },
-        '/admin': {
+        '/contacts': { 
+            prerender: true,
+            headers: { 'cache-control': 's-maxage=31536000' }
+        },
+        '/deliver': { 
+            prerender: true,
+            swr: 7200, // Обновление каждые 2 часа
+            headers: { 'cache-control': 's-maxage=7200' }
+        },
+        
+        // SPA страницы (требуют авторизации)
+        '/admin': { 
             ssr: false,
+            headers: { 'cache-control': 'no-cache' }
         },
-        '/signin': {
+        '/signin': { 
             ssr: false,
+            headers: { 'cache-control': 'no-cache' }
         },
-        '/signup': {
+        '/signup': { 
             ssr: false,
+            headers: { 'cache-control': 'no-cache' }
         },
-        '/contacts': {
-            prerender: true,
-        },
-        '/deliver': {
-            prerender: true,
+        '/recover': { 
+            ssr: false,
+            headers: { 'cache-control': 'no-cache' }
         },
     },
     experimental: {
