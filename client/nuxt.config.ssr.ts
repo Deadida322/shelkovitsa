@@ -1,5 +1,5 @@
 /* eslint-disable ts/no-require-imports */
-// https://nuxt.com/docs/api/configuration/nuxt-config
+// Конфигурация для SSR (Server-Side Rendering)
 export default defineNuxtConfig({
     app: {
         head: {
@@ -23,9 +23,11 @@ export default defineNuxtConfig({
             },
         },
     },
+    
     modules: ['vuetify-nuxt-module', '@nuxt/eslint', '@pinia/nuxt'],
     devtools: { enabled: false },
     css: ['~/assets/main.scss'],
+    
     vite: {
         css: {
             preprocessorOptions: {
@@ -40,8 +42,8 @@ export default defineNuxtConfig({
                 host: 'localhost',
             },
         },
-
     },
+    
     hooks: {
         'vite:extendConfig': function (viteInlineConfig) {
             viteInlineConfig.server = {
@@ -53,60 +55,46 @@ export default defineNuxtConfig({
             };
         },
     },
+    
     runtimeConfig: {
-        apiSecret: '', // can be overridden by NUXT_API_SECRET environment variable
+        apiSecret: '',
         public: {
-            apiBase: require('node:process').env.BASE_URL, // can be overridden by NUXT_PUBLIC_API_BASE environment variable
+            apiBase: process.env.BASE_URL || 'http://localhost:3000',
         },
     },
+    
+    // SSR для всех страниц
     routeRules: {
         // SSR страницы с кэшированием
         '/': { 
             ssr: true,
-            swr: 3600, // Кэширование на 1 час
-            headers: { 'cache-control': 's-maxage=3600' }
+            swr: 3600 // Кэширование на 1 час
         },
         '/catalog': { 
             ssr: true,
-            swr: 1800, // Кэширование на 30 минут
-            headers: { 'cache-control': 's-maxage=1800' }
+            swr: 1800 // Кэширование на 30 минут
         },
         '/catalog/**': { 
             ssr: true,
-            swr: 3600, // Кэширование на 1 час
-            headers: { 'cache-control': 's-maxage=3600' }
+            swr: 3600 // Кэширование на 1 час
         },
         '/contacts': { 
             ssr: true,
-            swr: 7200, // Кэширование на 2 часа
-            headers: { 'cache-control': 's-maxage=7200' }
+            swr: 7200 // Кэширование на 2 часа
         },
         '/deliver': { 
             ssr: true,
-            swr: 7200, // Кэширование на 2 часа
-            headers: { 'cache-control': 's-maxage=7200' }
+            swr: 7200 // Кэширование на 2 часа
         },
         
         // SPA страницы (требуют авторизации)
-        '/admin': { 
-            ssr: false,
-            headers: { 'cache-control': 'no-cache' }
-        },
-        '/signin': { 
-            ssr: false,
-            headers: { 'cache-control': 'no-cache' }
-        },
-        '/signup': { 
-            ssr: false,
-            headers: { 'cache-control': 'no-cache' }
-        },
-        '/recover': { 
-            ssr: false,
-            headers: { 'cache-control': 'no-cache' }
-        },
+        '/admin': { ssr: false },
+        '/signin': { ssr: false },
+        '/signup': { ssr: false },
+        '/recover': { ssr: false },
     },
+    
     experimental: {
         payloadExtraction: false,
     },
-
 });

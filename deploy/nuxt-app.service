@@ -1,0 +1,36 @@
+[Unit]
+Description=Nuxt.js Shelkovitsa App
+Documentation=https://nuxt.com/
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/shelkovitsa/client
+ExecStart=/usr/bin/node .output/server/index.mjs
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=NUXT_PUBLIC_API_BASE=https://shelkovitsa.ru/api
+
+# Безопасность
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/shelkovitsa/client
+ReadWritePaths=/var/log/pm2
+
+# Ограничения ресурсов
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nuxt-app
+
+[Install]
+WantedBy=multi-user.target

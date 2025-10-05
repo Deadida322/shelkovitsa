@@ -1,5 +1,5 @@
 /* eslint-disable ts/no-require-imports */
-// https://nuxt.com/docs/api/configuration/nuxt-config
+// Оптимизированная гибридная конфигурация
 export default defineNuxtConfig({
     app: {
         head: {
@@ -23,9 +23,11 @@ export default defineNuxtConfig({
             },
         },
     },
+    
     modules: ['vuetify-nuxt-module', '@nuxt/eslint', '@pinia/nuxt'],
     devtools: { enabled: false },
     css: ['~/assets/main.scss'],
+    
     vite: {
         css: {
             preprocessorOptions: {
@@ -40,8 +42,8 @@ export default defineNuxtConfig({
                 host: 'localhost',
             },
         },
-
     },
+    
     hooks: {
         'vite:extendConfig': function (viteInlineConfig) {
             viteInlineConfig.server = {
@@ -53,38 +55,39 @@ export default defineNuxtConfig({
             };
         },
     },
+    
     runtimeConfig: {
-        apiSecret: '', // can be overridden by NUXT_API_SECRET environment variable
+        apiSecret: '',
         public: {
-            apiBase: require('node:process').env.BASE_URL, // can be overridden by NUXT_PUBLIC_API_BASE environment variable
+            apiBase: process.env.BASE_URL || 'http://localhost:3000',
         },
     },
+    
+    // Оптимизированные правила маршрутизации
     routeRules: {
-        // SSR страницы с кэшированием
+        // Статические страницы (максимальная производительность)
         '/': { 
-            ssr: true,
-            swr: 3600, // Кэширование на 1 час
-            headers: { 'cache-control': 's-maxage=3600' }
-        },
-        '/catalog': { 
-            ssr: true,
-            swr: 1800, // Кэширование на 30 минут
-            headers: { 'cache-control': 's-maxage=1800' }
-        },
-        '/catalog/**': { 
-            ssr: true,
-            swr: 3600, // Кэширование на 1 час
-            headers: { 'cache-control': 's-maxage=3600' }
+            prerender: true,
+            headers: { 'cache-control': 's-maxage=31536000' }
         },
         '/contacts': { 
-            ssr: true,
-            swr: 7200, // Кэширование на 2 часа
-            headers: { 'cache-control': 's-maxage=7200' }
+            prerender: true,
+            headers: { 'cache-control': 's-maxage=31536000' }
         },
         '/deliver': { 
-            ssr: true,
-            swr: 7200, // Кэширование на 2 часа
-            headers: { 'cache-control': 's-maxage=7200' }
+            prerender: true,
+            headers: { 'cache-control': 's-maxage=31536000' }
+        },
+        
+        // Каталог с ISR (Incremental Static Regeneration)
+        '/catalog': { 
+            prerender: true,
+            swr: 3600, // Обновление каждые 2 часа
+            headers: { 'cache-control': 's-maxage=3600' }
+        },
+        '/catalog/**': { 
+            swr: 1800, // Обновление каждые 30 минут
+            headers: { 'cache-control': 's-maxage=1800' }
         },
         
         // SPA страницы (требуют авторизации)
@@ -105,8 +108,8 @@ export default defineNuxtConfig({
             headers: { 'cache-control': 'no-cache' }
         },
     },
+    
     experimental: {
         payloadExtraction: false,
     },
-
 });
