@@ -33,7 +33,7 @@ async function bootstrap() {
 	app.enableCors({
 		credentials: true,
 		// origin: '*'
-		origin: process.env.CORS
+		origin: process.env.CORS ?? process.env.CORS.split(',').map(origin => origin.trim())
 	});
 
 	// Если используете HTTPS — разрешите прокси-заголовки
