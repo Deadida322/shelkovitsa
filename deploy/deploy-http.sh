@@ -1,13 +1,10 @@
 #!/bin/bash
-# Единый скрипт развертывания для проекта Shelkovitsa
-# Домен: shelkovitsa.ru
-# Backend: NestJS на порту 8000
-# Frontend: Nuxt.js на порту 3000 (гибридный режим)
+# Скрипт развертывания с HTTP (без SSL) для отладки
 
 set -e
 
-echo "🚀 Развертывание проекта Shelkovitsa"
-echo "=================================="
+echo "🚀 Развертывание проекта Shelkovitsa (HTTP режим)"
+echo "=============================================="
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -43,12 +40,11 @@ fi
 PROJECT_DIR="/var/www/shelkovitsa"
 DOMAIN="shelkovitsa.ru"
 
-log_info "Начинаем развертывание проекта Shelkovitsa"
+log_info "Начинаем развертывание проекта Shelkovitsa (HTTP режим)"
 
 # 1. Обновление из Git
 log_info "Шаг 1: Обновление кода из Git"
 cd $PROJECT_DIR
-# git pull origin main
 git pull
 log_success "Код обновлен из Git"
 
@@ -56,7 +52,6 @@ log_success "Код обновлен из Git"
 log_info "Шаг 2: Настройка прав доступа для npm"
 chown -R www-data:www-data $PROJECT_DIR
 chmod -R 755 $PROJECT_DIR
-# Создаем директории для npm кэша
 mkdir -p /root/.npm
 chown -R root:root /root/.npm
 log_success "Права доступа настроены"
@@ -72,14 +67,121 @@ log_info "Шаг 4: Сборка Backend"
 npm run build
 log_success "Backend собран"
 
-# 5. Настройка nginx (ДО запуска Backend!)
-log_info "Шаг 5: Настройка nginx"
-cp $PROJECT_DIR/deploy/nginx.conf /etc/nginx/nginx.conf
+# 5. Создание HTTP-only конфигурации nginx
+log_info "Шаг 5: Создание HTTP-only конфигурации nginx"
+cat > /etc/nginx/nginx.conf << 'EOF'
+user www-data;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+    use epoll;
+    multi_accept on;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    
+    access_log /var/log/nginx/access.log main;
+    
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    client_max_body_size 20M;
+    
+    # Gzip сжатие
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/json
+        application/javascript
+        application/xml+rss
+        application/atom+xml
+        image/svg+xml;
+    
+    # Upstream для NestJS API
+    upstream api_backend {
+        server 127.0.0.1:8000;
+        keepalive 32;
+    }
+    
+    # Upstream для Nuxt.js
+    upstream nuxt_backend {
+        server 127.0.0.1:3000;
+        keepalive 32;
+    }
+    
+    # HTTP сервер
+    server {
+        listen 80;
+        server_name shelkovitsa.ru www.shelkovitsa.ru localhost;
+        
+        # API маршруты - проксирование к NestJS
+        location /api/ {
+            proxy_pass http://api_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+            
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+        }
+        
+        # Статические файлы API
+        location /static/ {
+            proxy_pass http://api_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+        
+        # Frontend - проксирование к Nuxt.js
+        location / {
+            proxy_pass http://nuxt_backend;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+}
+EOF
 
 # Проверка конфигурации nginx
 if nginx -t; then
     systemctl reload nginx
-    log_success "Nginx настроен и перезагружен"
+    log_success "Nginx настроен (HTTP режим)"
 else
     log_error "Ошибка в конфигурации nginx"
     nginx -t
@@ -97,24 +199,19 @@ log_info "Backend запущен с PID: $BACKEND_PID"
 log_info "Ожидание запуска Backend..."
 sleep 10
 
-# Проверяем, что Backend отвечает через nginx
-log_info "Проверка доступности Backend через nginx..."
+# Проверяем, что Backend отвечает
+log_info "Проверка доступности Backend..."
 for i in {1..30}; do
-    # Проверяем прямой доступ к Backend
     if curl -s http://localhost:8000/api/health > /dev/null 2>&1; then
         log_success "Backend отвечает на порту 8000"
-        # Проверяем доступ через nginx
         if curl -s http://localhost/api/health > /dev/null 2>&1; then
             log_success "Backend готов к работе через nginx"
             break
         else
             log_warning "Backend работает, но nginx не проксирует запросы"
-            # Показываем статус nginx
-            systemctl status nginx --no-pager
         fi
     else
         log_info "Ожидание Backend... ($i/30)"
-        # Показываем логи Backend для отладки
         if [ -f /tmp/backend-temp.log ]; then
             log_info "Последние строки логов Backend:"
             tail -5 /tmp/backend-temp.log
@@ -123,7 +220,7 @@ for i in {1..30}; do
     sleep 2
 done
 
-# Дополнительная проверка эндпоинтов
+# Проверка API эндпоинтов
 log_info "Проверка API эндпоинтов..."
 if curl -s http://localhost/api/product-category > /dev/null 2>&1; then
     log_success "API эндпоинт /api/product-category доступен"
@@ -143,24 +240,24 @@ else
     log_warning "API эндпоинт /api/product-color недоступен"
 fi
 
-# 8. Установка зависимостей Frontend
-log_info "Шаг 8: Установка зависимостей Frontend"
+# 7. Установка зависимостей Frontend
+log_info "Шаг 7: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
 npm i --force
 log_success "Зависимости Frontend установлены"
 
-# 9. Сборка Frontend (с работающим Backend через nginx)
-log_info "Шаг 9: Сборка Frontend (Backend доступен через nginx)"
+# 8. Сборка Frontend (с работающим Backend через nginx)
+log_info "Шаг 8: Сборка Frontend (Backend доступен через nginx)"
 npm run build
 log_success "Frontend собран"
 
-# 10. Остановка временного Backend
-log_info "Шаг 10: Остановка временного Backend"
+# 9. Остановка временного Backend
+log_info "Шаг 9: Остановка временного Backend"
 kill $BACKEND_PID 2>/dev/null || log_warning "Backend процесс уже остановлен"
 log_success "Временный Backend остановлен"
 
-# 11. Настройка systemd сервисов
-log_info "Шаг 11: Настройка systemd сервисов"
+# 10. Настройка systemd сервисов
+log_info "Шаг 10: Настройка systemd сервисов"
 
 # Backend сервис
 cat > /etc/systemd/system/shelkovitsa-backend.service << EOF
@@ -199,7 +296,7 @@ Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=3000
-Environment=NUXT_PUBLIC_API_BASE=https://$DOMAIN
+Environment=NUXT_PUBLIC_API_BASE=http://$DOMAIN
 
 [Install]
 WantedBy=multi-user.target
@@ -207,8 +304,8 @@ EOF
 
 log_success "Systemd сервисы настроены"
 
-# 12. Перезапуск сервисов
-log_info "Шаг 12: Перезапуск сервисов"
+# 11. Перезапуск сервисов
+log_info "Шаг 11: Перезапуск сервисов"
 systemctl daemon-reload
 systemctl enable shelkovitsa-backend
 systemctl enable shelkovitsa-frontend
@@ -216,8 +313,8 @@ systemctl restart shelkovitsa-backend
 systemctl restart shelkovitsa-frontend
 log_success "Сервисы перезапущены"
 
-# 13. Проверка статуса
-log_info "Шаг 13: Проверка статуса сервисов"
+# 12. Проверка статуса
+log_info "Шаг 12: Проверка статуса сервисов"
 
 # Проверка Backend
 if systemctl is-active --quiet shelkovitsa-backend; then
@@ -243,12 +340,12 @@ else
     systemctl status nginx --no-pager
 fi
 
-# 14. Проверка портов
-log_info "Шаг 14: Проверка портов"
-netstat -tlnp | grep -E ':(8000|3000|80|443)' || log_warning "Некоторые порты не найдены"
+# 13. Проверка портов
+log_info "Шаг 13: Проверка портов"
+netstat -tlnp | grep -E ':(8000|3000|80)' || log_warning "Некоторые порты не найдены"
 
-# 15. Тест доступности
-log_info "Шаг 15: Тест доступности"
+# 14. Тест доступности
+log_info "Шаг 14: Тест доступности"
 
 # Тест Backend через nginx
 if curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health | grep -q "200"; then
@@ -272,7 +369,7 @@ else
 fi
 
 echo ""
-log_success "🎉 Развертывание завершено!"
+log_success "🎉 Развертывание завершено (HTTP режим)!"
 echo ""
 echo "📊 Полезные команды:"
 echo "  systemctl status shelkovitsa-backend"
@@ -283,6 +380,8 @@ echo "  journalctl -u shelkovitsa-frontend -f"
 echo "  tail -f /var/log/nginx/access.log"
 echo ""
 echo "🌐 Проверьте работу сайта:"
-echo "  http://$DOMAIN (редирект на HTTPS)"
-echo "  https://$DOMAIN"
+echo "  http://$DOMAIN"
+echo "  http://localhost"
 echo ""
+echo "🔧 Для диагностики проблем:"
+echo "  sudo ./deploy/debug-backend.sh"
