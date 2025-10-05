@@ -60,30 +60,29 @@ export default defineNuxtConfig({
         },
     },
     routeRules: {
-        // SSR страницы с кэшированием
+        // Главная страница с популярными товарами (частое обновление)
         '/': { 
-            ssr: true,
-            swr: 3600, // Кэширование на 1 час
-            headers: { 'cache-control': 's-maxage=3600' }
+            prerender: true,
+            swr: 1800, // Обновление каждые 30 минут
+            headers: { 'cache-control': 's-maxage=1800' }
         },
         '/catalog': { 
-            ssr: true,
-            swr: 1800, // Кэширование на 30 минут
+            prerender: true,
+            swr: 1800, // Обновление каждые 30 минут
             headers: { 'cache-control': 's-maxage=1800' }
         },
         '/catalog/**': { 
-            ssr: true,
-            swr: 3600, // Кэширование на 1 час
+            prerender: true,
+            swr: 3600, // Обновление каждый час
             headers: { 'cache-control': 's-maxage=3600' }
         },
         '/contacts': { 
-            ssr: true,
-            swr: 7200, // Кэширование на 2 часа
-            headers: { 'cache-control': 's-maxage=7200' }
+            prerender: true,
+            headers: { 'cache-control': 's-maxage=31536000' }
         },
         '/deliver': { 
-            ssr: true,
-            swr: 7200, // Кэширование на 2 часа
+            prerender: true,
+            swr: 7200, // Обновление каждые 2 часа
             headers: { 'cache-control': 's-maxage=7200' }
         },
         
