@@ -40,12 +40,20 @@ PROJECT_DIR="/var/www/shelkovitsa"
 
 log_info "Исправление прав доступа для проекта Shelkovitsa"
 
-# 1. Создание директорий для npm
-log_info "Шаг 1: Создание директорий для npm"
+# 1. Создание директорий для npm и Backend
+log_info "Шаг 1: Создание директорий для npm и Backend"
 mkdir -p /root/.npm
 mkdir -p /home/www-data/.npm
 mkdir -p $PROJECT_DIR/server/node_modules
 mkdir -p $PROJECT_DIR/client/node_modules
+
+# Создаем необходимые директории для Backend
+mkdir -p $PROJECT_DIR/server/temp/src
+mkdir -p $PROJECT_DIR/server/temp/dest
+mkdir -p $PROJECT_DIR/server/docs
+mkdir -p $PROJECT_DIR/server/static
+mkdir -p $PROJECT_DIR/server/logs
+mkdir -p $PROJECT_DIR/client/logs
 log_success "Директории созданы"
 
 # 2. Настройка прав доступа
@@ -54,6 +62,18 @@ chown -R root:root /root/.npm
 chown -R www-data:www-data /home/www-data/.npm
 chown -R www-data:www-data $PROJECT_DIR
 chmod -R 755 $PROJECT_DIR
+
+# Дополнительные права для Backend директорий
+chown -R www-data:www-data $PROJECT_DIR/server/temp
+chown -R www-data:www-data $PROJECT_DIR/server/docs
+chown -R www-data:www-data $PROJECT_DIR/server/static
+chown -R www-data:www-data $PROJECT_DIR/server/logs
+chown -R www-data:www-data $PROJECT_DIR/client/logs
+chmod -R 755 $PROJECT_DIR/server/temp
+chmod -R 755 $PROJECT_DIR/server/docs
+chmod -R 755 $PROJECT_DIR/server/static
+chmod -R 755 $PROJECT_DIR/server/logs
+chmod -R 755 $PROJECT_DIR/client/logs
 log_success "Права доступа настроены"
 
 # 3. Очистка npm кэша

@@ -54,6 +54,19 @@ chown -R www-data:www-data $PROJECT_DIR
 chmod -R 755 $PROJECT_DIR
 mkdir -p /root/.npm
 chown -R root:root /root/.npm
+
+# Создаем необходимые директории для Backend
+log_info "Создание необходимых директорий для Backend"
+mkdir -p $PROJECT_DIR/server/temp/src
+mkdir -p $PROJECT_DIR/server/temp/dest
+mkdir -p $PROJECT_DIR/server/docs
+mkdir -p $PROJECT_DIR/server/static
+chown -R www-data:www-data $PROJECT_DIR/server/temp
+chown -R www-data:www-data $PROJECT_DIR/server/docs
+chown -R www-data:www-data $PROJECT_DIR/server/static
+chmod -R 755 $PROJECT_DIR/server/temp
+chmod -R 755 $PROJECT_DIR/server/docs
+chmod -R 755 $PROJECT_DIR/server/static
 log_success "Права доступа настроены"
 
 # 3. Установка зависимостей Backend
