@@ -9,12 +9,12 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3000,
-        NUXT_PUBLIC_API_BASE: 'https://shelkovitsa.ru/api'
+        NUXT_PUBLIC_API_BASE: 'https://shelkovitsa.ru'
       },
       env_production: {
         NODE_ENV: 'production',
         PORT: 3000,
-        NUXT_PUBLIC_API_BASE: 'https://shelkovitsa.ru/api'
+        NUXT_PUBLIC_API_BASE: 'https://shelkovitsa.ru'
       },
       // Настройки перезапуска
       autorestart: true,
