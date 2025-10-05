@@ -160,9 +160,9 @@ fi
 log_info "Шаг 8: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
 # Очищаем node_modules и package-lock.json для чистой установки
-rm -rf node_modules package-lock.json
+# rm -rf node_modules package-lock.json
 # Устанавливаем зависимости с force для решения конфликтов
-npm install --force
+npm install
 log_success "Зависимости Frontend установлены"
 
 # 9. Сборка Frontend (с работающим Backend через nginx)
