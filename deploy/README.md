@@ -67,10 +67,11 @@ sudo ./deploy/deploy.sh
 
 **⚠️ Важно**: Frontend зависит от Backend API во время сборки. Скрипт автоматически:
 1. Собирает Backend
-2. Временно запускает Backend
-3. Собирает Frontend (с доступным API)
-4. Останавливает временный Backend
-5. Запускает финальные сервисы
+2. **Настраивает nginx с SSL сертификатами**
+3. Запускает Backend
+4. Собирает Frontend (с доступным API через nginx)
+5. Останавливает временный Backend
+6. Запускает финальные сервисы
 
 ## 🔧 Ручное развертывание
 
@@ -90,21 +91,28 @@ sudo systemctl start shelkovitsa-backend
 
 ### Frontend (Nuxt.js)
 
-**⚠️ Важно**: Frontend требует работающий Backend API для сборки!
+**⚠️ Важно**: Frontend требует работающий Backend API через nginx для сборки!
 
-1. **Запуск Backend** (обязательно):
+1. **Настройка nginx** (обязательно):
+```bash
+sudo cp /var/www/shelkovitsa/deploy/nginx.conf /etc/nginx/nginx.conf
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+2. **Запуск Backend** (обязательно):
 ```bash
 cd /var/www/shelkovitsa/server
 PORT=8000 node dist/main.js &
 ```
 
-2. **Сборка Frontend**:
+3. **Сборка Frontend**:
 ```bash
 cd /var/www/shelkovitsa/client
 npm run build
 ```
 
-3. **Systemd сервис**:
+4. **Systemd сервис**:
 ```bash
 sudo systemctl enable shelkovitsa-frontend
 sudo systemctl start shelkovitsa-frontend

@@ -72,9 +72,22 @@ log_info "Шаг 4: Сборка Backend"
 npm run build
 log_success "Backend собран"
 
-# 5. Временный запуск Backend для генерации Frontend
-log_info "Шаг 5: Временный запуск Backend для генерации Frontend"
-# Создаем временный процесс для Backend
+# 5. Настройка nginx (ДО запуска Backend!)
+log_info "Шаг 5: Настройка nginx"
+cp $PROJECT_DIR/deploy/nginx.conf /etc/nginx/nginx.conf
+
+# Проверка конфигурации nginx
+if nginx -t; then
+    systemctl reload nginx
+    log_success "Nginx настроен и перезагружен"
+else
+    log_error "Ошибка в конфигурации nginx"
+    nginx -t
+    exit 1
+fi
+
+# 6. Запуск Backend
+log_info "Шаг 6: Запуск Backend"
 cd $PROJECT_DIR/server
 PORT=8000 nohup node dist/main.js > /tmp/backend-temp.log 2>&1 &
 BACKEND_PID=$!
@@ -84,34 +97,34 @@ log_info "Backend запущен с PID: $BACKEND_PID"
 log_info "Ожидание запуска Backend..."
 sleep 10
 
-# Проверяем, что Backend отвечает
+# Проверяем, что Backend отвечает через nginx
 for i in {1..30}; do
-    if curl -s http://localhost:8000/api/health > /dev/null 2>&1; then
-        log_success "Backend готов к работе"
+    if curl -s http://localhost/api/health > /dev/null 2>&1; then
+        log_success "Backend готов к работе через nginx"
         break
     fi
-    log_info "Ожидание Backend... ($i/30)"
+    log_info "Ожидание Backend через nginx... ($i/30)"
     sleep 2
 done
 
-# 7. Установка зависимостей Frontend
-log_info "Шаг 7: Установка зависимостей Frontend"
+# 8. Установка зависимостей Frontend
+log_info "Шаг 8: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
 npm i --force
 log_success "Зависимости Frontend установлены"
 
-# 8. Сборка Frontend (с работающим Backend)
-log_info "Шаг 8: Сборка Frontend (Backend должен быть запущен)"
+# 9. Сборка Frontend (с работающим Backend через nginx)
+log_info "Шаг 9: Сборка Frontend (Backend доступен через nginx)"
 npm run build
 log_success "Frontend собран"
 
-# 9. Остановка временного Backend
-log_info "Шаг 9: Остановка временного Backend"
+# 10. Остановка временного Backend
+log_info "Шаг 10: Остановка временного Backend"
 kill $BACKEND_PID 2>/dev/null || log_warning "Backend процесс уже остановлен"
 log_success "Временный Backend остановлен"
 
-# 10. Настройка systemd сервисов
-log_info "Шаг 10: Настройка systemd сервисов"
+# 11. Настройка systemd сервисов
+log_info "Шаг 11: Настройка systemd сервисов"
 
 # Backend сервис
 cat > /etc/systemd/system/shelkovitsa-backend.service << EOF
@@ -158,28 +171,14 @@ EOF
 
 log_success "Systemd сервисы настроены"
 
-# 11. Перезапуск сервисов
-log_info "Шаг 11: Перезапуск сервисов"
+# 12. Перезапуск сервисов
+log_info "Шаг 12: Перезапуск сервисов"
 systemctl daemon-reload
 systemctl enable shelkovitsa-backend
 systemctl enable shelkovitsa-frontend
 systemctl restart shelkovitsa-backend
 systemctl restart shelkovitsa-frontend
 log_success "Сервисы перезапущены"
-
-# 12. Настройка nginx
-log_info "Шаг 12: Настройка nginx"
-cp $PROJECT_DIR/deploy/nginx.conf /etc/nginx/nginx.conf
-
-# Проверка конфигурации nginx
-if nginx -t; then
-    systemctl reload nginx
-    log_success "Nginx настроен и перезагружен"
-else
-    log_error "Ошибка в конфигурации nginx"
-    nginx -t
-    exit 1
-fi
 
 # 13. Проверка статуса
 log_info "Шаг 13: Проверка статуса сервисов"
@@ -215,11 +214,11 @@ netstat -tlnp | grep -E ':(8000|3000|80|443)' || log_warning "Некоторые
 # 15. Тест доступности
 log_info "Шаг 15: Тест доступности"
 
-# Тест Backend
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/health | grep -q "200"; then
-    log_success "Backend API отвечает"
+# Тест Backend через nginx
+if curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health | grep -q "200"; then
+    log_success "Backend API отвечает через nginx"
 else
-    log_warning "Backend API не отвечает на порту 8000"
+    log_warning "Backend API не отвечает через nginx"
 fi
 
 # Тест Frontend

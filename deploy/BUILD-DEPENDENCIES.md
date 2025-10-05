@@ -35,21 +35,26 @@ sudo ./deploy/deploy.sh
 cd server
 npm run build
 
-# 2. Временный запуск Backend
+# 2. Настройка nginx (КРИТИЧЕСКИ ВАЖНО!)
+sudo cp ../deploy/nginx.conf /etc/nginx/nginx.conf
+sudo nginx -t
+sudo systemctl reload nginx
+
+# 3. Временный запуск Backend
 PORT=8000 node dist/main.js &
 BACKEND_PID=$!
 
-# 3. Ожидание запуска Backend
+# 4. Ожидание запуска Backend
 sleep 10
 
-# 4. Проверка доступности API
-curl http://localhost:8000/api/health
+# 5. Проверка доступности API через nginx
+curl http://localhost/api/health
 
-# 5. Сборка Frontend
+# 6. Сборка Frontend (с доступным API через nginx)
 cd ../client
 npm run build
 
-# 6. Остановка временного Backend
+# 7. Остановка временного Backend
 kill $BACKEND_PID
 ```
 
