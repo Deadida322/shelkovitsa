@@ -61,7 +61,7 @@ log_success "Резервная копия создана: $BACKUP_DIR"
 # 3. Установка зависимостей Backend
 log_info "Шаг 3: Установка зависимостей Backend"
 cd $PROJECT_DIR/server
-npm ci --production
+npm i --production
 log_success "Зависимости Backend установлены"
 
 # 4. Сборка Backend
@@ -72,7 +72,7 @@ log_success "Backend собран"
 # 5. Установка зависимостей Frontend
 log_info "Шаг 5: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
-npm ci
+npm i --force
 log_success "Зависимости Frontend установлены"
 
 # 6. Сборка Frontend
