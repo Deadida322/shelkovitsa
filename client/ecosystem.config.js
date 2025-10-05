@@ -21,10 +21,10 @@ module.exports = {
       watch: false,
       max_memory_restart: '1G',
       
-      // Логирование
-      log_file: '/var/log/pm2/shelkovitsa-nuxt.log',
-      out_file: '/var/log/pm2/shelkovitsa-nuxt-out.log',
-      error_file: '/var/log/pm2/shelkovitsa-nuxt-error.log',
+      // Логирование (используем стандартные пути)
+      log_file: './logs/shelkovitsa-nuxt.log',
+      out_file: './logs/shelkovitsa-nuxt-out.log',
+      error_file: './logs/shelkovitsa-nuxt-error.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       
       // Настройки производительности

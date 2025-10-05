@@ -15,17 +15,6 @@ Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=NUXT_PUBLIC_API_BASE=https://shelkovitsa.ru/api
 
-# Безопасность
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=/var/www/shelkovitsa/client
-
-# Ограничения ресурсов
-LimitNOFILE=65536
-LimitNPROC=4096
-
 # Логирование
 StandardOutput=journal
 StandardError=journal

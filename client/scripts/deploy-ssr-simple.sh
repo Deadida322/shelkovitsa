@@ -1,7 +1,7 @@
 #!/bin/bash
-# Скрипт для развертывания SSR приложения
+# Скрипт для развертывания SSR приложения с упрощенным systemd сервисом
 
-echo "🚀 Развертывание SSR приложения..."
+echo "🚀 Развертывание SSR приложения (упрощенная версия)..."
 
 # Проверяем наличие папки .output
 if [ ! -d ".output" ]; then
@@ -20,19 +20,13 @@ sudo cp -r "$SERVER_PATH" "$BACKUP_PATH/" 2>/dev/null || echo "⚠️  Резе�
 echo "📦 Копирование файлов..."
 sudo mkdir -p "$SERVER_PATH"
 sudo cp -r .output/* "$SERVER_PATH/"
-sudo cp ecosystem.config.js "$SERVER_PATH/"
 
 echo "🔧 Настройка прав доступа..."
 sudo chown -R www-data:www-data "$SERVER_PATH"
 sudo chmod -R 755 "$SERVER_PATH"
 
-echo "📝 Создание systemd сервиса для Nuxt..."
-# Создаем необходимые директории
-sudo mkdir -p /var/log/pm2
-sudo chown www-data:www-data /var/log/pm2
-
-# Копируем systemd сервис
-sudo cp ../deploy/nuxt-app.service /etc/systemd/system/nuxt-app.service
+echo "📝 Создание упрощенного systemd сервиса..."
+sudo cp ../deploy/nuxt-app-simple.service /etc/systemd/system/nuxt-app.service
 
 echo "🔄 Перезапуск сервисов..."
 sudo systemctl daemon-reload
