@@ -36,21 +36,18 @@ sudo certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" --non-interactive --agree-tos
 if [ $? -eq 0 ]; then
     echo "✅ SSL сертификаты успешно получены!"
     
-    # Переключаемся на полную конфигурацию nginx с SSL
-    echo "🔧 Переключение на полную конфигурацию nginx..."
-    sudo cp ../deploy/nginx-ssr-optimized.conf /etc/nginx/nginx.conf
-    
-    # Обновляем домен в конфигурации
-    sudo sed -i "s/shelkovitsa.ru/$DOMAIN/g" /etc/nginx/nginx.conf
-    
-    # Проверяем конфигурацию
+    # Certbot автоматически обновляет nginx конфигурацию
+    # Проверяем, что nginx работает с SSL
+    echo "🔍 Проверка nginx с SSL..."
     if sudo nginx -t; then
-        echo "✅ Конфигурация nginx с SSL корректна"
+        echo "✅ Nginx с SSL работает корректно"
         sudo systemctl reload nginx
         echo "🎉 SSL настроен успешно!"
         echo "🌐 Проверьте работу сайта: https://$DOMAIN"
     else
         echo "❌ Ошибка в конфигурации nginx с SSL"
+        echo "📋 Детали ошибки:"
+        sudo nginx -t
         echo "🔄 Возвращаемся к HTTP конфигурации..."
         sudo cp ../deploy/nginx-http-only.conf /etc/nginx/nginx.conf
         sudo systemctl reload nginx
