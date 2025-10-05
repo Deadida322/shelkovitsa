@@ -159,7 +159,11 @@ fi
 # 8. Установка зависимостей Frontend
 log_info "Шаг 8: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
-npm i --force
+# Очищаем node_modules и package-lock.json для чистой установки
+rm -rf node_modules package-lock.json
+# Устанавливаем SASS для исправления проблем с SCSS
+npm install sass@^1.77.8 --save-dev
+npm install --force
 log_success "Зависимости Frontend установлены"
 
 # 9. Сборка Frontend (с работающим Backend через nginx)
