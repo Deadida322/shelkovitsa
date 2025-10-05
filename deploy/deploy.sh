@@ -41,7 +41,6 @@ fi
 
 # Переменные
 PROJECT_DIR="/var/www/shelkovitsa"
-BACKUP_DIR="/var/www/shelkovitsa/backup/$(date +%Y%m%d_%H%M%S)"
 DOMAIN="shelkovitsa.ru"
 
 log_info "Начинаем развертывание проекта Shelkovitsa"
@@ -53,14 +52,8 @@ cd $PROJECT_DIR
 git pull
 log_success "Код обновлен из Git"
 
-# 2. Создание резервной копии
-log_info "Шаг 2: Создание резервной копии"
-mkdir -p $BACKUP_DIR
-cp -r $PROJECT_DIR $BACKUP_DIR/ 2>/dev/null || log_warning "Резервная копия не создана (первое развертывание?)"
-log_success "Резервная копия создана: $BACKUP_DIR"
-
-# 3. Настройка прав доступа для npm
-log_info "Шаг 3: Настройка прав доступа для npm"
+# 2. Настройка прав доступа для npm
+log_info "Шаг 2: Настройка прав доступа для npm"
 chown -R www-data:www-data $PROJECT_DIR
 chmod -R 755 $PROJECT_DIR
 # Создаем директории для npm кэша
@@ -68,19 +61,19 @@ mkdir -p /root/.npm
 chown -R root:root /root/.npm
 log_success "Права доступа настроены"
 
-# 4. Установка зависимостей Backend
-log_info "Шаг 4: Установка зависимостей Backend"
+# 3. Установка зависимостей Backend
+log_info "Шаг 3: Установка зависимостей Backend"
 cd $PROJECT_DIR/server
 npm ci --omit=dev
 log_success "Зависимости Backend установлены"
 
-# 5. Сборка Backend
-log_info "Шаг 5: Сборка Backend"
+# 4. Сборка Backend
+log_info "Шаг 4: Сборка Backend"
 npm run build
 log_success "Backend собран"
 
-# 6. Временный запуск Backend для генерации Frontend
-log_info "Шаг 6: Временный запуск Backend для генерации Frontend"
+# 5. Временный запуск Backend для генерации Frontend
+log_info "Шаг 5: Временный запуск Backend для генерации Frontend"
 # Создаем временный процесс для Backend
 cd $PROJECT_DIR/server
 PORT=8000 nohup node dist/main.js > /tmp/backend-temp.log 2>&1 &
@@ -101,24 +94,24 @@ for i in {1..30}; do
     sleep 2
 done
 
-# 8. Установка зависимостей Frontend
-log_info "Шаг 8: Установка зависимостей Frontend"
+# 7. Установка зависимостей Frontend
+log_info "Шаг 7: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
 npm i --force
 log_success "Зависимости Frontend установлены"
 
-# 9. Сборка Frontend (с работающим Backend)
-log_info "Шаг 9: Сборка Frontend (Backend должен быть запущен)"
+# 8. Сборка Frontend (с работающим Backend)
+log_info "Шаг 8: Сборка Frontend (Backend должен быть запущен)"
 npm run build
 log_success "Frontend собран"
 
-# 10. Остановка временного Backend
-log_info "Шаг 10: Остановка временного Backend"
+# 9. Остановка временного Backend
+log_info "Шаг 9: Остановка временного Backend"
 kill $BACKEND_PID 2>/dev/null || log_warning "Backend процесс уже остановлен"
 log_success "Временный Backend остановлен"
 
-# 11. Настройка systemd сервисов
-log_info "Шаг 11: Настройка systemd сервисов"
+# 10. Настройка systemd сервисов
+log_info "Шаг 10: Настройка systemd сервисов"
 
 # Backend сервис
 cat > /etc/systemd/system/shelkovitsa-backend.service << EOF
@@ -165,8 +158,8 @@ EOF
 
 log_success "Systemd сервисы настроены"
 
-# 12. Перезапуск сервисов
-log_info "Шаг 12: Перезапуск сервисов"
+# 11. Перезапуск сервисов
+log_info "Шаг 11: Перезапуск сервисов"
 systemctl daemon-reload
 systemctl enable shelkovitsa-backend
 systemctl enable shelkovitsa-frontend
@@ -174,8 +167,8 @@ systemctl restart shelkovitsa-backend
 systemctl restart shelkovitsa-frontend
 log_success "Сервисы перезапущены"
 
-# 13. Настройка nginx
-log_info "Шаг 13: Настройка nginx"
+# 12. Настройка nginx
+log_info "Шаг 12: Настройка nginx"
 cp $PROJECT_DIR/deploy/nginx.conf /etc/nginx/nginx.conf
 
 # Проверка конфигурации nginx
@@ -188,8 +181,8 @@ else
     exit 1
 fi
 
-# 14. Проверка статуса
-log_info "Шаг 14: Проверка статуса сервисов"
+# 13. Проверка статуса
+log_info "Шаг 13: Проверка статуса сервисов"
 
 # Проверка Backend
 if systemctl is-active --quiet shelkovitsa-backend; then
@@ -215,12 +208,12 @@ else
     systemctl status nginx --no-pager
 fi
 
-# 15. Проверка портов
-log_info "Шаг 15: Проверка портов"
+# 14. Проверка портов
+log_info "Шаг 14: Проверка портов"
 netstat -tlnp | grep -E ':(8000|3000|80|443)' || log_warning "Некоторые порты не найдены"
 
-# 16. Тест доступности
-log_info "Шаг 16: Тест доступности"
+# 15. Тест доступности
+log_info "Шаг 15: Тест доступности"
 
 # Тест Backend
 if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/health | grep -q "200"; then
@@ -258,4 +251,3 @@ echo "🌐 Проверьте работу сайта:"
 echo "  http://$DOMAIN (редирект на HTTPS)"
 echo "  https://$DOMAIN"
 echo ""
-echo "📁 Резервная копия: $BACKUP_DIR"
