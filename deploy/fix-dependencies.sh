@@ -1,10 +1,10 @@
 #!/bin/bash
-# Скрипт для исправления проблем с SASS в Frontend
+# Скрипт для исправления конфликтов зависимостей Frontend
 
 set -e
 
-echo "🎨 Исправление проблем с SASS в Frontend"
-echo "====================================="
+echo "🔧 Исправление конфликтов зависимостей Frontend"
+echo "============================================="
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -38,7 +38,7 @@ fi
 
 PROJECT_DIR="/var/www/shelkovitsa"
 
-log_info "Исправление проблем с SASS для проекта Shelkovitsa"
+log_info "Исправление конфликтов зависимостей для проекта Shelkovitsa"
 
 # 1. Переход в директорию Frontend
 log_info "Шаг 1: Переход в директорию Frontend"
@@ -49,37 +49,47 @@ log_info "Шаг 2: Очистка зависимостей"
 rm -rf node_modules package-lock.json
 log_success "Зависимости очищены"
 
-# 3. Установка всех зависимостей с legacy-peer-deps
-log_info "Шаг 3: Установка всех зависимостей"
-npm install --legacy-peer-deps
+# 3. Создание .npmrc для решения конфликтов
+log_info "Шаг 3: Создание .npmrc для решения конфликтов"
+cat > .npmrc << 'EOF'
+legacy-peer-deps=true
+fund=false
+audit=false
+EOF
+log_success ".npmrc создан"
+
+# 4. Установка зависимостей
+log_info "Шаг 4: Установка зависимостей"
+npm install
 log_success "Зависимости установлены"
 
-# 4. Проверка версии SASS
-log_info "Шаг 4: Проверка версии SASS"
-npm list sass || log_warning "SASS не найден в зависимостях"
+# 5. Проверка установленных пакетов
+log_info "Шаг 5: Проверка установленных пакетов"
+npm list --depth=0 | head -10
 
-# 5. Тест сборки
-log_info "Шаг 5: Тест сборки Frontend"
+# 6. Тест сборки
+log_info "Шаг 6: Тест сборки Frontend"
 if npm run build; then
     log_success "Frontend собран успешно"
 else
     log_error "Ошибка сборки Frontend"
     log_info "Попробуйте следующие команды:"
     echo "  cd $PROJECT_DIR/client"
-    echo "  npm install sass@^1.77.8 --save-dev"
+    echo "  rm -rf node_modules package-lock.json"
+    echo "  npm install --legacy-peer-deps"
     echo "  npm run build"
     exit 1
 fi
 
 echo ""
-log_success "🎉 Проблемы с SASS исправлены!"
+log_success "🎉 Конфликты зависимостей исправлены!"
 echo ""
 echo "📊 Полезные команды:"
 echo "  cd $PROJECT_DIR/client"
-echo "  npm list sass"
+echo "  npm list --depth=0"
 echo "  npm run build"
 echo ""
 echo "🔧 Если проблемы остались:"
-echo "  npm install sass@^1.77.8 --save-dev"
-echo "  npm install"
+echo "  rm -rf node_modules package-lock.json"
+echo "  npm install --legacy-peer-deps"
 echo "  npm run build"

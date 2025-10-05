@@ -92,9 +92,8 @@ log_success "Зависимости Backend установлены"
 log_info "Шаг 5: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
 rm -rf node_modules package-lock.json
-# Устанавливаем SASS для исправления проблем с SCSS
-npm install sass@^1.77.8 --save-dev
-npm install
+# Устанавливаем зависимости с legacy-peer-deps для решения конфликтов
+npm install --legacy-peer-deps
 log_success "Зависимости Frontend установлены"
 
 # 6. Финальная настройка прав
