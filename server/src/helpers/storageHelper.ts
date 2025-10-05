@@ -34,12 +34,18 @@ export function getDestPath(filePath?: string): string {
 export function initDiskStorage() {
 	const srcPath = baseSrcPath();
 	const destPath = baseDestPath();
-	if (!fs.existsSync(srcPath)) {
-		fsPromises.mkdir(srcPath);
-	}
+	
+	try {
+		if (!fs.existsSync(srcPath)) {
+			fsPromises.mkdir(srcPath, { recursive: true });
+		}
 
-	if (!fs.existsSync(destPath)) {
-		fsPromises.mkdir(destPath);
+		if (!fs.existsSync(destPath)) {
+			fsPromises.mkdir(destPath, { recursive: true });
+		}
+	} catch (error) {
+		console.error('Ошибка создания директорий:', error);
+		throw new InternalServerErrorException('Не удалось создать необходимые директории');
 	}
 }
 
