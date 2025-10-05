@@ -69,25 +69,52 @@ log_info "Шаг 4: Сборка Backend"
 npm run build
 log_success "Backend собран"
 
-# 5. Установка зависимостей Frontend
-log_info "Шаг 5: Установка зависимостей Frontend"
+# 5. Временный запуск Backend для генерации Frontend
+log_info "Шаг 5: Временный запуск Backend для генерации Frontend"
+# Создаем временный процесс для Backend
+cd $PROJECT_DIR/server
+PORT=8000 nohup node dist/main.js > /tmp/backend-temp.log 2>&1 &
+BACKEND_PID=$!
+log_info "Backend запущен с PID: $BACKEND_PID"
+
+# Ждем запуска Backend
+log_info "Ожидание запуска Backend..."
+sleep 10
+
+# Проверяем, что Backend отвечает
+for i in {1..30}; do
+    if curl -s http://localhost:8000/api/health > /dev/null 2>&1; then
+        log_success "Backend готов к работе"
+        break
+    fi
+    log_info "Ожидание Backend... ($i/30)"
+    sleep 2
+done
+
+# 6. Установка зависимостей Frontend
+log_info "Шаг 6: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
 npm i --force
 log_success "Зависимости Frontend установлены"
 
-# 6. Сборка Frontend
-log_info "Шаг 6: Сборка Frontend"
+# 7. Сборка Frontend (с работающим Backend)
+log_info "Шаг 7: Сборка Frontend (Backend должен быть запущен)"
 npm run build
 log_success "Frontend собран"
 
-# 7. Настройка прав доступа
-log_info "Шаг 7: Настройка прав доступа"
+# 8. Остановка временного Backend
+log_info "Шаг 8: Остановка временного Backend"
+kill $BACKEND_PID 2>/dev/null || log_warning "Backend процесс уже остановлен"
+log_success "Временный Backend остановлен"
+
+# 9. Настройка прав доступа
+log_info "Шаг 9: Настройка прав доступа"
 chown -R www-data:www-data $PROJECT_DIR
 chmod -R 755 $PROJECT_DIR
 log_success "Права доступа настроены"
 
-# 8. Настройка systemd сервисов
-log_info "Шаг 8: Настройка systemd сервисов"
+# 10. Настройка systemd сервисов
+log_info "Шаг 10: Настройка systemd сервисов"
 
 # Backend сервис
 cat > /etc/systemd/system/shelkovitsa-backend.service << EOF
@@ -134,8 +161,8 @@ EOF
 
 log_success "Systemd сервисы настроены"
 
-# 9. Перезапуск сервисов
-log_info "Шаг 9: Перезапуск сервисов"
+# 11. Перезапуск сервисов
+log_info "Шаг 11: Перезапуск сервисов"
 systemctl daemon-reload
 systemctl enable shelkovitsa-backend
 systemctl enable shelkovitsa-frontend
@@ -143,8 +170,8 @@ systemctl restart shelkovitsa-backend
 systemctl restart shelkovitsa-frontend
 log_success "Сервисы перезапущены"
 
-# 10. Настройка nginx
-log_info "Шаг 10: Настройка nginx"
+# 12. Настройка nginx
+log_info "Шаг 12: Настройка nginx"
 cp $PROJECT_DIR/deploy/nginx.conf /etc/nginx/nginx.conf
 
 # Проверка конфигурации nginx
@@ -157,8 +184,8 @@ else
     exit 1
 fi
 
-# 11. Проверка статуса
-log_info "Шаг 11: Проверка статуса сервисов"
+# 13. Проверка статуса
+log_info "Шаг 13: Проверка статуса сервисов"
 
 # Проверка Backend
 if systemctl is-active --quiet shelkovitsa-backend; then
@@ -184,12 +211,12 @@ else
     systemctl status nginx --no-pager
 fi
 
-# 12. Проверка портов
-log_info "Шаг 12: Проверка портов"
+# 14. Проверка портов
+log_info "Шаг 14: Проверка портов"
 netstat -tlnp | grep -E ':(8000|3000|80|443)' || log_warning "Некоторые порты не найдены"
 
-# 13. Тест доступности
-log_info "Шаг 13: Тест доступности"
+# 15. Тест доступности
+log_info "Шаг 15: Тест доступности"
 
 # Тест Backend
 if curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/api/health | grep -q "200"; then
