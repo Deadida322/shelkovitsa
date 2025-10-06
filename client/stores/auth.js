@@ -1,5 +1,6 @@
 import { useCartStore } from '#imports';
 import { defineStore } from 'pinia';
+import { readonly } from 'vue';
 
 export const useAuthStore = defineStore('auth', () => {
     const user = useCookie('user');
@@ -33,7 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
     return {
-        user,
+        user: readonly(user),
         login,
         getMe,
     };

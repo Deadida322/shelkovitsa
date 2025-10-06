@@ -1,6 +1,6 @@
 <script setup>
-    import { useCategoriesStore, useFiltersStore, useRouter } from "#imports";
-    import debounce from "lodash/debounce";
+    import { useCategoriesStore, useFiltersStore, useRouter } from '#imports';
+    import debounce from 'lodash/debounce';
 
     const categoriesStore = useCategoriesStore();
     const filtersStore = useFiltersStore();
@@ -10,7 +10,7 @@
     const { $api } = useNuxtApp();
     const page = ref(0);
     const pageSize = ref(6);
-    const search = ref("");
+    const search = ref('');
 
     const updateSearch = debounce(() => {
         filtersStore.filters.search = search.value;
@@ -25,10 +25,10 @@
         itemsPerPage: pageSize.value,
         ...(filtersStore.filters.subcategory
             ? {
-                  categoryId: +filtersStore.filters.category,
-                  subcategoryId: +filtersStore.filters.subcategory
-              }
-            : null)
+                categoryId: +filtersStore.filters.category,
+                subcategoryId: +filtersStore.filters.subcategory,
+            }
+            : null),
     }));
 
     watch(search, updateSearch);
@@ -43,17 +43,17 @@
     }
 
     const breadcrumbs = computed(() => {
-        const result = ["Каталог"];
+        const result = ['Каталог'];
         if (filtersStore.filters.category) {
             result.push(
-                categoriesStore.categoriesMap[filtersStore.filters.category]
+                categoriesStore.categoriesMap[filtersStore.filters.category],
             );
         }
         if (filtersStore.filters.subcategory) {
             result.push(
                 categoriesStore.subcategoriesMap[
                     filtersStore.filters.subcategory
-                ]
+                ],
             );
         }
         return result;
@@ -63,43 +63,43 @@
         payload,
         () => {
             isProductsLoading.value = true;
-            $api("/api/product-article/getList", {
-                method: "POST",
-                body: payload.value
+            $api('/api/product-article/getList', {
+                method: 'POST',
+                body: payload.value,
             }).then((res) => {
                 shopItems.value = res.data;
                 totalItems.value = res.count;
                 isProductsLoading.value = false;
             });
         },
-        { immediate: true, deep: true }
+        { immediate: true, deep: true },
     );
 
     // Добавляем SEO улучшения без удаления существующего кода
     useHead({
-        title: "Каталог товаров - Шелковица",
+        title: 'Каталог товаров - Шелковица',
         meta: [
             {
-                name: "description",
+                name: 'description',
                 content:
-                    'Каталог товаров интернет-магазина нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества.'
+                    'Каталог товаров интернет-магазина нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества.',
             },
             {
-                name: "keywords",
+                name: 'keywords',
                 content:
-                    "каталог, товары, нижнее белье, женское белье, мужское белье, белье купить, каталог белья"
+                    'каталог, товары, нижнее белье, женское белье, мужское белье, белье купить, каталог белья',
             },
-            { property: "og:title", content: "Каталог товаров - Шелковица" },
+            { property: 'og:title', content: 'Каталог товаров - Шелковица' },
             {
-                property: "og:description",
+                property: 'og:description',
                 content:
-                    'Каталог товаров интернет-магазина нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества.'
+                    'Каталог товаров интернет-магазина нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества.',
             },
-            { property: "og:type", content: "website" },
-            { property: "og:url", content: "https://shelkovitsa.ru/catalog" },
-            { name: "twitter:card", content: "summary_large_image" }
+            { property: 'og:type', content: 'website' },
+            { property: 'og:url', content: 'https://shelkovitsa.ru/catalog' },
+            { name: 'twitter:card', content: 'summary_large_image' },
         ],
-        link: [{ rel: "canonical", href: "https://shelkovitsa.ru/catalog" }]
+        link: [{ rel: 'canonical', href: 'https://shelkovitsa.ru/catalog' }],
     });
 </script>
 
@@ -109,37 +109,46 @@
             <Title>Каталог</Title>
             <Meta
                 name="description"
-                content="Каталог товаров магазина Шелковица" />
+                content="Каталог товаров магазина Шелковица"
+            />
         </Head>
-        <h2 class="text-h6 mt-sm-4 mb-4">Каталог</h2>
+        <h2 class="text-h6 mt-sm-4 mb-4">
+            Каталог
+        </h2>
         <s-search-input-skeleton v-if="isProductsLoading" />
         <vs-input
             v-else
             v-model="search"
             class="s-input"
             placeholder="Поиск в категории"
-            icon-after>
+            icon-after
+        >
             <template #icon>
                 <v-icon>mdi-magnify</v-icon>
             </template>
         </vs-input>
         <div
             v-if="breadcrumbs.length > 1"
-            class="d-flex align-center">
+            class="d-flex align-center"
+        >
             <v-breadcrumbs :items="breadcrumbs" />
             <v-btn
                 v-tooltip="'Очистить фильтры'"
                 size="x-small"
                 icon="mdi-close"
                 variant="plain"
-                @click="clearFilters()" />
+                @click="clearFilters()"
+            />
         </div>
         <vs-alert
             v-if="!isProductsLoading"
             class="mt-2"
-            color="#1A5CFF">
+            color="#1A5CFF"
+        >
             <template #icon>
-                <v-icon size="40"> mdi-information </v-icon>
+                <v-icon size="40">
+                    mdi-information
+                </v-icon>
             </template>
             По вашему запросу найдено {{ totalItems }} вариантов!
         </vs-alert>
@@ -148,7 +157,8 @@
                 <div
                     v-for="i in 6"
                     :key="`skeleton-${i}`"
-                    class="shop-item">
+                    class="shop-item"
+                >
                     <s-shop-item-skeleton />
                 </div>
             </template>
@@ -157,10 +167,12 @@
                 v-for="(item, key) in shopItems"
                 v-else
                 :key="item.id + key"
-                class="shop-item">
+                class="shop-item"
+            >
                 <s-shop-item
                     :item="item"
-                    @click="navigateTo(`/catalog/${item.id}`)" />
+                    @click="navigateTo(`/catalog/${item.id}`)"
+                />
             </div>
         </div>
         <div class="d-flex justify-end mt-10">
@@ -170,7 +182,8 @@
                 :layout="['prev', 'pager', 'next']"
                 :page-size="pageSize"
                 :total="totalItems"
-                @update:current-page="page = $event - 1" />
+                @update:current-page="page = $event - 1"
+            />
         </div>
     </div>
 </template>

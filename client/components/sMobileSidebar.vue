@@ -1,17 +1,25 @@
 <script setup>
-import useBreakpoints from '@/composables/breakpoints';
+    import useBreakpoints from '@/composables/breakpoints';
 
-const emit = defineEmits(['update:open']);
-const bp = useBreakpoints();
-const attrs = useAttrs();
-function onItemClick() {
-    emit('update:open', false);
-}
+    const emit = defineEmits(['update:open']);
+    const bp = useBreakpoints();
+    const attrs = useAttrs();
+    function onItemClick() {
+        emit('update:open', false);
+    }
 </script>
 
 <template>
-    <vs-sidebar class="sidebar" v-bind="attrs" absolute>
-        <vs-sidebar-item id="/" class="mr-4" @click="onItemClick">
+    <vs-sidebar
+        class="sidebar"
+        v-bind="attrs"
+        absolute
+    >
+        <vs-sidebar-item
+            id="/"
+            class="mr-4"
+            @click="onItemClick"
+        >
             <template #icon>
                 <v-icon size="small">
                     mdi-home-outline
@@ -61,7 +69,9 @@ function onItemClick() {
                     <v-icon size="x-small">
                         mdi-phone
                     </v-icon>
-                    8 999 999 99 88
+                    <a href="tel:+79255859439" class="s-footer__item a">
+                        +7 925 585 94 39
+                    </a>
                 </div>
             </div>
         </template>

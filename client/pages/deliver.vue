@@ -1,72 +1,67 @@
 <script setup>
-import { useCartStore, useMappingStore, useOrderStore } from '#imports';
-import { VueMaskDirective as vMask } from 'v-mask';
-import { VsNotification } from 'vuesax-alpha';
+    import { useCartStore, useMappingStore, useOrderStore } from '#imports';
+    import { VueMaskDirective as vMask } from 'v-mask';
+    import { VsNotification } from 'vuesax-alpha';
 
-definePageMeta({
-    middleware: [
-        // 'auth',
-    ],
-});
-const config = useRuntimeConfig();
-const base = config.public.apiBase;
-const { $api } = useNuxtApp();
-const deliveryTypes = ref([]);
-$api(`/api/delivery-type`).then((res) => {
-    deliveryTypes.value = res;
-});
-
-const orderStore = useOrderStore();
-const cartStore = useCartStore();
-const mappingStore = useMappingStore();
-
-function onCountDown(count, index) {
-    if (!count)
-        cartStore.removeItem(index);
-}
-
-function handleImageError(event) {
-    console.error('Ошибка загрузки изображения на странице доставки:', event.target.src);
-}
-
-const step = ref(1);
-
-function nextStep() {
-    if (step.value < 2)
-        return step.value++;
-    $api('/api/order/create', { method: 'POST', body: { ...orderStore.order, orderProducts: cartStore.cart } }).then(() => {
-        VsNotification({
-            title: 'Отправлено!',
-            content: 'Заказ отправлен, ожидайте связи',
-            position: 'bottom-center',
-            border: 'success',
-        });
-        cartStore.clearCart();
+    const config = useRuntimeConfig();
+    const base = config.public.apiBase;
+    const { $api } = useNuxtApp();
+    const deliveryTypes = ref([]);
+    $api(`/api/delivery-type`).then((res) => {
+        deliveryTypes.value = res;
     });
-}
 
-// Добавляем SEO улучшения без удаления существующего кода
-useHead({
-    title: 'Корзина и доставка - Шелковица',
-    meta: [
-        {
-            name: 'description',
-            content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.',
-        },
-        {
-            name: 'keywords',
-            content: 'корзина, заказ, доставка, оформление заказа, шелковица, интернет магазин белья',
-        },
-        { property: 'og:title', content: 'Корзина и доставка - Шелковица' },
-        { property: 'og:description', content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.' },
-        { property: 'og:type', content: 'website' },
-        { property: 'og:url', content: 'https://shelkovitsa.ru/deliver' },
-        { name: 'twitter:card', content: 'summary_large_image' },
-    ],
-    link: [
-        { rel: 'canonical', href: 'https://shelkovitsa.ru/deliver' },
-    ],
-});
+    const orderStore = useOrderStore();
+    const cartStore = useCartStore();
+    const mappingStore = useMappingStore();
+
+    function onCountDown(count, index) {
+        if (!count)
+            cartStore.removeItem(index);
+    }
+
+    function handleImageError(event) {
+        console.error('Ошибка загрузки изображения на странице доставки:', event.target.src);
+    }
+
+    const step = ref(1);
+
+    function nextStep() {
+        if (step.value < 2)
+            return step.value++;
+        $api('/api/order/create', { method: 'POST', body: { ...orderStore.order, orderProducts: cartStore.cart } }).then(() => {
+            VsNotification({
+                title: 'Отправлено!',
+                content: 'Заказ отправлен, ожидайте связи',
+                position: 'bottom-center',
+                border: 'success',
+            });
+            cartStore.clearCart();
+        });
+    }
+
+    // Добавляем SEO улучшения без удаления существующего кода
+    useHead({
+        title: 'Корзина и доставка - Шелковица',
+        meta: [
+            {
+                name: 'description',
+                content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.',
+            },
+            {
+                name: 'keywords',
+                content: 'корзина, заказ, доставка, оформление заказа, шелковица, интернет магазин белья',
+            },
+            { property: 'og:title', content: 'Корзина и доставка - Шелковица' },
+            { property: 'og:description', content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.' },
+            { property: 'og:type', content: 'website' },
+            { property: 'og:url', content: 'https://shelkovitsa.ru/deliver' },
+            { name: 'twitter:card', content: 'summary_large_image' },
+        ],
+        link: [
+            { rel: 'canonical', href: 'https://shelkovitsa.ru/deliver' },
+        ],
+    });
 </script>
 
 <template>
@@ -165,7 +160,11 @@ useHead({
                     </vs-tr>
                 </template>
             </vs-table>
-            <div v-else class="link" @click="navigateTo('/catalog')">
+            <div
+                v-else
+                class="link"
+                @click="navigateTo('/catalog')"
+            >
                 <vs-alert
                     class="mt-4 alert"
                     color="success"

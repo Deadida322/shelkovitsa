@@ -1,25 +1,25 @@
 <script setup>
-useHead({
-  title: 'Контакты - Шелковица',
-  meta: [
-    { 
-      name: 'description', 
-      content: 'Контактная информация интернет-магазина нижнего белья "Шелковица" - телефоны, адрес, карта проезда.' 
-    },
-    { 
-      name: 'keywords', 
-      content: 'контакты, телефоны, адрес, карта проезда, шелковица, интернет магазин белья' 
-    },
-    { property: 'og:title', content: 'Контакты - Шелковица' },
-    { property: 'og:description', content: 'Контактная информация интернет-магазина нижнего белья "Шелковица" - телефоны, адрес, карта проезда.' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://shelkovitsa.ru/contacts' },
-    { name: 'twitter:card', content: 'summary_large_image' },
-  ],
-  link: [
-    { rel: 'canonical', href: 'https://shelkovitsa.ru/contacts' }
-  ]
-});
+    useHead({
+        title: 'Контакты - Шелковица',
+        meta: [
+            {
+                name: 'description',
+                content: 'Контактная информация интернет-магазина нижнего белья "Шелковица" - телефоны, адрес, карта проезда.',
+            },
+            {
+                name: 'keywords',
+                content: 'контакты, телефоны, адрес, карта проезда, шелковица, интернет магазин белья',
+            },
+            { property: 'og:title', content: 'Контакты - Шелковица' },
+            { property: 'og:description', content: 'Контактная информация интернет-магазина нижнего белья "Шелковица" - телефоны, адрес, карта проезда.' },
+            { property: 'og:type', content: 'website' },
+            { property: 'og:url', content: 'https://shelkovitsa.ru/contacts' },
+            { name: 'twitter:card', content: 'summary_large_image' },
+        ],
+        link: [
+            { rel: 'canonical', href: 'https://shelkovitsa.ru/contacts' },
+        ],
+    });
 </script>
 
 <template>
@@ -28,21 +28,17 @@ useHead({
             КОНТАКТЫ
         </h2>
         <div class="text-body-1 mt-4">
-            Вы можете связаться с нами по номерам
+            Вы можете связаться с нами:
         </div>
-        <div class="d-flex align-center mt-4 ml-4">
-            <v-icon>mdi-phone</v-icon><a
-                class="ml-2"
-                href="tel:88005555900"
-            >88005555900</a>
+
+        <div class="d-flex align-center mt-1 ml-2">
+            <a href="tel:+79255859439" class="s-footer__item a">
+                +7 925 585 94 39
+            </a>
         </div>
-        <div class="d-flex align-center mt-4 ml-4">
-            <v-icon>mdi-phone</v-icon>
-            <a
-                class="ml-2"
-                href="tel:88005555900"
-            >
-                88005555900
+        <div class="d-flex align-center mt-1 ml-2">
+            <a href="mailto:shelkovitsa2009@yandex.ru" class="s-footer__item a">
+                shelkovitsa2009@yandex.ru
             </a>
         </div>
         <div class="text-body-1 mt-4">

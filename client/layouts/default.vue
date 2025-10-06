@@ -1,12 +1,12 @@
 <script setup>
-import { useCategoriesStore } from '~/stores/categories';
-import { useMappingStore } from '~/stores/mapping';
+    import { useCategoriesStore } from '~/stores/categories';
+    import { useMappingStore } from '~/stores/mapping';
 
-const categoriesStore = useCategoriesStore();
-const mappingStore = useMappingStore();
-categoriesStore.getCategories();
-mappingStore.getColors();
-mappingStore.getSizes();
+    const categoriesStore = useCategoriesStore();
+    const mappingStore = useMappingStore();
+    categoriesStore.getCategories();
+    mappingStore.getColors();
+    mappingStore.getSizes();
 </script>
 
 <template>
