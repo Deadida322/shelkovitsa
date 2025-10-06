@@ -179,6 +179,19 @@ sudo systemctl restart shelkovitsa-frontend
 
 ## 🚨 Устранение неполадок
 
+### Проблема: Фронтенд не обновляется после деплоя
+```bash
+# Принудительная очистка кэша
+sudo ./deploy/clear-cache.sh
+
+# Или ручная очистка
+sudo rm -rf /var/cache/nginx/*
+sudo rm -rf /var/www/shelkovitsa/client/.nuxt
+sudo rm -rf /var/www/shelkovitsa/client/.output
+sudo systemctl restart nginx
+sudo systemctl restart shelkovitsa-frontend
+```
+
 ### Проблема: 502 Bad Gateway
 ```bash
 # Проверьте статус сервисов
