@@ -170,6 +170,12 @@ log_info "Шаг 9: Сборка Frontend (Backend доступен через n
 npm run build
 log_success "Frontend собран"
 
+# Очистка кэша nginx
+log_info "Очистка кэша nginx..."
+rm -rf /var/cache/nginx/*
+systemctl reload nginx
+log_success "Кэш nginx очищен"
+
 # 10. Остановка временного Backend
 log_info "Шаг 10: Остановка временного Backend"
 kill $BACKEND_PID 2>/dev/null || log_warning "Backend процесс уже остановлен"
@@ -228,8 +234,17 @@ log_info "Шаг 12: Перезапуск сервисов"
 systemctl daemon-reload
 systemctl enable shelkovitsa-backend
 systemctl enable shelkovitsa-frontend
-systemctl restart shelkovitsa-backend
-systemctl restart shelkovitsa-frontend
+
+# Принудительная остановка сервисов
+log_info "Принудительная остановка сервисов..."
+systemctl stop shelkovitsa-backend 2>/dev/null || true
+systemctl stop shelkovitsa-frontend 2>/dev/null || true
+sleep 3
+
+# Запуск сервисов
+log_info "Запуск сервисов..."
+systemctl start shelkovitsa-backend
+systemctl start shelkovitsa-frontend
 log_success "Сервисы перезапущены"
 
 # 13. Проверка статуса
