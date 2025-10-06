@@ -76,13 +76,12 @@ export default defineNuxtConfig({
             headers: { 'cache-control': 's-maxage=3600' },
         },
         '/contacts': {
-            prerender: true,
+            prerender: false,
             headers: { 'cache-control': 's-maxage=31536000' },
         },
         '/deliver': {
-            prerender: true,
-            swr: 7200, // Обновление каждые 2 часа
-            headers: { 'cache-control': 's-maxage=7200' },
+            prerender: false,
+            ssr: false,
         },
 
         // SPA страницы (требуют авторизации)
@@ -106,5 +105,4 @@ export default defineNuxtConfig({
     experimental: {
         payloadExtraction: false,
     },
-
 });

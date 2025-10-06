@@ -1,6 +1,10 @@
 <template>
     <div class="skeleton-loader">
-        <div v-for="i in 3" :key="i" class="skeleton" />
+        <div
+            v-for="i in 3"
+            :key="i"
+            class="skeleton"
+        />
     </div>
 </template>
 

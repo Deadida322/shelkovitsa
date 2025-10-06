@@ -1,27 +1,27 @@
 <script setup>
-import { useAuthStore } from '@/stores/auth';
-import { VsNotification } from 'vuesax-alpha';
+    import { useAuthStore } from '@/stores/auth';
+    import { VsNotification } from 'vuesax-alpha';
 
-const authStore = useAuthStore();
-const user = ref({
-    mail: '',
-    password: '',
-});
-
-const isLoading = ref(false);
-
-async function onSubmit() {
-    isLoading.value = true;
-    await authStore.login(user.value).catch(({ response }) => {
-        VsNotification({
-            title: 'Ошибка!',
-            content: response?._data?.error?.message,
-            position: 'bottom-center',
-            border: 'danger',
-        });
+    const authStore = useAuthStore();
+    const user = ref({
+        mail: '',
+        password: '',
     });
-    isLoading.value = false;
-}
+
+    const isLoading = ref(false);
+
+    async function onSubmit() {
+        isLoading.value = true;
+        await authStore.login(user.value).catch(({ response }) => {
+            VsNotification({
+                title: 'Ошибка!',
+                content: response?._data?.error?.message,
+                position: 'bottom-center',
+                border: 'danger',
+            });
+        });
+        isLoading.value = false;
+    }
 </script>
 
 <template>

@@ -1,9 +1,8 @@
-import { useAuthStore } from '@/stores/auth';
+export default defineNuxtRouteMiddleware(async () => {
+    const authStore = useAuthStore();
+    await authStore.getMe();
 
-const { user } = useAuthStore();
-
-export default defineNuxtRouteMiddleware(() => {
-    if (!user && !user?.isAdmin) {
+    if (!authStore.user && !authStore.user?.isAdmin) {
         return navigateTo('/signin');
     }
 });
