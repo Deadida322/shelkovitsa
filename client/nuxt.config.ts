@@ -1,4 +1,3 @@
-/* eslint-disable ts/no-require-imports */
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
     app: {
@@ -23,7 +22,7 @@ export default defineNuxtConfig({
             },
         },
     },
-    modules: ['vuetify-nuxt-module', '@nuxt/eslint', '@pinia/nuxt'],
+    modules: ['vuetify-nuxt-module', '@nuxt/eslint', '@pinia/nuxt', '@vuesax-alpha/nuxt'],
     devtools: { enabled: false },
     css: ['~/assets/main.scss'],
     vite: {
@@ -61,47 +60,47 @@ export default defineNuxtConfig({
     },
     routeRules: {
         // Главная страница с популярными товарами (частое обновление)
-        '/': { 
+        '/': {
             prerender: true,
             swr: 1800, // Обновление каждые 30 минут
-            headers: { 'cache-control': 's-maxage=1800' }
+            headers: { 'cache-control': 's-maxage=1800' },
         },
-        '/catalog': { 
+        '/catalog': {
             prerender: true,
             swr: 1800, // Обновление каждые 30 минут
-            headers: { 'cache-control': 's-maxage=1800' }
+            headers: { 'cache-control': 's-maxage=1800' },
         },
-        '/catalog/**': { 
+        '/catalog/**': {
             prerender: true,
             swr: 3600, // Обновление каждый час
-            headers: { 'cache-control': 's-maxage=3600' }
+            headers: { 'cache-control': 's-maxage=3600' },
         },
-        '/contacts': { 
+        '/contacts': {
             prerender: true,
-            headers: { 'cache-control': 's-maxage=31536000' }
+            headers: { 'cache-control': 's-maxage=31536000' },
         },
-        '/deliver': { 
+        '/deliver': {
             prerender: true,
             swr: 7200, // Обновление каждые 2 часа
-            headers: { 'cache-control': 's-maxage=7200' }
+            headers: { 'cache-control': 's-maxage=7200' },
         },
-        
+
         // SPA страницы (требуют авторизации)
-        '/admin': { 
+        '/admin': {
             ssr: false,
-            headers: { 'cache-control': 'no-cache' }
+            headers: { 'cache-control': 'no-cache' },
         },
-        '/signin': { 
+        '/signin': {
             ssr: false,
-            headers: { 'cache-control': 'no-cache' }
+            headers: { 'cache-control': 'no-cache' },
         },
-        '/signup': { 
+        '/signup': {
             ssr: false,
-            headers: { 'cache-control': 'no-cache' }
+            headers: { 'cache-control': 'no-cache' },
         },
-        '/recover': { 
+        '/recover': {
             ssr: false,
-            headers: { 'cache-control': 'no-cache' }
+            headers: { 'cache-control': 'no-cache' },
         },
     },
     experimental: {
