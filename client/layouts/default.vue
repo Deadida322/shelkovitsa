@@ -4,9 +4,11 @@
 
     const categoriesStore = useCategoriesStore();
     const mappingStore = useMappingStore();
-    categoriesStore.getCategories();
-    mappingStore.getColors();
-    mappingStore.getSizes();
+    useAsyncData(async () => {
+        categoriesStore.getCategories();
+        mappingStore.getColors();
+        mappingStore.getSizes();
+    });
 </script>
 
 <template>
