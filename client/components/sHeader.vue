@@ -60,11 +60,11 @@
                             Войти
                         </nuxt-link>
                     </vs-button>
-                    <vs-button class="d-none d-sm-block">
-                        <nuxt-link to="/signup">
+                    <nuxt-link to="/signup">
+                        <vs-button class="d-none d-sm-block">
                             Регистрация
-                        </nuxt-link>
-                    </vs-button>
+                        </vs-button>
+                    </nuxt-link>
                 </template>
             </client-only>
 
