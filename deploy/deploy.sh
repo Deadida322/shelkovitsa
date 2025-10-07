@@ -118,7 +118,7 @@ for i in {1..30}; do
     if curl -s http://localhost:8000/api/benefit > /dev/null 2>&1; then
         log_success "Backend отвечает на порту 8000"
         # Проверяем доступ через nginx
-        if curl -s http://localhost/api/benefit > /dev/null 2>&1; then
+        if curl -s -k https://localhost/api/benefit > /dev/null 2>&1; then
             log_success "Backend готов к работе через nginx"
             break
         else
@@ -285,17 +285,17 @@ netstat -tlnp | grep -E ':(8000|3000|80|443)' || log_warning "Некоторые
 log_info "Шаг 15: Тест доступности"
 
 # Тест Backend через nginx
-if curl -s -o /dev/null -w "%{http_code}" http://localhost/api/benefit | grep -q "200"; then
+if curl -s -k -o /dev/null -w "%{http_code}" https://localhost/api/benefit | grep -q "200"; then
     log_success "Backend API отвечает через nginx"
 else
     log_warning "Backend API не отвечает через nginx"
 fi
 
 # Тест Frontend
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200"; then
-    log_success "Frontend отвечает"
+if curl -s -k -o /dev/null -w "%{http_code}" https://localhost | grep -q "200"; then
+    log_success "Frontend отвечает через nginx"
 else
-    log_warning "Frontend не отвечает на порту 3000"
+    log_warning "Frontend не отвечает через nginx"
 fi
 
 # Тест nginx
