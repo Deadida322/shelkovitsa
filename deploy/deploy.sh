@@ -103,7 +103,7 @@ fi
 # 6. Запуск Backend
 log_info "Шаг 6: Запуск Backend"
 cd $PROJECT_DIR/server
-PORT=8000 nohup node dist/main.js > /tmp/backend-temp.log 2>&1 &
+PORT=8000 HOST=0.0.0.0 nohup node dist/main.js > /tmp/backend-temp.log 2>&1 &
 BACKEND_PID=$!
 log_info "Backend запущен с PID: $BACKEND_PID"
 
@@ -201,6 +201,7 @@ Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=8000
+Environment=HOST=0.0.0.0
 
 [Install]
 WantedBy=multi-user.target
@@ -222,6 +223,7 @@ Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=3000
+Environment=HOST=0.0.0.0
 Environment=NUXT_PUBLIC_API_BASE=https://$DOMAIN
 
 [Install]
