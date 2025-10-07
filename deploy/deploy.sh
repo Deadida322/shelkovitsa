@@ -115,10 +115,10 @@ sleep 10
 log_info "Проверка доступности Backend через nginx..."
 for i in {1..30}; do
     # Проверяем прямой доступ к Backend
-    if curl -s http://localhost:8000/api/health > /dev/null 2>&1; then
+    if curl -s http://localhost:8000/api/benefit > /dev/null 2>&1; then
         log_success "Backend отвечает на порту 8000"
         # Проверяем доступ через nginx
-        if curl -s http://localhost/api/health > /dev/null 2>&1; then
+        if curl -s http://localhost/api/benefit > /dev/null 2>&1; then
             log_success "Backend готов к работе через nginx"
             break
         else
@@ -285,7 +285,7 @@ netstat -tlnp | grep -E ':(8000|3000|80|443)' || log_warning "Некоторые
 log_info "Шаг 15: Тест доступности"
 
 # Тест Backend через nginx
-if curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health | grep -q "200"; then
+if curl -s -o /dev/null -w "%{http_code}" http://localhost/api/benefit | grep -q "200"; then
     log_success "Backend API отвечает через nginx"
 else
     log_warning "Backend API не отвечает через nginx"
