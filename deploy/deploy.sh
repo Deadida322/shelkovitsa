@@ -54,7 +54,8 @@ log_success "Код обновлен из Git"
 
 # 2. Настройка прав доступа для npm
 log_info "Шаг 2: Настройка прав доступа для npm"
-chown -R www-data:www-data $PROJECT_DIR
+# Убираем глобальный chown чтобы не изменять владельца всех файлов проекта
+# chown -R www-data:www-data $PROJECT_DIR
 chmod -R 755 $PROJECT_DIR
 # Создаем директории для npm кэша
 mkdir -p /root/.npm

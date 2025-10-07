@@ -17,6 +17,11 @@ node_modules
 /temp
 temp
 
+# Server build and temp files
+server/dist/
+server/temp/
+server/static/
+
 # Logs
 logs
 *.log
