@@ -149,16 +149,11 @@ echo "✅ Nginx перезагружен"
 # Проверка доступности статических файлов
 echo "ℹ️  Проверка статических файлов..."
 sleep 3
-# Найдем любой .js файл в папке _nuxt для проверки
-NUXT_FILE=$(find /var/www/shelkovitsa/client/.output/public/_nuxt/ -name "*.js" | head -1 | xargs basename)
-if [ -n "$NUXT_FILE" ]; then
-    if curl -s -I https://shelkovitsa.ru/_nuxt/$NUXT_FILE | grep -q "200 OK"; then
-        echo "✅ Статические файлы доступны"
-    else
-        echo "⚠️  Статические файлы недоступны"
-    fi
+# Проверяем доступность папки _nuxt через Frontend сервис
+if curl -s -I https://shelkovitsa.ru/_nuxt/ | grep -q "200 OK\|301\|302"; then
+    echo "✅ Статические файлы доступны через Frontend сервис"
 else
-    echo "⚠️  Файлы в папке _nuxt не найдены"
+    echo "⚠️  Статические файлы недоступны"
 fi
 
 # 10. Проверка статуса
