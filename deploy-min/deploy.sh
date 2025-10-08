@@ -49,19 +49,8 @@ else
     exit 1
 fi
 
-# 5. Установка зависимостей Frontend
-echo "ℹ️  Шаг 5: Установка зависимостей Frontend"
-cd $PROJECT_DIR/client
-npm install
-echo "✅ Зависимости Frontend установлены"
-
-# 6. Сборка Frontend
-echo "ℹ️  Шаг 6: Сборка Frontend"
-npm run build
-echo "✅ Frontend собран"
-
-# 7. Настройка systemd сервисов
-echo "ℹ️  Шаг 7: Настройка systemd сервисов"
+# 5. Настройка systemd сервисов
+echo "ℹ️  Шаг 5: Настройка systemd сервисов"
 
 # Backend сервис
 cat > /etc/systemd/system/shelkovitsa-backend.service << EOF
@@ -111,17 +100,14 @@ EOF
 
 echo "✅ Systemd сервисы настроены"
 
-# 8. Перезапуск сервисов
-echo "ℹ️  Шаг 8: Перезапуск сервисов"
+# 6. Запуск Backend
+echo "ℹ️  Шаг 6: Запуск Backend"
 systemctl daemon-reload
 systemctl enable shelkovitsa-backend
-systemctl enable shelkovitsa-frontend
 
 systemctl stop shelkovitsa-backend 2>/dev/null || true
-systemctl stop shelkovitsa-frontend 2>/dev/null || true
 sleep 2
 
-# Запуск Backend
 echo "ℹ️  Запуск Backend..."
 systemctl start shelkovitsa-backend
 sleep 5
@@ -138,13 +124,25 @@ for i in {1..30}; do
     fi
 done
 
-# Запуск Frontend (после готовности Backend)
-echo "ℹ️  Запуск Frontend..."
-systemctl start shelkovitsa-frontend
-echo "✅ Сервисы перезапущены"
+# 7. Установка зависимостей Frontend
+echo "ℹ️  Шаг 7: Установка зависимостей Frontend"
+cd $PROJECT_DIR/client
+npm install
+echo "✅ Зависимости Frontend установлены"
 
-# 9. Проверка статуса
-echo "ℹ️  Шаг 9: Проверка статуса"
+# 8. Сборка Frontend (после запуска Backend)
+echo "ℹ️  Шаг 8: Сборка Frontend (Backend доступен)"
+npm run build
+echo "✅ Frontend собран"
+
+# 9. Запуск Frontend
+echo "ℹ️  Шаг 9: Запуск Frontend"
+systemctl enable shelkovitsa-frontend
+systemctl start shelkovitsa-frontend
+echo "✅ Frontend запущен"
+
+# 10. Проверка статуса
+echo "ℹ️  Шаг 10: Проверка статуса"
 sleep 5
 
 if systemctl is-active --quiet shelkovitsa-backend; then
