@@ -127,7 +127,7 @@ done
 # 7. Установка зависимостей Frontend
 echo "ℹ️  Шаг 7: Установка зависимостей Frontend"
 cd $PROJECT_DIR/client
-npm install
+npm install --force
 echo "✅ Зависимости Frontend установлены"
 
 # 8. Сборка Frontend (после запуска Backend)
