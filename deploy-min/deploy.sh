@@ -141,6 +141,11 @@ systemctl enable shelkovitsa-frontend
 systemctl start shelkovitsa-frontend
 echo "✅ Frontend запущен"
 
+# Перезагрузка nginx для применения изменений
+echo "ℹ️  Перезагрузка nginx..."
+systemctl reload nginx
+echo "✅ Nginx перезагружен"
+
 # 10. Проверка статуса
 echo "ℹ️  Шаг 10: Проверка статуса"
 sleep 5
