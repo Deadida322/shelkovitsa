@@ -81,8 +81,7 @@ export class ProductArticleController {
 
 	@Get('populate')
 	async getPopulateList() {
-		const articles = this.productArticleService.getPopulateList();
-		return articles;
+		return this.productArticleService.getPopulateList();
 	}
 
 	@AdminAuth()
