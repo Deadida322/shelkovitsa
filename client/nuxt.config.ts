@@ -59,32 +59,14 @@ export default defineNuxtConfig({
         },
     },
     routeRules: {
-        // Главная страница с популярными товарами (частое обновление)
-        '/': {
-            prerender: true,
-            swr: 1800, // Обновление каждые 30 минут
-            headers: { 'cache-control': 's-maxage=1800' },
-        },
-        '/catalog': {
-            prerender: true,
-            swr: 1800, // Обновление каждые 30 минут
-            headers: { 'cache-control': 's-maxage=1800' },
-        },
-        '/catalog/**': {
-            prerender: true,
-            swr: 3600, // Обновление каждый час
-            headers: { 'cache-control': 's-maxage=3600' },
-        },
         '/contacts': {
-            prerender: false,
-            headers: { 'cache-control': 's-maxage=31536000' },
+            prerender: true,
         },
         '/deliver': {
             prerender: false,
             ssr: false,
         },
 
-        // SPA страницы (требуют авторизации)
         '/admin': {
             ssr: false,
             headers: { 'cache-control': 'no-cache' },
@@ -103,6 +85,6 @@ export default defineNuxtConfig({
         },
     },
     experimental: {
-        payloadExtraction: false,
+        payloadExtraction: true,
     },
 });
