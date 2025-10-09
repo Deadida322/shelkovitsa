@@ -33,11 +33,16 @@ async function bootstrap() {
 	app.enableCors({
 		credentials: true,
 		// origin: '*'
-		origin: process.env.CORS ?? process.env.CORS.split(',').map(origin => origin.trim())
+		origin:
+			process.env.CORS ?? process.env.CORS.split(',').map((origin) => origin.trim())
 	});
 
 	// Если используете HTTPS — разрешите прокси-заголовки
-	app.use(helmet());
+	app.use(
+		helmet({
+			crossOriginResourcePolicy: false
+		})
+	);
 	const expressApp = app.getHttpAdapter().getInstance() as express.Express;
 	expressApp.set('trust proxy', 1); // доверять заголовкам от Nginx
 

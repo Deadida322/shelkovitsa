@@ -74,7 +74,8 @@ export class ProductArticleService {
 		const p = await this.productArticleRepository.findOne({
 			where: wherePayload,
 			relations: {
-				products: true
+				products: true,
+				productFiles: true
 			}
 		});
 
@@ -176,7 +177,10 @@ export class ProductArticleService {
 
 		const [result, total] = await this.productArticleRepository.findAndCount({
 			...getPaginateWhere(payload),
-			where: wherePayload
+			where: wherePayload,
+			relations: {
+				productFiles: true
+			}
 		});
 
 		return getPaginateResult(
@@ -513,18 +517,19 @@ export class ProductArticleService {
 
 	// TODO допилить и обсудить
 	async getPopulateList() {
+		const takeCount = 3;
 		const prevDate = moment().subtract(1, 'months').toDate();
 
-		const articles = await this.productArticleRepository
+		// Сначала получаем ID популярных артикулов с заказами за последний месяц
+		const popularArticleIds = await this.productArticleRepository
 			.createQueryBuilder('product_article')
-			// .leftJoinAndSelect('product_article.productFiles', 'product_file')
-			.leftJoinAndSelect('product_article.products', 'product')
-			.leftJoinAndSelect('product.orderProducts', 'orderProduct')
-			.leftJoinAndSelect('orderProduct.order', 'order')
+			.leftJoin('product_article.products', 'product')
+			.leftJoin('product.orderProducts', 'orderProduct')
+			.leftJoin('orderProduct.order', 'order')
 			.where('order.created_at > :createdAt', {
 				createdAt: prevDate
 			})
-			.where(
+			.andWhere(
 				'product_article.isVisible = :isVisible AND product_article.is_deleted = :isDeleted',
 				{
 					isVisible: true,
@@ -532,22 +537,61 @@ export class ProductArticleService {
 				}
 			)
 			.groupBy('product_article.id')
-			.select([
-				'product_article.id as id',
-				'product_article.name as name',
-				'product_article.country as country',
-				'product_article.description as description',
-				'product_article.article as article',
-				'product_article.price as price',
-				'count(order.id) as orderCount'
-			])
+			.select('product_article.id', 'id')
+			.addSelect('count(order.id)', 'orderCount')
 			.orderBy('count(order.id)', 'DESC')
-			.limit(3)
+			.limit(takeCount)
 			.execute();
 
-		console.log(articles);
+		let articleIds: number[];
 
-		return convertToJsonMany(ProductArticleDto, articles);
+		if (popularArticleIds.length > 0) {
+			// Если есть популярные продукты с заказами
+			articleIds = popularArticleIds.map((item) => item.id);
+		} else {
+			// Если нет популярных продуктов, берем любые доступные
+			const fallbackArticles = await this.productArticleRepository.find({
+				where: {
+					isVisible: true,
+					is_deleted: false
+				},
+				select: ['id'],
+				take: takeCount
+			});
+			articleIds = fallbackArticles.map((item) => item.id);
+		}
+
+		if (articleIds.length === 0) {
+			return [];
+		}
+
+		// Получаем полные данные с файлами для выбранных артикулов
+		const articles = await this.productArticleRepository.find({
+			where: {
+				id: In(articleIds),
+				isVisible: true,
+				is_deleted: false
+			},
+			relations: {
+				productFiles: true,
+				products: true
+			}
+		});
+
+		// Сортируем по количеству заказов (если есть данные о заказах)
+		const sortedArticles = articles.sort((a, b) => {
+			if (popularArticleIds.length > 0) {
+				const aCount =
+					popularArticleIds.find((item) => item.id === a.id)?.orderCount || 0;
+				const bCount =
+					popularArticleIds.find((item) => item.id === b.id)?.orderCount || 0;
+				return bCount - aCount;
+			}
+			// Если нет данных о заказах, сортируем по ID
+			return a.id - b.id;
+		});
+
+		return convertToJsonMany(ProductArticleDto, sortedArticles);
 	}
 
 	async uploadImage(payload: UploadImageDto) {
