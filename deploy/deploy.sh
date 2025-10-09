@@ -54,7 +54,8 @@ log_success "Код обновлен из Git"
 
 # 2. Настройка прав доступа для npm
 log_info "Шаг 2: Настройка прав доступа для npm"
-chown -R www-data:www-data $PROJECT_DIR
+# Убираем глобальный chown чтобы не изменять владельца всех файлов проекта
+# chown -R www-data:www-data $PROJECT_DIR
 chmod -R 755 $PROJECT_DIR
 # Создаем директории для npm кэша
 mkdir -p /root/.npm
@@ -102,7 +103,7 @@ fi
 # 6. Запуск Backend
 log_info "Шаг 6: Запуск Backend"
 cd $PROJECT_DIR/server
-PORT=8000 nohup node dist/main.js > /tmp/backend-temp.log 2>&1 &
+PORT=8000 HOST=0.0.0.0 nohup node dist/main.js > /tmp/backend-temp.log 2>&1 &
 BACKEND_PID=$!
 log_info "Backend запущен с PID: $BACKEND_PID"
 
@@ -114,10 +115,10 @@ sleep 10
 log_info "Проверка доступности Backend через nginx..."
 for i in {1..30}; do
     # Проверяем прямой доступ к Backend
-    if curl -s http://localhost:8000/api/health > /dev/null 2>&1; then
+    if curl -s http://localhost:8000/api/benefit > /dev/null 2>&1; then
         log_success "Backend отвечает на порту 8000"
         # Проверяем доступ через nginx
-        if curl -s http://localhost/api/health > /dev/null 2>&1; then
+        if curl -s -k https://localhost/api/benefit > /dev/null 2>&1; then
             log_success "Backend готов к работе через nginx"
             break
         else
@@ -200,6 +201,7 @@ Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=8000
+Environment=HOST=0.0.0.0
 
 [Install]
 WantedBy=multi-user.target
@@ -221,6 +223,7 @@ Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=3000
+Environment=HOST=0.0.0.0
 Environment=NUXT_PUBLIC_API_BASE=https://$DOMAIN
 
 [Install]
@@ -282,17 +285,17 @@ netstat -tlnp | grep -E ':(8000|3000|80|443)' || log_warning "Некоторые
 log_info "Шаг 15: Тест доступности"
 
 # Тест Backend через nginx
-if curl -s -o /dev/null -w "%{http_code}" http://localhost/api/health | grep -q "200"; then
+if curl -s -k -o /dev/null -w "%{http_code}" https://localhost/api/benefit | grep -q "200"; then
     log_success "Backend API отвечает через nginx"
 else
     log_warning "Backend API не отвечает через nginx"
 fi
 
 # Тест Frontend
-if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200"; then
-    log_success "Frontend отвечает"
+if curl -s -k -o /dev/null -w "%{http_code}" https://localhost | grep -q "200"; then
+    log_success "Frontend отвечает через nginx"
 else
-    log_warning "Frontend не отвечает на порту 3000"
+    log_warning "Frontend не отвечает через nginx"
 fi
 
 # Тест nginx
