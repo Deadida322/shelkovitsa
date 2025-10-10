@@ -13,6 +13,15 @@ function onDelete(index) {
         cartStore.cart.splice(index, 1);
     }
 }
+
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения в корзине:', event.target.src);
+}
+
+function goToCheckout() {
+    navigateTo('/deliver');
+    opened.value = false;
+}
 </script>
 
 <template>
@@ -75,7 +84,7 @@ function onDelete(index) {
             <vs-button type="flat" @click="cartStore.clearCart">
                 Очистить
             </vs-button>
-            <vs-button @click="navigateTo('/deliver')">
+            <vs-button @click="goToCheckout">
                 Заказать
             </vs-button>
         </div>

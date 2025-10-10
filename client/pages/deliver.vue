@@ -1,6 +1,5 @@
 <script setup>
 import { useCartStore, useMappingStore, useOrderStore } from '#imports';
-import { mask as vMask } from 'vue-the-mask';
 import { VsNotification } from 'vuesax-alpha';
 
 definePageMeta({
@@ -121,7 +120,7 @@ function nextStep() {
                                 disabled
                                 type="flat"
                             >
-                                {{ tr.price }} ₽
+                                <span class="price">{{ tr.price }} ₽</span>
                             </vs-button>
                         </vs-td>
                         <vs-td>
@@ -221,18 +220,15 @@ function nextStep() {
 
                                 <s-input
                                     v-model="orderStore.order.tel"
-                                    v-mask="'+7(###)###-##-##'"
+                                    v-maska="'+7 (###) ###-##-##'"
                                     class="s-input"
                                     type="phone"
                                     placeholder="Номер телефона"
                                     icon="phone"
                                     :min-length="16"
                                     required
-                                >
-                                    <template #icon>
-                                        <v-icon>mdi-phone</v-icon>
-                                    </template>
-                                </s-input>
+                                />
+
                                 <s-input
                                     v-model="orderStore.order.description"
                                     class="s-input"
@@ -325,7 +321,7 @@ function nextStep() {
     </div>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
     .link {
         cursor: pointer;
     }
@@ -380,13 +376,17 @@ function nextStep() {
         }
     }
 
-    .vs-select {
-        max-width: 100%;
+     .alert {
+        z-index: -1;
+    }
+
+    .price {
+        text-wrap: nowrap;
     }
 </style>
 
-<style lang="scss" scoped>
-    .alert {
-        z-index: -1;
+<style lang="scss">
+    .vs-select {
+        max-width: 100%;
     }
 </style>

@@ -1,6 +1,40 @@
 <script setup>
 import advantages from '~/assets/js/advantages';
-import mockShops from '~/assets/js/mockShops';
+
+const { $api } = useNuxtApp();
+const isLoading = ref(false);
+const populateItems = ref([]);
+useHead({
+    title: 'Шелковица - интернет-магазин нижнего белья',
+    meta: [
+        {
+            name: 'description',
+            content: 'Интернет-магазин нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества, демократичные цены, доставка по всей России.',
+        },
+        {
+            name: 'keywords',
+            content: 'нижнее белье, интернет магазин белья, купить белье, женское белье, мужское белье, белье оптом, нижнее белье купить, нижнее белье интернет магазин',
+        },
+        { property: 'og:title', content: 'Шелковица - интернет-магазин нижнего белья' },
+        { property: 'og:description', content: 'Интернет-магазин нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества, демократичные цены, доставка по всей России.' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: 'https://shelkovitsa.ru' },
+        { property: 'og:image', content: '/main.webp' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+    ],
+    link: [
+        { rel: 'canonical', href: 'https://shelkovitsa.ru/' },
+    ],
+});
+
+useAsyncData(() => {
+    isLoading.value = true;
+    $api('/api/product-article/populate').then((res) => {
+        populateItems.value = res;
+    }).finally(() => {
+        isLoading.value = false;
+    });
+});
 </script>
 
 <template>
@@ -49,11 +83,21 @@ import mockShops from '~/assets/js/mockShops';
             Популярно сейчас
         </div>
         <div class="s-shop-carousel">
-            <s-shop-item
-                v-for="(item, key) in mockShops.splice(0, 3)"
-                :key="key"
-                :item="item"
-            />
+            <template v-if="isLoading">
+                <s-shop-item-skeleton
+                    v-for="i in 3"
+                    :key="`skeleton-${i}`"
+                    class="skeleton"
+                />
+            </template>
+            <template v-else>
+                <s-shop-item
+                    v-for="(item, key) in populateItems.splice(0, 3)"
+                    :key="key"
+                    :item="item"
+                    @click="navigateTo(`/catalog/${item.id}`)"
+                />
+            </template>
         </div>
         <div class="d-flex justify-center mt-4 mb-4">
             <vs-button
@@ -67,6 +111,9 @@ import mockShops from '~/assets/js/mockShops';
 </template>
 
 <style scoped lang="scss">
+.skeleton {
+    flex: 1;
+}
 .s-shop-carousel {
         margin-top: 40px;
         display: flex;

@@ -1,74 +1,78 @@
 <script setup>
-const props = defineProps({
-    images: {
-        type: Array,
-        default: () => [],
-    },
-    modelValue: {
-        type: Boolean,
-        default: false,
-    },
-    initialIndex: {
-        type: Number,
-        default: 0,
-    },
-});
+    const props = defineProps({
+        images: {
+            type: Array,
+            default: () => [],
+        },
+        modelValue: {
+            type: Boolean,
+            default: false,
+        },
+        initialIndex: {
+            type: Number,
+            default: 0,
+        },
+    });
 
-const emit = defineEmits(['update:modelValue']);
+    const emit = defineEmits(['update:modelValue']);
 
-const currentIndex = ref(props.initialIndex);
+    const currentIndex = ref(props.initialIndex);
 
-watch(() => props.modelValue, (newValue) => {
-    if (newValue) {
-        currentIndex.value = props.initialIndex;
+    watch(() => props.modelValue, (newValue) => {
+        if (newValue) {
+            currentIndex.value = props.initialIndex;
+        }
+    });
+
+    function closeViewer() {
+        emit('update:modelValue', false);
     }
-});
 
-function closeViewer() {
-    emit('update:modelValue', false);
-}
+    function goToPrevious() {
+        if (currentIndex.value > 0) {
+            currentIndex.value--;
+        }
+        else {
+            currentIndex.value = props.images.length - 1;
+        }
+    }
 
-function goToPrevious() {
-    if (currentIndex.value > 0) {
-        currentIndex.value--;
+    function goToNext() {
+        if (currentIndex.value < props.images.length - 1) {
+            currentIndex.value++;
+        }
+        else {
+            currentIndex.value = 0;
+        }
     }
-    else {
-        currentIndex.value = props.images.length - 1;
-    }
-}
 
-function goToNext() {
-    if (currentIndex.value < props.images.length - 1) {
-        currentIndex.value++;
+    function handleKeyDown(event) {
+        if (event.key === 'Escape') {
+            closeViewer();
+        }
+        else if (event.key === 'ArrowLeft') {
+            goToPrevious();
+        }
+        else if (event.key === 'ArrowRight') {
+            goToNext();
+        }
     }
-    else {
-        currentIndex.value = 0;
-    }
-}
 
-function handleKeyDown(event) {
-    if (event.key === 'Escape') {
-        closeViewer();
-    }
-    else if (event.key === 'ArrowLeft') {
-        goToPrevious();
-    }
-    else if (event.key === 'ArrowRight') {
-        goToNext();
-    }
-}
+    onMounted(() => {
+        window.addEventListener('keydown', handleKeyDown);
+    });
 
-onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown);
-});
-
-onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-});
+    onUnmounted(() => {
+        window.removeEventListener('keydown', handleKeyDown);
+    });
 </script>
 
 <template>
-    <div v-if="modelValue && images.length" class="s-image-viewer" @click="closeViewer">
+    <div
+        v-if="modelValue && images.length"
+        class="s-image-viewer"
+        @click="closeViewer"
+    >
         <div class="s-image-viewer__container" @click.stop>
             <v-btn
                 v-if="images.length > 1"
@@ -108,7 +112,8 @@ onUnmounted(() => {
                 <span
                     v-for="(image, index) in images"
                     :key="index"
-                    class="s-image-viewer__indicator" :class="{
+                    class="s-image-viewer__indicator"
+                    :class="{
                         's-image-viewer__indicator--active': index === currentIndex,
                     }"
                     @click="currentIndex = index"

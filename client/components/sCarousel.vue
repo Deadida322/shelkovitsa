@@ -1,19 +1,19 @@
 <script setup>
-import { computed } from 'vue';
+    import { computed } from 'vue';
 
-const props = defineProps({
-    itemsPerPage: {
-        type: Number,
-        default: 3,
-    },
-    gap: {
-        type: Number,
-        default: 10,
-    },
-});
+    const props = defineProps({
+        itemsPerPage: {
+            type: Number,
+            default: 3,
+        },
+        gap: {
+            type: Number,
+            default: 10,
+        },
+    });
 
-const computedGap = computed(() => `${props.gap}px`);
-const slideWidth = computed(() => `${100 / props.itemsPerPage}%`);
+    const computedGap = computed(() => `${props.gap}px`);
+    const slideWidth = computed(() => `${100 / props.itemsPerPage}%`);
 </script>
 
 <template>

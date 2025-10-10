@@ -1,23 +1,23 @@
 <script setup>
-import { useCategoriesStore, useFiltersStore } from '#imports';
-import SCategoryMenuSkeleton from './sCategoryMenuSkeleton.vue';
+    import { useCategoriesStore, useFiltersStore } from '#imports';
+    import SCategoryMenuSkeleton from './sCategoryMenuSkeleton.vue';
 
-const categoriesStore = useCategoriesStore();
-const filtersStore = useFiltersStore();
-const category = ref(filtersStore.filters.subcategory || '');
-watch(() => filtersStore.filters.subcategory, (val) => {
-    if (!val) {
-        category.value = '';
+    const categoriesStore = useCategoriesStore();
+    const filtersStore = useFiltersStore();
+    const category = ref(filtersStore.filters.subcategory || '');
+    watch(() => filtersStore.filters.subcategory, (val) => {
+        if (!val) {
+            category.value = '';
+        }
+    });
+    function navigate(item, nest) {
+        filtersStore.filters = { category: item.id, subcategory: nest.id };
+        navigateTo({ path: '/catalog', query: { ...filtersStore.filters } });
     }
-});
-function navigate(item, nest) {
-    filtersStore.filters = { category: item.id, subcategory: nest.id };
-    navigateTo({ path: '/catalog', query: { ...filtersStore.filters } });
-}
 
-const isCategoriesLoading = computed(() => {
-    return categoriesStore.categories.length === 0;
-});
+    const isCategoriesLoading = computed(() => {
+        return categoriesStore.categories.length === 0;
+    });
 </script>
 
 <template>
@@ -26,7 +26,11 @@ const isCategoriesLoading = computed(() => {
             Женское бельё
         </template>
         <template v-if="!isCategoriesLoading">
-            <vs-sidebar-group v-for="item in categoriesStore.categories" :id="String(item.name)" :key="item.name">
+            <vs-sidebar-group
+                v-for="item in categoriesStore.categories"
+                :id="String(item.name)"
+                :key="item.name"
+            >
                 <template #header>
                     <vs-sidebar-item arrow>
                         {{ item.name }}

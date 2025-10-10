@@ -1,6 +1,7 @@
 <script setup>
 import { useCartStore } from '@/stores/cart';
 import { notification } from 'vuesax-alpha/lib/components/notification/src/notify.js';
+import { useDisplay } from 'vuetify/lib/framework.mjs';
 
 const route = useRoute();
 const shopItem = ref({});
@@ -18,6 +19,8 @@ const payload = ref({});
 const displayedImage = ref(``);
 const showImageViewer = ref(false);
 const imageViewerIndex = ref(0);
+const loading = ref(true);
+const { mobile } = useDisplay();
 
 function addToCart() {
     const item = {
@@ -40,20 +43,55 @@ function addToCart() {
 
 const logo = computed(() => {
     const logo = shopItem.value.productFiles?.find(item => item.isLogo)?.name || shopItem.value.productFiles?.[0]?.name;
-    return logo ? `${base}/${logo}` : '';
+    return logo ? `${base}/static/${logo}` : '';
 });
 
 const productImages = computed(() => {
-    return shopItem.value.productFiles?.map(file => `${base}/${file.name}`) || [];
+    return shopItem.value.productFiles?.map(file => `${base}/static/${file.name}`) || [];
 });
 
-watch(() => cartInfo.value.size, (val) => {
-    payload.value = {
-        ...payload.value,
-        productSizeId: val,
-    };
+// Функция для обновления SEO информации
+function updateSEO() {
+    if (!shopItem.value || !shopItem.value.name)
+        return;
 
-    delete cartInfo.value.color;
+    useHead({
+        title: `${shopItem.value.name} - Шелковица`,
+        meta: [
+            {
+                name: 'description',
+                content: shopItem.value.description || `Купить ${shopItem.value.name} в интернет-магазине "Шелковица". Высокое качество, демократичные цены, доставка по всей России.`,
+            },
+            {
+                name: 'keywords',
+                content: `${shopItem.value.name}, купить, нижнее белье, женское белье, белье, ${shopItem.value.productCategories?.map(c => c.name).join(', ') || ''}`,
+            },
+            { property: 'og:title', content: `${shopItem.value.name} - Шелковица` },
+            { property: 'og:description', content: shopItem.value.description || `Купить ${shopItem.value.name} в интернет-магазине "Шелковица". Высокое качество, демократичные цены, доставка по всей России.` },
+            { property: 'og:type', content: 'product' },
+            { property: 'og:url', content: `https://shelkovitsa.ru/catalog/${route.params.id}` },
+            { property: 'og:image', content: logo.value || '/main.webp' },
+            { name: 'twitter:card', content: 'summary_large_image' },
+            { name: 'product:price:amount', content: shopItem.value.price?.toString() || '0' },
+            { name: 'product:price:currency', content: 'RUB' },
+        ],
+        link: [
+            { rel: 'canonical', href: `https://shelkovitsa.ru/catalog/${route.params.id}` },
+        ],
+    });
+}
+
+useAsyncData(() => {
+    watch(() => cartInfo.value.size, (val) => {
+        payload.value = {
+            ...payload.value,
+            productSizeId: val,
+        };
+
+        delete cartInfo.value.color;
+    });
+}, {
+    immediate: true,
 });
 
 watch(() => cartInfo.value.color, (val) => {
@@ -61,6 +99,16 @@ watch(() => cartInfo.value.color, (val) => {
         ...payload.value,
         productColorId: val,
     };
+});
+
+// Отслеживаем изменения параметров маршрута для обновления SEO
+watch(() => route.params.id, () => {
+    updateSEO();
+}, { immediate: true });
+
+// Отслеживаем изменения товара для обновления SEO
+watch(shopItem, () => {
+    updateSEO();
 });
 
 watch(cartInfo, async () => {
@@ -81,6 +129,9 @@ watch(cartInfo, async () => {
         $api(`/api/product-article/${route.params.id}`, { method: 'POST', body: payload.value }).then((res) => {
             shopItem.value = res;
             displayedImage.value = logo.value;
+            loading.value = false;
+            // Обновляем SEO при загрузке товара
+            updateSEO();
         });
     }
 }, { immediate: true, deep: true });
@@ -92,198 +143,153 @@ function handleImageClick(image, index) {
         showImageViewer.value = true;
     }
 };
+
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения:', event.target.src);
+    // Можно добавить fallback изображение
+    // event.target.src = '/placeholder.jpg';
+};
 </script>
 
 <template>
-    <div class="catalog-item-page catalog-item">
-        <h1 class="text-h6">
-            {{ shopItem.name }}
-        </h1>
-        <SImageViewer
-            v-model="showImageViewer"
-            :images="productImages"
-            :initial-index="imageViewerIndex"
-        />
-        <div class="catalog-item__container d-flex">
-            <div class="catalog-item__images mt-4">
-                <v-img
-                    cover
-                    class="image-main"
-                    height="200px"
-                    :src="displayedImage"
-                    @click="showImageViewer = true"
-                />
-                <s-carousel
-                    class="images-carousel mt-4"
-                    :items-per-page="1.8"
-                >
-                    <s-slide
-                        v-for="({ name }, key) in shopItem.productFiles"
-                        :key="key"
-                    >
-                        <v-img
-                            cover
-                            class="carousel-image"
-                            height="100px"
-                            :src="`${base}/${name}`"
-                            @click="handleImageClick(`${base}/${name}`, key)"
-                        />
-                    </s-slide>
-                </s-carousel>
-            </div>
-            <s-validate v-slot="{ submit }" class="catalog-item__info mt-2" @submit="addToCart">
-                <h3 class="text-h6">
-                    Описание товара
-                </h3>
-                <div class="item-info__description text-body1">
-                    {{ shopItem.description }}
-                </div>
-                <h3 class="text-h6 mt-4">
-                    Размеры в сетке Российских размеров
-                </h3>
-                <div class="item-info__description text-body1  mt-4">
-                    {{ shopItem.sizes?.join(", ") }}
-                </div>
-                <div class="item-info__to-cart mt-4 d-flex flex-column align-end">
-                    <div class="item-info__select-container">
-                        <client-only>
-                            <div class="item-info__select">
-                                <s-select
-                                    v-model="cartInfo.size"
-                                    required
-                                    label="Размер"
-                                    class="item-info__select"
-                                    placeholder="Укажите размер"
-                                    :options="shopItem.productSizes"
-                                    label-key="name"
-                                />
-                            </div>
-                            <div class="item-info__select">
-                                <s-select
-                                    v-model="cartInfo.color"
-                                    :disabled="!cartInfo.size"
-                                    required
-                                    class="item-info__select"
-                                    placeholder="Укажите цвет"
-                                    label="Цвет"
-                                    label-key="name"
-                                    :options="shopItem.productColors"
-                                />
-                            </div>
-                        </client-only>
-                    </div>
-                    <s-count-input
-                        v-model="cartInfo.amount"
-                        :max="shopItem.available || 1"
-                        class="mt-4"
-                        label="Количество"
+    <div>
+        <div v-if="!loading" class="catalog-item-page catalog-item">
+            <h1 class="text-h6">
+                {{ shopItem.name }}
+            </h1>
+            <SImageViewer
+                v-model="showImageViewer"
+                :images="productImages"
+                :initial-index="imageViewerIndex"
+            />
+            <div class="catalog-item__container">
+                <div class="catalog-item__images mt-4">
+                    <v-img
+                        cover
+                        class="image-main"
+                        :height=" mobile ? '400px' : '300px'"
+                        :src="displayedImage"
+                        @click="showImageViewer = true"
+                        @error="handleImageError"
                     />
-                    <div v-if="shopItem.available" class="item-info__count-caption">
-                        На складе <span>{{ shopItem.available }}</span> шт.
-                    </div>
-                    <div class="item-info__actions d-flex mt-4">
-                        <vs-button
-                            disabled
-                            type="flat"
+                    <s-carousel
+                        class="images-carousel mt-4"
+                        :items-per-page="1.8"
+                    >
+                        <s-slide
+                            v-for="({ name }, key) in shopItem.productFiles"
+                            :key="key"
                         >
-                            {{ shopItem.price }} ₽
-                        </vs-button>
-                        <vs-button @click="submit">
-                            Добавить в корзину  <v-icon class="ml-1">
-                                mdi-cart-outline
-                            </v-icon>
-                        </vs-button>
-                    </div>
+                            <v-img
+                                cover
+                                class="carousel-image"
+                                height="200px"
+                                :src="`${base}/static/${name}`"
+                                @click="handleImageClick(`${base}/static/${name}`, key)"
+                                @error="handleImageError"
+                            />
+                        </s-slide>
+                    </s-carousel>
                 </div>
-            </s-validate>
+                <s-validate
+                    v-slot="{ submit }"
+                    class="catalog-item__info mt-2"
+                    @submit="addToCart"
+                >
+                    <h3 class="text-h6">
+                        Описание товара
+                    </h3>
+                    <div class="item-info__description text-body1">
+                        {{ shopItem.description }}
+                    </div>
+                    <h3 class="text-h6 mt-4">
+                        Размеры в сетке Российских размеров
+                    </h3>
+                    <div class="item-info__description text-body1  mt-4">
+                        {{ shopItem.sizes?.join(", ") }}
+                    </div>
+                    <div class="item-info__to-cart mt-4 d-flex flex-column align-end">
+                        <div class="item-info__select-container">
+                            <client-only>
+                                <div class="item-info__select">
+                                    <s-select
+                                        v-model="cartInfo.size"
+                                        required
+                                        label="Размер"
+                                        class="item-info__select"
+                                        placeholder="Укажите размер"
+                                        :options="shopItem.productSizes"
+                                        label-key="name"
+                                    />
+                                </div>
+                                <div class="item-info__select">
+                                    <s-select
+                                        v-model="cartInfo.color"
+                                        :disabled="!cartInfo.size"
+                                        required
+                                        class="item-info__select"
+                                        placeholder="Укажите цвет"
+                                        label="Цвет"
+                                        label-key="name"
+                                        :options="shopItem.productColors"
+                                    />
+                                </div>
+                            </client-only>
+                        </div>
+                        <s-count-input
+                            v-model="cartInfo.amount"
+                            :max="shopItem.available || 1"
+                            class="mt-4"
+                            label="Количество"
+                        />
+                        <div v-if="shopItem.available" class="item-info__count-caption">
+                            На складе <span>{{ shopItem.available }}</span> шт.
+                        </div>
+                        <div class="item-info__actions d-flex mt-4">
+                            <vs-button
+                                disabled
+                                type="flat"
+                            >
+                                {{ shopItem.price }} ₽
+                            </vs-button>
+                            <vs-button @click="submit">
+                                Добавить в корзину  <v-icon class="ml-1">
+                                    mdi-cart-outline
+                                </v-icon>
+                            </vs-button>
+                        </div>
+                    </div>
+                </s-validate>
+            </div>
         </div>
     </div>
 </template>
 
-<style lang="scss">
-    .vs-pager__aria-active {
-        z-index: 1 !important;
-    }
+<style lang="scss" scoped>
+.catalog-item {
+    &__container {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
 
-    .catalog-item {
-        &__container {
+        @media screen and (max-width: 768px) {
+            grid-template-columns: auto;
+            grid-template-rows: repeat(2, 1fr);
+        }
+    }
+}
+
+.item-info {
+    &__select-container {
+        gap: 10px;
+        display: flex;
+        flex-direction: column;
+        @media screen and (max-width: 768px) {
             width: 100%;
-            justify-content: space-between;
-
-            @media screen and (max-width: 600px) {
-                flex-direction: column;
-            }
-        }
-        &__images {
-            width: 40%;
-
-            @media screen and (max-width: 600px) {
-                width: 100%;
-            }
-
-        }
-        &__info {
-            width: 58%;
-
-            @media screen and (max-width: 600px) {
-                width: 100%;
-            }
-
-        }
-    }
-
-    .item-info {
-        &__select {
-            width: 50% !important;
-            .vs-select {
+            ::v-deep(.vs-select) {
                 max-width: 100%;
             }
         }
-        &__select-container {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-        }
-
-        &__count-caption {
-            font-size: 12px;
-            opacity: .8;
-            margin-top: 10px;
-            span {
-                color: $primary
-            }
-        }
-
     }
-
-    .carousel-image {
-        border-radius: 12px;
-        cursor: pointer;
-    }
-
-    .images-carousel {
-        height: 100px !important;
-    }
-
-    .image-main {
-        border-radius: 12px;
-        cursor: pointer;
-    }
-
-    .image-preview {
-        width: 100vw;
-        height: 100vh;
-        background-color: rgba(0, 0, 0, 0.168);
-        display: flex;
-        position: fixed;
-        z-index: 9999;
-        justify-content: center;
-        align-items: center;
-        top: 0;
-        left: 0;
-
-        .v-img {
-            border-radius: 12px !important;
-        }
-    }
+}
 </style>

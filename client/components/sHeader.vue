@@ -17,6 +17,7 @@ watch(active, (val) => {
 
 watch(() => route.path, (val) => {
     active.value = val;
+    mobileMenuVisible.value = false;
 });
 </script>
 
