@@ -1,27 +1,27 @@
 <script setup>
-import { useCartStore, useMappingStore } from '#imports';
+    import { useCartStore, useMappingStore } from '#imports';
 
-const cartStore = useCartStore();
-const mapps = useMappingStore();
-const opened = ref(false);
-const config = useRuntimeConfig();
-const base = config.public.apiBase;
-const toggle = () => opened.value = !opened.value;
+    const cartStore = useCartStore();
+    const mapps = useMappingStore();
+    const opened = ref(false);
+    const config = useRuntimeConfig();
+    const base = config.public.apiBase;
+    const toggle = () => opened.value = !opened.value;
 
-function onDelete(index) {
-    if (cartStore.cart[index].amount === 0) {
-        cartStore.cart.splice(index, 1);
+    function onDelete(index) {
+        if (cartStore.cart[index].amount === 0) {
+            cartStore.cart.splice(index, 1);
+        }
     }
-}
 
-function handleImageError(event) {
-    console.error('Ошибка загрузки изображения в корзине:', event.target.src);
-}
+    function handleImageError(event) {
+        console.error('Ошибка загрузки изображения в корзине:', event.target.src);
+    }
 
-function goToCheckout() {
-    navigateTo('/deliver');
-    opened.value = false;
-}
+    function goToCheckout() {
+        navigateTo('/deliver');
+        opened.value = false;
+    }
 </script>
 
 <template>
@@ -53,8 +53,21 @@ function goToCheckout() {
         </div>
         <div class="s-cart__body">
             <template v-if="cartStore.cart.length">
-                <div v-for="(item, index) in cartStore.cart" :key="item.count" class="s-cart__item cart-item">
-                    <v-img max-width="64px" height="64px" cover width="64px" class="cart-item__image" :rounded="8" :src="`${base}/${item.logo}`" />
+                <div
+                    v-for="(item, index) in cartStore.cart"
+                    :key="item.count"
+                    class="s-cart__item cart-item"
+                >
+                    <v-img
+                        max-width="64px"
+                        height="64px"
+                        cover
+                        width="64px"
+                        class="cart-item__image"
+                        :rounded="8"
+                        :src="`${base}/static/${item.logo}`"
+                        @error="handleImageError"
+                    />
                     <div class="cart-item__text">
                         <div class="cart-item__title">
                             {{ item.name }}
@@ -65,7 +78,11 @@ function goToCheckout() {
                     </div>
                     <div class="cart-item__actions text-center">
                         <div class="cart-item__count align-center">
-                            <s-count-input v-model="item.amount" :max="item.maxAmount" @update:model-value="onDelete(index)" />
+                            <s-count-input
+                                v-model="item.amount"
+                                :max="item.maxAmount"
+                                @update:model-value="onDelete(index)"
+                            />
                         </div>
                         <div class="cart-item__price mt-2">
                             {{ item.price * item.amount }} <span>₽</span>

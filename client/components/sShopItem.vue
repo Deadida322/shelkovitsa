@@ -1,14 +1,14 @@
 <script setup>
-const props = defineProps({
-    item: {
-        type: Object,
-        default: () => {},
-    },
-});
+    const props = defineProps({
+        item: {
+            type: Object,
+            default: () => {},
+        },
+    });
 
-const config = useRuntimeConfig();
-const base = config.public.apiBase;
-const getLogo = props.item.productFiles?.find(item => item.isLogo)?.name || props.item.productFiles?.[0];
+    const config = useRuntimeConfig();
+    const base = config.public.apiBase;
+    const getLogo = props.item.productFiles?.find(item => item.isLogo)?.name || props.item.productFiles?.[0]?.name;
 </script>
 
 <template>
@@ -17,7 +17,7 @@ const getLogo = props.item.productFiles?.find(item => item.isLogo)?.name || prop
             <h3>{{ item.name }}</h3>
         </template>
         <template #img>
-            <img :src="`${base}/${getLogo}`" alt="">
+            <img :src="`${base}/static/${getLogo}`" alt="">
         </template>
         <template #text>
             <p>{{ item.description }}</p>
@@ -26,7 +26,11 @@ const getLogo = props.item.productFiles?.find(item => item.isLogo)?.name || prop
             <vs-button color="danger" icon>
                 <v-icon>mdi-cart</v-icon>
             </vs-button>
-            <v-chip class="ml-4" variant="flat" label>
+            <v-chip
+                class="ml-4"
+                variant="flat"
+                label
+            >
                 {{ item.price }} ₽
             </v-chip>
         </template>

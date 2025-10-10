@@ -1,24 +1,24 @@
 <script setup>
-import { useAuthStore } from '#imports';
-import menu from '~/assets/js/menu';
-import useBreakpoints from '~/composables/breakpoints';
+    import { useAuthStore } from '#imports';
+    import menu from '~/assets/js/menu';
+    import useBreakpoints from '~/composables/breakpoints';
 
-const authStore = useAuthStore();
-const route = useRoute();
-const active = ref(route.path);
-const bp = useBreakpoints();
-const mobileMenuVisible = ref(false);
+    const authStore = useAuthStore();
+    const route = useRoute();
+    const active = ref(route.path);
+    const bp = useBreakpoints();
+    const mobileMenuVisible = ref(false);
 
-const router = useRouter();
+    const router = useRouter();
 
-watch(active, (val) => {
-    router.push(val);
-});
+    watch(active, (val) => {
+        router.push(val);
+    });
 
-watch(() => route.path, (val) => {
-    active.value = val;
-    mobileMenuVisible.value = false;
-});
+    watch(() => route.path, (val) => {
+        active.value = val;
+        mobileMenuVisible.value = false;
+    });
 </script>
 
 <template>
@@ -45,29 +45,34 @@ watch(() => route.path, (val) => {
             <div>{{ item.title }} </div>
         </vs-navbar-item>
         <template #right>
-            <template v-if="authStore.user">
-                <nuxt-link class="d-sm-none" to="/deliver">
-                    <v-btn variant="tonal" size="small" icon="mdi-cart-outline" />
-                </nuxt-link>
-            </template>
-            <template v-else>
-                <vs-button class="d-none d-sm-block" type="flat">
-                    <nuxt-link to="/signin">
-                        Войти
+            <client-only>
+                <template v-if="authStore.user">
+                    <nuxt-link class="d-sm-none" to="/deliver">
+                        <v-btn
+                            variant="tonal"
+                            size="small"
+                            icon="mdi-cart-outline"
+                        />
                     </nuxt-link>
-                </vs-button>
-                <vs-button class="d-none d-sm-block">
+                </template>
+                <template v-else-if="!authStore.loading">
+                    <vs-button class="d-none d-sm-block" type="flat">
+                        <nuxt-link to="/signin">
+                            Войти
+                        </nuxt-link>
+                    </vs-button>
                     <nuxt-link to="/signup">
-                        Регистрация
+                        <vs-button class="d-none d-sm-block">
+                            Регистрация
+                        </vs-button>
                     </nuxt-link>
-                </vs-button>
-            </template>
+                </template>
+            </client-only>
 
             <v-btn
-                v-if="bp.isTablet || bp.isMobile || bp.isSmallMobile"
+                class="d-sm-none d-block ml-6"
                 size="small"
                 variant="tonal"
-                class="ml-6"
                 icon
                 @click="mobileMenuVisible = !mobileMenuVisible"
             >

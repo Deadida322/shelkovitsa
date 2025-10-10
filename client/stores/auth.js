@@ -1,5 +1,6 @@
 import { useCartStore } from '#imports';
 import { defineStore } from 'pinia';
+import { readonly } from 'vue';
 
 export const useAuthStore = defineStore('auth', () => {
     const user = useCookie('user');
@@ -13,9 +14,14 @@ export const useAuthStore = defineStore('auth', () => {
     const login = async (body) => {
         await api('/api/auth/login', { method: 'POST', body }).then((res) => {
             user.value = { ...res };
-            navigateTo({ path: '/deliver' });
+            if (res.isAdmin) {
+                navigateTo({ path: '/admin' });
+            }
+            else {
+                navigateTo({ path: '/deliver' });
+                cart.mergeCartWithBackend();
+            }
         });
-        cart.mergeCartWithBackend();
     };
 
     const getMe = async () => {
@@ -32,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
     };
 
     return {
-        user,
+        user: readonly(user),
         login,
         getMe,
         clearUser,

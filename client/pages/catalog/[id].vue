@@ -1,154 +1,169 @@
 <script setup>
-import { useCartStore } from '@/stores/cart';
-import { notification } from 'vuesax-alpha/lib/components/notification/src/notify.js';
-import { useDisplay } from 'vuetify/lib/framework.mjs';
+    import { useCartStore } from '@/stores/cart';
+    import { notification } from 'vuesax-alpha/lib/components/notification/src/notify.js';
+    import { useDisplay } from 'vuetify/lib/framework.mjs';
 
-const route = useRoute();
-const shopItem = ref({});
-const config = useRuntimeConfig();
-const base = config.public.apiBase;
-const cartStore = useCartStore();
+    const route = useRoute();
+    const shopItem = ref({});
+    const config = useRuntimeConfig();
+    const base = config.public.apiBase;
+    const cartStore = useCartStore();
 
-const { $api } = useNuxtApp();
+    const { $api } = useNuxtApp();
 
-const cartInfo = ref({
-    amount: 1,
-});
+    const cartInfo = ref({
+        amount: 1,
+    });
 
-const payload = ref({});
-const displayedImage = ref(``);
-const showImageViewer = ref(false);
-const imageViewerIndex = ref(0);
-const loading = ref(true);
-const { mobile } = useDisplay();
+    const payload = ref({});
+    const displayedImage = ref(``);
+    const showImageViewer = ref(false);
+    const imageViewerIndex = ref(0);
+    const loading = ref(true);
+    const { mobile } = useDisplay();
 
-function addToCart() {
-    const item = {
-        productId: cartInfo.value.productId,
-        productSizeId: cartInfo.value.size,
-        productColorId: cartInfo.value.color,
-        name: shopItem.value.name,
-        price: shopItem.value.price,
-        amount: cartInfo.value.amount,
-        maxAmount: shopItem.value.available,
-        logo: shopItem.value.productFiles.find(item => item.isLogo).name,
+    function addToCart() {
+        const item = {
+            productId: cartInfo.value.productId,
+            productSizeId: cartInfo.value.size,
+            productColorId: cartInfo.value.color,
+            name: shopItem.value.name,
+            price: shopItem.value.price,
+            amount: cartInfo.value.amount,
+            maxAmount: shopItem.value.available,
+            logo: shopItem.value.productFiles.find(item => item.isLogo).name,
+        };
+        cartStore.updateCart(item);
+        notification({
+            title: 'Добавлено!',
+            content: `Отличный выбор! Товар добавлен в корзину`,
+            position: 'bottom-center',
+        });
     };
-    cartStore.updateCart(item);
-    notification({
-        title: 'Добавлено!',
-        content: `Отличный выбор! Товар добавлен в корзину`,
-        position: 'bottom-center',
+
+    const logo = computed(() => {
+        const logo = shopItem.value.productFiles?.find(item => item.isLogo)?.name || shopItem.value.productFiles?.[0]?.name;
+        return logo ? `${base}/static/${logo}` : '';
+        return logo ? `${base}/static/${logo}` : '';
     });
-};
 
-const logo = computed(() => {
-    const logo = shopItem.value.productFiles?.find(item => item.isLogo)?.name || shopItem.value.productFiles?.[0]?.name;
-    return logo ? `${base}/static/${logo}` : '';
-});
-
-const productImages = computed(() => {
-    return shopItem.value.productFiles?.map(file => `${base}/static/${file.name}`) || [];
-});
-
-// Функция для обновления SEO информации
-function updateSEO() {
-    if (!shopItem.value || !shopItem.value.name)
-        return;
-
-    useHead({
-        title: `${shopItem.value.name} - Шелковица`,
-        meta: [
-            {
-                name: 'description',
-                content: shopItem.value.description || `Купить ${shopItem.value.name} в интернет-магазине "Шелковица". Высокое качество, демократичные цены, доставка по всей России.`,
-            },
-            {
-                name: 'keywords',
-                content: `${shopItem.value.name}, купить, нижнее белье, женское белье, белье, ${shopItem.value.productCategories?.map(c => c.name).join(', ') || ''}`,
-            },
-            { property: 'og:title', content: `${shopItem.value.name} - Шелковица` },
-            { property: 'og:description', content: shopItem.value.description || `Купить ${shopItem.value.name} в интернет-магазине "Шелковица". Высокое качество, демократичные цены, доставка по всей России.` },
-            { property: 'og:type', content: 'product' },
-            { property: 'og:url', content: `https://shelkovitsa.ru/catalog/${route.params.id}` },
-            { property: 'og:image', content: logo.value || '/main.webp' },
-            { name: 'twitter:card', content: 'summary_large_image' },
-            { name: 'product:price:amount', content: shopItem.value.price?.toString() || '0' },
-            { name: 'product:price:currency', content: 'RUB' },
-        ],
-        link: [
-            { rel: 'canonical', href: `https://shelkovitsa.ru/catalog/${route.params.id}` },
-        ],
+    const productImages = computed(() => {
+        return shopItem.value.productFiles?.map(file => `${base}/static/${file.name}`) || [];
+        return shopItem.value.productFiles?.map(file => `${base}/static/${file.name}`) || [];
     });
-}
 
-useAsyncData(() => {
-    watch(() => cartInfo.value.size, (val) => {
+    // Функция для обновления SEO информации
+    function updateSEO() {
+        if (!shopItem.value || !shopItem.value.name)
+            return;
+
+        useHead({
+            title: `${shopItem.value.name} - Шелковица`,
+            meta: [
+                {
+                    name: 'description',
+                    content: shopItem.value.description || `Купить ${shopItem.value.name} в интернет-магазине "Шелковица". Высокое качество, демократичные цены, доставка по всей России.`,
+                },
+                {
+                    name: 'keywords',
+                    content: `${shopItem.value.name}, купить, нижнее белье, женское белье, белье, ${shopItem.value.productCategories?.map(c => c.name).join(', ') || ''}`,
+                },
+                { property: 'og:title', content: `${shopItem.value.name} - Шелковица` },
+                { property: 'og:description', content: shopItem.value.description || `Купить ${shopItem.value.name} в интернет-магазине "Шелковица". Высокое качество, демократичные цены, доставка по всей России.` },
+                { property: 'og:type', content: 'product' },
+                { property: 'og:url', content: `https://shelkovitsa.ru/catalog/${route.params.id}` },
+                { property: 'og:image', content: logo.value || '/main.webp' },
+                { name: 'twitter:card', content: 'summary_large_image' },
+                { name: 'product:price:amount', content: shopItem.value.price?.toString() || '0' },
+                { name: 'product:price:currency', content: 'RUB' },
+            ],
+            link: [
+                { rel: 'canonical', href: `https://shelkovitsa.ru/catalog/${route.params.id}` },
+            ],
+        });
+    }
+
+    useAsyncData(() => {
+        watch(() => cartInfo.value.size, (val) => {
+            payload.value = {
+                ...payload.value,
+                productSizeId: val,
+            };
+
+            delete cartInfo.value.color;
+        });
+    }, {
+        immediate: true,
+    });
+
+    watch(() => cartInfo.value.color, (val) => {
         payload.value = {
             ...payload.value,
-            productSizeId: val,
+            productColorId: val,
         };
-
-        delete cartInfo.value.color;
     });
-}, {
-    immediate: true,
-});
 
-watch(() => cartInfo.value.color, (val) => {
-    payload.value = {
-        ...payload.value,
-        productColorId: val,
+    // Отслеживаем изменения параметров маршрута для обновления SEO
+    watch(() => route.params.id, () => {
+        updateSEO();
+    }, { immediate: true });
+
+    // Отслеживаем изменения товара для обновления SEO
+    watch(shopItem, () => {
+        updateSEO();
+    });
+
+    // Отслеживаем изменения параметров маршрута для обновления SEO
+    watch(() => route.params.id, () => {
+        updateSEO();
+    }, { immediate: true });
+
+    // Отслеживаем изменения товара для обновления SEO
+    watch(shopItem, () => {
+        updateSEO();
+    });
+
+    watch(cartInfo, async () => {
+        await nextTick();
+        if (cartInfo.value.color && cartInfo.value.size) {
+            $api(`/api/product/get`, {
+                method: 'POST',
+                body: {
+                    ...payload.value,
+                    productArticleId: +route.params.id,
+                },
+            }).then(({ amount, id }) => {
+                cartInfo.value.productId = id;
+                shopItem.value.available = amount;
+            });
+        }
+        else {
+            $api(`/api/product-article/${route.params.id}`, { method: 'POST', body: payload.value }).then((res) => {
+                shopItem.value = res;
+                displayedImage.value = logo.value;
+                loading.value = false;
+                // Обновляем SEO при загрузке товара
+                updateSEO();
+                loading.value = false;
+                // Обновляем SEO при загрузке товара
+                updateSEO();
+            });
+        }
+    }, { immediate: true, deep: true });
+
+    function handleImageClick(image, index) {
+        displayedImage.value = image;
+        if (!showImageViewer.value) {
+            imageViewerIndex.value = index;
+            showImageViewer.value = true;
+        }
     };
-});
 
-// Отслеживаем изменения параметров маршрута для обновления SEO
-watch(() => route.params.id, () => {
-    updateSEO();
-}, { immediate: true });
-
-// Отслеживаем изменения товара для обновления SEO
-watch(shopItem, () => {
-    updateSEO();
-});
-
-watch(cartInfo, async () => {
-    await nextTick();
-    if (cartInfo.value.color && cartInfo.value.size) {
-        $api(`/api/product/get`, {
-            method: 'POST',
-            body: {
-                ...payload.value,
-                productArticleId: +route.params.id,
-            },
-        }).then(({ amount, id }) => {
-            cartInfo.value.productId = id;
-            shopItem.value.available = amount;
-        });
-    }
-    else {
-        $api(`/api/product-article/${route.params.id}`, { method: 'POST', body: payload.value }).then((res) => {
-            shopItem.value = res;
-            displayedImage.value = logo.value;
-            loading.value = false;
-            // Обновляем SEO при загрузке товара
-            updateSEO();
-        });
-    }
-}, { immediate: true, deep: true });
-
-function handleImageClick(image, index) {
-    displayedImage.value = image;
-    if (!showImageViewer.value) {
-        imageViewerIndex.value = index;
-        showImageViewer.value = true;
-    }
-};
-
-function handleImageError(event) {
-    console.error('Ошибка загрузки изображения:', event.target.src);
+    function handleImageError(event) {
+        console.error('Ошибка загрузки изображения:', event.target.src);
     // Можно добавить fallback изображение
     // event.target.src = '/placeholder.jpg';
-};
+    };
 </script>
 
 <template>

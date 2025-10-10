@@ -11,10 +11,13 @@ const totalItems = ref(0);
 const editableItem = ref({});
 function getProducts() {
     loading.value = true;
-    return $api('/api/product-article/admin/getList', { method: 'POST', body: {
-        page: page.value - 1,
-        itemsPerPage: 10,
-    } }).then((res) => {
+    return $api('/api/product-article/admin/getList', {
+        method: 'POST',
+        body: {
+            page: page.value - 1,
+            itemsPerPage: 10,
+        },
+    }).then((res) => {
         products.value = res.data;
         totalItems.value = res.count;
         loading.value = false;
@@ -23,12 +26,42 @@ function getProducts() {
 
 getProducts();
 
-function updateXlsx(file) {
+async function updateXlsx(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('isDeletedOther', isDeletedOther.value);
-    $api('/api/product-article/uploadProducts', { method: 'PUT', body: formData });
-};
+    loading.value = true;
+    try {
+        const response = await $api('/api/product-article/uploadProducts', {
+            method: 'PUT',
+            body: formData,
+            responseType: 'blob', // Указываем, что ожидаем бинарный ответ
+        });
+        getProducts();
+
+        // Создаем ссылку для скачивания файла
+        const url = window.URL.createObjectURL(new Blob([response]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'products-errors.xlsx'); // Имя файла
+        document.body.appendChild(link);
+        link.click();
+
+        // Очищаем созданные элементы
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    }
+    catch (e) {
+        VsNotification({
+            title: 'Ошибка!',
+            content: e.message,
+            position: 'bottom-center',
+            border: 'error',
+        });
+        loading.value = false;
+    }
+    loading.value = false;
+}
 
 const headers = [
     {
@@ -36,7 +69,7 @@ const headers = [
         value: 'id',
     },
     {
-        title: 'Артикуль',
+        title: 'Артикул',
         value: 'article',
     },
     {
@@ -72,9 +105,14 @@ function toggleModal(item) {
 
 <template>
     <div class="admin-products pa-2">
-        <EditModal v-model="editableItem" v-model:visible="modalShow" />
+        <EditModal
+            v-model="editableItem"
+            v-model:visible="modalShow"
+            @update-product="getProducts"
+        />
         <div class="d-flex align-center">
             <v-file-input
+                :loading="loading"
                 density="compact"
                 hide-details
                 label="Загрузить эксель"
@@ -83,10 +121,13 @@ function toggleModal(item) {
             />
             <v-checkbox
                 v-model="isDeletedOther"
-                v-tooltip="'При установки данного чекбокса, товары, указанные в файле полностью перезапишут текущие'"
+                v-tooltip="
+                    'При установки данного чекбокса, товары, указанные в файле полностью перезапишут текущие'
+                "
                 class="ml-2"
                 color="red"
                 hide-details
+                :loading="loading"
                 label="Обновить целиком"
             />
         </div>
@@ -101,6 +142,11 @@ function toggleModal(item) {
             :items-length="totalItems"
             @update:options="getProducts"
         >
+            <template #no-data>
+                <div class="text-center pa-4">
+                    Нет данных
+                </div>
+            </template>
             <template #item.is_deleted="{ item }">
                 <v-checkbox-btn
                     v-model="item.is_deleted"

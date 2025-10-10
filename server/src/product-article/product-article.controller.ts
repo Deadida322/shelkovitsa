@@ -34,7 +34,7 @@ import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 
 @Controller('product-article')
 export class ProductArticleController {
-	constructor(private productArticleService: ProductArticleService) {}
+	constructor(private readonly productArticleService: ProductArticleService) {}
 
 	// @AdminAuth()
 	// @Post('create')
@@ -81,8 +81,7 @@ export class ProductArticleController {
 
 	@Get('populate')
 	async getPopulateList() {
-		const articles = this.productArticleService.getPopulateList();
-		return articles;
+		return this.productArticleService.getPopulateList();
 	}
 
 	@AdminAuth()

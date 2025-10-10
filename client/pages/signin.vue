@@ -1,15 +1,27 @@
 <script setup>
-import { useAuthStore } from '@/stores/auth';
+    import { useAuthStore } from '@/stores/auth';
+    import { VsNotification } from 'vuesax-alpha';
 
-const authStore = useAuthStore();
-const user = ref({
-    mail: '',
-    password: '',
-});
+    const authStore = useAuthStore();
+    const user = ref({
+        mail: '',
+        password: '',
+    });
 
-function onSubmit() {
-    authStore.login(user.value);
-}
+    const isLoading = ref(false);
+
+    async function onSubmit() {
+        isLoading.value = true;
+        await authStore.login(user.value).catch(({ response }) => {
+            VsNotification({
+                title: 'Ошибка!',
+                content: response?._data?.error?.message,
+                position: 'bottom-center',
+                border: 'danger',
+            });
+        });
+        isLoading.value = false;
+    }
 </script>
 
 <template>
@@ -38,7 +50,7 @@ function onSubmit() {
             <div class="text-center text-h6 mb-4">
                 Войти в аккаунт
             </div>
-            <s-form @submit="onSubmit">
+            <s-form :loading="isLoading" @submit="onSubmit">
                 <div class="auth-card__form">
                     <s-input
                         v-model="user.mail"

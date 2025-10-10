@@ -9,7 +9,7 @@ export class ProductFile extends BaseEntity {
 	id!: number;
 
 	@Column()
-	image!: string;
+	name!: string;
 
 	@Column({
 		default: false

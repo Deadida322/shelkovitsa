@@ -1,9 +1,4 @@
-import {
-	BadRequestException,
-	Injectable,
-	InternalServerErrorException,
-	NotFoundException
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { baseWhere, filterDuplicateObjectById } from 'src/common/utils';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
@@ -36,12 +31,7 @@ import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import * as moment from 'moment';
 import { UploadImageDto } from './dto/UploadImageDto';
-import {
-	existsFile,
-	getColorsPath,
-	moveFileToStatic,
-	removeFile
-} from 'src/helpers/storageHelper';
+import { getColorsPath, moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { CommonImageDto } from './dto/CommonImageDto';
@@ -51,25 +41,25 @@ import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 @Injectable()
 export class ProductArticleService {
 	constructor(
-		private dataSource: DataSource,
+		private readonly dataSource: DataSource,
 
 		@InjectRepository(Product)
-		private productRepository: Repository<Product>,
+		private readonly productRepository: Repository<Product>,
 
 		@InjectRepository(ProductArticle)
-		private productArticleRepository: Repository<ProductArticle>,
+		private readonly productArticleRepository: Repository<ProductArticle>,
 
 		@InjectRepository(ProductColor)
-		private productColorRepository: Repository<ProductColor>,
+		private readonly productColorRepository: Repository<ProductColor>,
 
 		@InjectRepository(ProductSize)
-		private productSizeRepository: Repository<ProductSize>,
+		private readonly productSizeRepository: Repository<ProductSize>,
 
 		@InjectRepository(ProductSubcategory)
-		private productSubcategoryRepository: Repository<ProductSubcategory>,
+		private readonly productSubcategoryRepository: Repository<ProductSubcategory>,
 
 		@InjectRepository(ProductFile)
-		private productFileRepository: Repository<ProductFile>
+		private readonly productFileRepository: Repository<ProductFile>
 	) {}
 
 	async getProductArticle(
@@ -84,7 +74,8 @@ export class ProductArticleService {
 		const p = await this.productArticleRepository.findOne({
 			where: wherePayload,
 			relations: {
-				products: true
+				products: true,
+				productFiles: true
 			}
 		});
 
@@ -166,16 +157,30 @@ export class ProductArticleService {
 				)
 			};
 		}
-		if (payload.name) {
-			wherePayload = { ...wherePayload, name: ILike(payload.name) };
-		}
+
 		if (!isAdmin) {
 			wherePayload = { ...wherePayload, ...baseProductWhere };
 		}
 
+		if (payload.query) {
+			wherePayload = [
+				{
+					...wherePayload,
+					article: ILike(`%${payload.query}%`)
+				},
+				{
+					...wherePayload,
+					name: ILike(`%${payload.query}%`)
+				}
+			];
+		}
+
 		const [result, total] = await this.productArticleRepository.findAndCount({
 			...getPaginateWhere(payload),
-			where: wherePayload
+			where: wherePayload,
+			relations: {
+				productFiles: true
+			}
 		});
 
 		return getPaginateResult(
@@ -211,7 +216,7 @@ export class ProductArticleService {
 		);
 	}
 
-	//!!!!недоделано
+	//!!!! TODO недоделано
 	async createArticleProduct(
 		createProductDto: CreateProductArticleDto,
 		images?: File[]
@@ -279,40 +284,91 @@ export class ProductArticleService {
 		}
 		const errorRows: string[][] = [];
 		const colorMap = await this.getColorMap();
-		for (let i = 0; i < data.length; i++) {
-			const row = data[i];
+		let index = 0;
+		for (const row of data) {
 			try {
-				const product: ParseProductArticleDto = {
-					article: row[1] ?? '',
-					color: row[2] ?? '',
-					size: row[3] ?? '',
-					amount: Number(row[4] ?? -1),
-					price: Number(row[5] ?? -1)
-				};
+				if (index !== 0) {
+					const product: ParseProductArticleDto = {
+						article: row[13] ?? '',
+						color: {
+							name: row[4] ?? '',
+							url: row[5] ?? ''
+						},
+						size: row[6] ?? '',
+						amount: Number(row[18] ?? 0),
+						price: Number(row[7] ?? 0),
+						country: row[9] ?? '',
+						description: row[10] ?? ''
+					};
 
-				const values = Object.values(product);
-				if (values.includes('') || values.includes(-1)) {
-					errorRows.push([
-						...row,
-						'',
-						'В строке пустые или отрицательные значения'
-					]);
-				} else {
-					product.article = String(product.article).trim();
-					product.color = capitalizeFirstLetter(String(product.color).trim());
-					product.size = String(product.size).trim();
-					await this.parseArticleProduct(product, colorMap);
+					// Функция для проверки пустых значений на любом уровне вложенности
+					const hasEmptyValues = (obj: any): boolean => {
+						if (
+							obj === null ||
+							obj === undefined ||
+							obj === '' ||
+							obj === 0
+						) {
+							return true;
+						}
+						if (typeof obj === 'object') {
+							return Object.values(obj).some((value) =>
+								hasEmptyValues(value)
+							);
+						}
+						return false;
+					};
+
+					// Функция для проверки заполненных значений на любом уровне вложенности
+					const hasFilledValues = (obj: any): boolean => {
+						if (
+							obj === null ||
+							obj === undefined ||
+							obj === '' ||
+							obj === 0
+						) {
+							return false;
+						}
+						if (typeof obj === 'object') {
+							return Object.values(obj).some((value) =>
+								hasFilledValues(value)
+							);
+						}
+						return true;
+					};
+
+					const hasEmpty = hasEmptyValues(product);
+					const hasFilled = hasFilledValues(product);
+
+					if (!hasFilled) {
+						// Если все поля пустые - ничего не делаем
+					} else if (hasEmpty) {
+						// Если есть хотя бы одно заполненное, но есть и пустые - ошибка
+						errorRows.push([
+							...row,
+							'',
+							`В строке ${index + 1} есть пустые или нулевые значения`
+						]);
+					} else {
+						console.log(`Спаршенный продукт: ${JSON.stringify(product)}`);
+						product.article = String(product.article).trim();
+						product.color.name = capitalizeFirstLetter(
+							String(product.color.name).trim()
+						);
+						product.size = String(product.size).trim();
+						await this.parseArticleProduct(product, colorMap);
+					}
 				}
 			} catch (err) {
-				const errRow = [...row, '', String(err)];
+				const errRow = [...row, '', `Строка ${index + 1}: `, String(err)];
 				errorRows.push(errRow);
+			} finally {
+				index++;
 			}
 		}
 
 		if (errorRows.length > 0) {
-			const buffer = xlsx.build([
-				{ name: 'myFirstSheet', data: errorRows, options: {} }
-			]);
+			const buffer = xlsx.build([{ name: 'Ошибки', data: errorRows, options: {} }]);
 
 			return buffer;
 		}
@@ -326,7 +382,14 @@ export class ProductArticleService {
 
 		const colorMap = new Map();
 		data.forEach((el) => {
-			colorMap.set(capitalizeFirstLetter(el[0]), capitalizeFirstLetter(el[1]));
+			const firstEl = String(el[0]).trim();
+			const secondEl = String(el[1]).trim();
+			if (firstEl && secondEl) {
+				colorMap.set(
+					capitalizeFirstLetter(firstEl),
+					capitalizeFirstLetter(secondEl)
+				);
+			}
 		});
 		return colorMap;
 	}
@@ -335,9 +398,9 @@ export class ProductArticleService {
 		productDto: ParseProductArticleDto,
 		colorMap: Map<string, string>
 	): Promise<void> {
-		const { amount, article, color, price, size } = productDto;
+		const { amount, article, color, price, size, country } = productDto;
 
-		const mappedColor = colorMap.get(color);
+		const mappedColor = colorMap.get(color.name);
 		if (!mappedColor) {
 			throw new Error(`Нет такого цвета в файле преобразования`);
 		}
@@ -357,14 +420,56 @@ export class ProductArticleService {
 			if (!productArticle) {
 				productArticle = await productArticleRepository.save({
 					article,
-					price
+					price,
+					country
 				});
 			} else {
 				await productArticleRepository.update(
 					{ id: productArticle.id },
 					{
+						price,
 						is_deleted: false
 					}
+				);
+			}
+
+			const productColorRepository =
+				queryRunner.manager.getRepository(ProductColor);
+			const productColor = await productColorRepository.findOne({
+				where: {
+					name: mappedColor
+				}
+			});
+			if (!productColor) {
+				throw new Error(`В БД не найден такой цвет`);
+			} else {
+				await productColorRepository.update(
+					{
+						id: productColor.id,
+						url: productColor.url
+					},
+					{ is_deleted: false }
+				);
+			}
+
+			const productSizeRepository = queryRunner.manager.getRepository(ProductSize);
+
+			let productSize = await productSizeRepository.findOne({
+				where: {
+					name: size
+				}
+			});
+
+			if (!productSize) {
+				productSize = await productSizeRepository.save({
+					name: size
+				});
+			} else {
+				await productSizeRepository.update(
+					{
+						id: productSize.id
+					},
+					{ is_deleted: false }
 				);
 			}
 
@@ -383,10 +488,6 @@ export class ProductArticleService {
 				}
 			});
 
-			const productColorRepository =
-				queryRunner.manager.getRepository(ProductColor);
-			const productSizeRepository = queryRunner.manager.getRepository(ProductSize);
-
 			if (existProduct) {
 				await productRepository.update(
 					{
@@ -395,42 +496,6 @@ export class ProductArticleService {
 					{ is_deleted: false, amount }
 				);
 			} else {
-				let productColor = await productColorRepository.findOne({
-					where: {
-						name: mappedColor
-					}
-				});
-				if (!productColor) {
-					throw new Error(`В БД не найден такой цвет`);
-				} else {
-					await productColorRepository.update(
-						{
-							id: productColor.id
-						},
-						{ is_deleted: false }
-					);
-				}
-				//секция с парсингом размеров
-
-				let productSize = await productSizeRepository.findOne({
-					where: {
-						name: size
-					}
-				});
-
-				if (!productSize) {
-					productSize = await productSizeRepository.save({
-						name: size
-					});
-				} else {
-					await productSizeRepository.update(
-						{
-							id: productSize.id
-						},
-						{ is_deleted: false }
-					);
-				}
-
 				const productPayload = {
 					amount,
 					productColor,
@@ -438,7 +503,7 @@ export class ProductArticleService {
 					productArticle
 				};
 
-				existProduct = await productRepository.save(productPayload);
+				await productRepository.save(productPayload);
 			}
 
 			await queryRunner.commitTransaction();
@@ -450,18 +515,21 @@ export class ProductArticleService {
 		}
 	}
 
+	// TODO допилить и обсудить
 	async getPopulateList() {
+		const takeCount = 3;
 		const prevDate = moment().subtract(1, 'months').toDate();
 
-		const articles = await this.productArticleRepository
+		// Сначала получаем ID популярных артикулов с заказами за последний месяц
+		const popularArticleIds = await this.productArticleRepository
 			.createQueryBuilder('product_article')
-			.leftJoinAndSelect('product_article.products', 'product')
-			.leftJoinAndSelect('product.orderProducts', 'orderProduct')
-			.leftJoinAndSelect('orderProduct.order', 'order')
+			.leftJoin('product_article.products', 'product')
+			.leftJoin('product.orderProducts', 'orderProduct')
+			.leftJoin('orderProduct.order', 'order')
 			.where('order.created_at > :createdAt', {
 				createdAt: prevDate
 			})
-			.where(
+			.andWhere(
 				'product_article.isVisible = :isVisible AND product_article.is_deleted = :isDeleted',
 				{
 					isVisible: true,
@@ -469,15 +537,61 @@ export class ProductArticleService {
 				}
 			)
 			.groupBy('product_article.id')
-			.addGroupBy('product_article.id')
-			.select(
-				'product_article.id as id, product_article.id as name, product_article.description as description, product_article.article as article, product_article.price as price, count(order.id) as orderCount'
-			)
+			.select('product_article.id', 'id')
+			.addSelect('count(order.id)', 'orderCount')
 			.orderBy('count(order.id)', 'DESC')
-			.limit(3)
+			.limit(takeCount)
 			.execute();
 
-		return convertToJsonMany(ProductArticleDto, articles);
+		let articleIds: number[];
+
+		if (popularArticleIds.length > 0) {
+			// Если есть популярные продукты с заказами
+			articleIds = popularArticleIds.map((item) => item.id);
+		} else {
+			// Если нет популярных продуктов, берем любые доступные
+			const fallbackArticles = await this.productArticleRepository.find({
+				where: {
+					isVisible: true,
+					is_deleted: false
+				},
+				select: ['id'],
+				take: takeCount
+			});
+			articleIds = fallbackArticles.map((item) => item.id);
+		}
+
+		if (articleIds.length === 0) {
+			return [];
+		}
+
+		// Получаем полные данные с файлами для выбранных артикулов
+		const articles = await this.productArticleRepository.find({
+			where: {
+				id: In(articleIds),
+				isVisible: true,
+				is_deleted: false
+			},
+			relations: {
+				productFiles: true,
+				products: true
+			}
+		});
+
+		// Сортируем по количеству заказов (если есть данные о заказах)
+		const sortedArticles = articles.sort((a, b) => {
+			if (popularArticleIds.length > 0) {
+				const aCount =
+					popularArticleIds.find((item) => item.id === a.id)?.orderCount || 0;
+				const bCount =
+					popularArticleIds.find((item) => item.id === b.id)?.orderCount || 0;
+				return bCount - aCount;
+			}
+			// Если нет данных о заказах, сортируем по ID
+			return a.id - b.id;
+		});
+
+		return convertToJsonMany(ProductArticleDto, sortedArticles);
 	}
 
 	async uploadImage(payload: UploadImageDto) {
@@ -490,10 +604,10 @@ export class ProductArticleService {
 			throw new BadRequestException('Не найдено такого продукта');
 		}
 		const isLogo = productArticle.productFiles.length == 0;
-		const image = await moveFileToStatic(payload.image);
+		const name = await moveFileToStatic(payload.image);
 
 		await this.productFileRepository.save({
-			image,
+			name,
 			isLogo,
 			product: productArticle
 		});
@@ -507,10 +621,10 @@ export class ProductArticleService {
 		});
 
 		if (!file) {
-			throw new BadRequestException('Не найдено такого файла');
+			throw new NotFoundException('Не найдено такого файла');
 		}
 
-		await removeFile(file.image);
+		await removeFile(file.name);
 
 		await this.productFileRepository.delete({
 			id: file.id

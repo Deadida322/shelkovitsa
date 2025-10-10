@@ -15,12 +15,12 @@
             <div class="s-footer__title">
                 КОНТАКТЫ
             </div>
-            <div class="s-footer__item">
-                8 999 723 38 09
-            </div>
-            <div class="s-footer__item">
-                8 999 723 38 09
-            </div>
+            <a href="mailto:shelkovitsa2009@yandex.ru" class="s-footer__item a">
+                shelkovitsa2009@yandex.ru
+            </a>
+            <a href="tel:+79255859439" class="s-footer__item a">
+                +7 925 585 94 39
+            </a>
         </div>
         <div class="s-footer__col">
             <div class="s-footer__title">
@@ -34,7 +34,7 @@
             </div>
         </div>
         <div class="s-footer__watermark">
-            © Webgib 2024
+            © Webgib 2025
         </div>
     </div>
 </template>
@@ -96,6 +96,10 @@
             @media screen and (max-width: 600px) {
                 font-size: 10px;
                 margin-bottom: 10px;
+            }
+
+            &.a:hover{
+                text-decoration: underline;
             }
         }
 

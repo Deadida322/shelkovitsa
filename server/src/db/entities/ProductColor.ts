@@ -16,4 +16,14 @@ export class ProductColor extends BaseEntity {
 		unique: true
 	})
 	name!: string;
+
+	@Column({
+		nullable: true
+	})
+	image?: string;
+
+	@Column({
+		nullable: true
+	})
+	url?: string;
 }

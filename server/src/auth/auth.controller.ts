@@ -1,4 +1,12 @@
-import { BadRequestException, Body, Controller, Post, Res } from '@nestjs/common';
+import {
+	BadRequestException,
+	Body,
+	Controller,
+	Get,
+	Post,
+	Req,
+	Res
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/db/entities/User';
 import { Repository } from 'typeorm';
@@ -8,18 +16,28 @@ import { convertToJson } from 'src/helpers/convertHelper';
 import { encodePsd } from 'src/helpers/authHelper';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/LoginDto';
-import { Response } from 'express';
+import { Response, Request } from 'express';
+import { Auth } from 'src/decorators/auth';
 
-const cookieOptions = {
-	secure: false,
-	httpOnly: true
+interface ICookieOptions {
+	secure: boolean;
+	httpOnly: boolean;
+	sameSite: 'none' | 'lax' | 'strict' | boolean;
+	path: string;
+}
+const cookieOptions: ICookieOptions = {
+	secure: process.env.NODE_ENV === 'production',
+	httpOnly: true,
+	sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+	path: '/'
 };
+
 @Controller('auth')
 export class AuthController {
 	constructor(
 		@InjectRepository(User)
-		private usersRepository: Repository<User>,
-		private authService: AuthService
+		private readonly usersRepository: Repository<User>,
+		private readonly authService: AuthService
 	) {}
 
 	@Post('register')
@@ -61,5 +79,18 @@ export class AuthController {
 		const { access_token, user } = await this.authService.signIn(loginDto);
 		response.cookie('access_token', access_token, cookieOptions);
 		return user;
+	}
+
+	@Get('me')
+	@Auth()
+	async getMe(@Req() request: Request): Promise<UserDto> {
+		if (request.user) {
+			const isAdmin = await this.authService.isUserAdmin(request.user);
+			return convertToJson(UserDto, {
+				...request.user,
+				isAdmin
+			});
+		}
+		return null;
 	}
 }

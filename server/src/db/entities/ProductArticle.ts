@@ -14,6 +14,9 @@ export class ProductArticle extends BaseEntity {
 	name?: string;
 
 	@Column({ nullable: true })
+	country?: string;
+
+	@Column({ nullable: true })
 	description?: string;
 
 	@Column({ unique: true })

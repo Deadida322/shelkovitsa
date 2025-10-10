@@ -1,9 +1,9 @@
 # Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
+.output/
+.data/
+.nuxt/
+.nitro/
+.cache/
 dist
 
 # Node dependencies
@@ -16,6 +16,11 @@ node_modules
 /temp/*
 /temp
 temp
+
+# Server build and temp files
+server/dist/
+server/temp/
+server/static/
 
 # Logs
 logs

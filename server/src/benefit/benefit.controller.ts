@@ -4,7 +4,7 @@ import { BenefitDto } from './dto/BenefitDto';
 
 @Controller('benefit')
 export class BenefitController {
-	constructor(private benefitService: BenefitService) {}
+	constructor(private readonly benefitService: BenefitService) {}
 	@Get()
 	async getList(): Promise<BenefitDto[]> {
 		return this.benefitService.getList();

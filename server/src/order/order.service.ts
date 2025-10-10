@@ -24,6 +24,7 @@ import { DeliveryType } from 'src/db/entities/DeliveryType';
 import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
+import { ConfigService } from '@nestjs/config';
 
 const orderRelations = {
 	orderProducts: {
@@ -38,11 +39,13 @@ const orderRelations = {
 export class OrderService {
 	constructor(
 		@InjectRepository(Order)
-		private orderRepository: Repository<Order>,
+		private readonly orderRepository: Repository<Order>,
 		@InjectRepository(Product)
-		private productRepository: Repository<Product>,
-		private dataSource: DataSource,
-		@InjectBot() private bot: Telegraf
+		private readonly productRepository: Repository<Product>,
+		private readonly dataSource: DataSource,
+		@InjectBot()
+		private readonly bot: Telegraf,
+		private readonly configService: ConfigService
 	) {}
 
 	async create(createOrderDto: CreateOrderDto, userId?: number) {
@@ -207,6 +210,7 @@ export class OrderService {
 	}
 
 	async sendTgCreateOrder(newOrder: Order) {
+		const chatTgId = this.configService.getOrThrow<number>('CHAT_TG_ID');
 		const html = [
 			`<u>Новый заказ #${newOrder.id}:</u>\n`,
 			`<strong>Сумма:</strong> ${newOrder.price}\n`,
@@ -214,7 +218,7 @@ export class OrderService {
 		];
 
 		const parse_html = html.join('');
-		this.bot.telegram.sendMessage(process.env.ADMIN_TG_ID, parse_html, {
+		this.bot.telegram.sendMessage(chatTgId, parse_html, {
 			parse_mode: 'HTML'
 		});
 	}

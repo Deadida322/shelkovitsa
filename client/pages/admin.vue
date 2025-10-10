@@ -1,21 +1,21 @@
 <script setup>
-import adminCategories from '@/components/admin/categories';
-import adminOrders from '@/components/admin/orders';
-import adminProducts from '@/components/admin/products';
+    import adminCategories from '@/components/admin/categories';
+    import adminOrders from '@/components/admin/orders';
+    import adminProducts from '@/components/admin/products';
 
-definePageMeta({
-    middleware: [
-        'auth',
-    ],
-});
+    definePageMeta({
+        middleware: [
+            'auth',
+        ],
+    });
 
-const tab = ref('products');
-const tabs = ['products', 'orders', 'categories'];
-const componentsMap = {
-    products: adminProducts,
-    categories: adminCategories,
-    orders: adminOrders,
-};
+    const tab = ref('products');
+    const tabs = ['products', 'orders', 'categories'];
+    const componentsMap = {
+        products: adminProducts,
+        categories: adminCategories,
+        orders: adminOrders,
+    };
 </script>
 
 <template>

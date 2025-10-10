@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 export default ConfigModule.forRoot({
 	load: [
 		() => ({
-			PORT: parseInt(process.env.PORT, 10) || 3000,
+			PORT: parseInt(process.env.PORT, 10) || 8000,
 			DB_HOST: process.env.DB_HOST,
 			DB_PORT: parseInt(process.env.DB_PORT, 10) || 5432,
 			DB_USER: process.env.DB_USER,
@@ -25,7 +25,8 @@ export default ConfigModule.forRoot({
 			DEST_PATH: process.env.DEST_PATH,
 			CORS: process.env.CORS,
 			TELEGRAM_TOKEN: process.env.TELEGRAM_TOKEN,
-			ADMIN_TG_ID: process.env.ADMIN_TG_ID
+			ADMIN_TG_ID: process.env.ADMIN_TG_ID,
+			CHAT_TG_ID: process.env.CHAT_TG_ID
 		})
 	],
 	isGlobal: true

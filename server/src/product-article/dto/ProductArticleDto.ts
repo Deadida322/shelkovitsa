@@ -11,6 +11,9 @@ export class ProductArticleDto {
 	name!: string;
 
 	@Expose()
+	country?: string;
+
+	@Expose()
 	description?: string;
 
 	@Expose()

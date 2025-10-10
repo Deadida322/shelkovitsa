@@ -1,40 +1,40 @@
 <script setup>
-import advantages from '~/assets/js/advantages';
+    import advantages from '~/assets/js/advantages';
 
-const { $api } = useNuxtApp();
-const isLoading = ref(false);
-const populateItems = ref([]);
-useHead({
-    title: 'Шелковица - интернет-магазин нижнего белья',
-    meta: [
-        {
-            name: 'description',
-            content: 'Интернет-магазин нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества, демократичные цены, доставка по всей России.',
-        },
-        {
-            name: 'keywords',
-            content: 'нижнее белье, интернет магазин белья, купить белье, женское белье, мужское белье, белье оптом, нижнее белье купить, нижнее белье интернет магазин',
-        },
-        { property: 'og:title', content: 'Шелковица - интернет-магазин нижнего белья' },
-        { property: 'og:description', content: 'Интернет-магазин нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества, демократичные цены, доставка по всей России.' },
-        { property: 'og:type', content: 'website' },
-        { property: 'og:url', content: 'https://shelkovitsa.ru' },
-        { property: 'og:image', content: '/main.webp' },
-        { name: 'twitter:card', content: 'summary_large_image' },
-    ],
-    link: [
-        { rel: 'canonical', href: 'https://shelkovitsa.ru/' },
-    ],
-});
-
-useAsyncData(() => {
-    isLoading.value = true;
-    $api('/api/product-article/populate').then((res) => {
-        populateItems.value = res;
-    }).finally(() => {
-        isLoading.value = false;
+    const { $api } = useNuxtApp();
+    const isLoading = ref(false);
+    const populateItems = ref([]);
+    useHead({
+        title: 'Шелковица - интернет-магазин нижнего белья',
+        meta: [
+            {
+                name: 'description',
+                content: 'Интернет-магазин нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества, демократичные цены, доставка по всей России.',
+            },
+            {
+                name: 'keywords',
+                content: 'нижнее белье, интернет магазин белья, купить белье, женское белье, мужское белье, белье оптом, нижнее белье купить, нижнее белье интернет магазин',
+            },
+            { property: 'og:title', content: 'Шелковица - интернет-магазин нижнего белья' },
+            { property: 'og:description', content: 'Интернет-магазин нижнего белья "Шелковица" - широкий выбор женского и мужского белья, нижнее белье высокого качества, демократичные цены, доставка по всей России.' },
+            { property: 'og:type', content: 'website' },
+            { property: 'og:url', content: 'https://shelkovitsa.ru' },
+            { property: 'og:image', content: '/main.webp' },
+            { name: 'twitter:card', content: 'summary_large_image' },
+        ],
+        link: [
+            { rel: 'canonical', href: 'https://shelkovitsa.ru/' },
+        ],
     });
-});
+
+    useAsyncData(() => {
+        isLoading.value = true;
+        $api('/api/product-article/populate').then((res) => {
+            populateItems.value = res;
+        }).finally(() => {
+            isLoading.value = false;
+        });
+    });
 </script>
 
 <template>
@@ -46,6 +46,7 @@ useAsyncData(() => {
                 src="/main.webp"
                 cover
                 height="400px"
+                alt="Шелковица - интернет-магазин нижнего белья"
             >
                 <div class="d-flex flex-column justify-center align-center header__image-container">
                     <div class="text-h2 header__title">
