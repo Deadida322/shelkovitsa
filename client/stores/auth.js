@@ -33,9 +33,14 @@ export const useAuthStore = defineStore('auth', () => {
             });
         }
     };
+    const clearUser = () => {
+        user.value = null;
+    };
+
     return {
         user: readonly(user),
         login,
         getMe,
+        clearUser,
     };
 });

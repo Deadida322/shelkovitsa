@@ -1,9 +1,30 @@
 <script setup>
+    import { useCartStore } from '#imports';
+    import { watch } from 'vue';
     import { useCategoriesStore } from '~/stores/categories';
     import { useMappingStore } from '~/stores/mapping';
 
     const categoriesStore = useCategoriesStore();
     const mappingStore = useMappingStore();
+    const cartStore = useCartStore();
+
+    cartStore.initializeCart();
+    const route = useRoute();
+    watch(
+        () => route.fullPath,
+        (newPath) => {
+            if (newPath === '/deliver') {
+                cartStore.isDisabled = true;
+            }
+            else {
+                cartStore.isDisabled = false;
+            }
+        },
+        {
+            immediate: true,
+        },
+    );
+
     useAsyncData(async () => {
         categoriesStore.getCategories();
         mappingStore.getColors();
@@ -23,7 +44,7 @@
             </div>
         </div>
         <s-footer class="mt-12" />
-        <s-cart />
+        <s-cart v-if="!cartStore.isDisabled" />
     </div>
 </template>
 

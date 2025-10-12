@@ -9,6 +9,7 @@ export const useCartStore = defineStore('cart', () => {
     });
 
     const cart = ref([]);
+    const isDisabled = ref(false);
     const { $api } = useNuxtApp();
     const initializeCart = async () => {
         if (auth.user) {
@@ -97,17 +98,6 @@ export const useCartStore = defineStore('cart', () => {
         }
     };
 
-    // Watch for authentication changes
-    watch(() => auth.user, (newUser, oldUser) => {
-        // If user logged in or out, reinitialize cart
-        if ((newUser && !oldUser) || (!newUser && oldUser)) {
-            initializeCart();
-            if (newUser) {
-                mergeCartWithBackend();
-            }
-        }
-    });
-
     return {
         cart,
         initializeCart,
@@ -115,5 +105,6 @@ export const useCartStore = defineStore('cart', () => {
         clearCart,
         removeItem,
         mergeCartWithBackend,
+        isDisabled,
     };
 });
