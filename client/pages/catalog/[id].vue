@@ -1,5 +1,6 @@
 <script setup>
     import { useCartStore } from '@/stores/cart';
+    import { computed, watch } from 'vue';
     import { notification } from 'vuesax-alpha/lib/components/notification/src/notify.js';
     import { useDisplay } from 'vuetify/lib/framework.mjs';
 
@@ -44,11 +45,9 @@
     const logo = computed(() => {
         const logo = shopItem.value.productFiles?.find(item => item.isLogo)?.name || shopItem.value.productFiles?.[0]?.name;
         return logo ? `${base}/static/${logo}` : '';
-        return logo ? `${base}/static/${logo}` : '';
     });
 
     const productImages = computed(() => {
-        return shopItem.value.productFiles?.map(file => `${base}/static/${file.name}`) || [];
         return shopItem.value.productFiles?.map(file => `${base}/static/${file.name}`) || [];
     });
 
@@ -91,9 +90,9 @@
             };
 
             delete cartInfo.value.color;
+        }, {
+            immediate: true,
         });
-    }, {
-        immediate: true,
     });
 
     watch(() => cartInfo.value.color, (val) => {
@@ -103,25 +102,13 @@
         };
     });
 
-    // Отслеживаем изменения параметров маршрута для обновления SEO
-    watch(() => route.params.id, () => {
-        updateSEO();
-    }, { immediate: true });
-
-    // Отслеживаем изменения товара для обновления SEO
     watch(shopItem, () => {
         updateSEO();
     });
 
-    // Отслеживаем изменения параметров маршрута для обновления SEO
     watch(() => route.params.id, () => {
         updateSEO();
     }, { immediate: true });
-
-    // Отслеживаем изменения товара для обновления SEO
-    watch(shopItem, () => {
-        updateSEO();
-    });
 
     watch(cartInfo, async () => {
         await nextTick();
@@ -142,10 +129,6 @@
                 shopItem.value = res;
                 displayedImage.value = logo.value;
                 loading.value = false;
-                // Обновляем SEO при загрузке товара
-                updateSEO();
-                loading.value = false;
-                // Обновляем SEO при загрузке товара
                 updateSEO();
             });
         }
@@ -161,8 +144,6 @@
 
     function handleImageError(event) {
         console.error('Ошибка загрузки изображения:', event.target.src);
-    // Можно добавить fallback изображение
-    // event.target.src = '/placeholder.jpg';
     };
 </script>
 
