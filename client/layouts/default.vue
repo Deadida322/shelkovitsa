@@ -25,10 +25,17 @@
         },
     );
 
+    // Оптимизируем загрузку данных с помощью prefetch
     useAsyncData(async () => {
-        categoriesStore.getCategories();
-        mappingStore.getColors();
-        mappingStore.getSizes();
+        // Загружаем категории и маппинг параллельно
+        await Promise.allSettled([
+            categoriesStore.getCategories(),
+            mappingStore.getColors(),
+            mappingStore.getSizes(),
+        ]);
+    }, {
+        server: true,
+        lazy: false,
     });
 </script>
 
@@ -40,11 +47,15 @@
                 <slot />
             </div>
             <div class="shelkovitsa-body__menu">
-                <s-category-menu />
+                <ClientOnly>
+                    <s-category-menu />
+                </ClientOnly>
             </div>
         </div>
         <s-footer class="mt-12" />
-        <s-cart v-if="!cartStore.isDisabled" />
+        <ClientOnly>
+            <s-cart v-if="!cartStore.isDisabled" />
+        </ClientOnly>
     </div>
 </template>
 

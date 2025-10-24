@@ -1,25 +1,25 @@
 <script setup>
-const props = defineProps({
-    modelValue: {
-        type: Number,
-        default: 1,
-    },
-    label: {
-        type: String,
-        default: '',
-    },
-    max: {
-        type: Number,
-        default: 1000,
-    },
-});
+    const props = defineProps({
+        modelValue: {
+            type: Number,
+            default: 1,
+        },
+        label: {
+            type: String,
+            default: '',
+        },
+        max: {
+            type: Number,
+            default: 1000,
+        },
+    });
 
-const emit = defineEmits(['update:model-value']);
+    const emit = defineEmits(['update:model-value']);
 
-const count = computed({
-    get: () => props.modelValue,
-    set: val => emit('update:model-value', val > props.max ? props.max : val),
-});
+    const count = computed({
+        get: () => props.modelValue,
+        set: val => emit('update:model-value', val > props.max ? props.max : val),
+    });
 </script>
 
 <template>
@@ -35,14 +35,12 @@ const count = computed({
             >
                 -
             </vs-button>
-            <client-only>
-                <vs-input
-                    v-model="count"
-                    class="s-count-input__input"
-                    type="number"
-                    width="20px"
-                />
-            </client-only>
+            <vs-input
+                v-model="count"
+                class="s-count-input__input"
+                type="number"
+                width="20px"
+            />
             <vs-button
                 size="small"
                 class="s-count-input__more"

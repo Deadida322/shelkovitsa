@@ -1,4 +1,5 @@
 <script setup>
+    import { NuxtLink } from '#components';
     import { useAuthStore } from '#imports';
     import menu from '~/assets/js/menu';
     import useBreakpoints from '~/composables/breakpoints';
@@ -29,11 +30,11 @@
         padding-scroll
     >
         <template #left>
-            <nuxt-link to="/">
+            <NuxtLink to="/">
                 <div class="logo">
                     SHELKOVITSA
                 </div>
-            </nuxt-link>
+            </NuxtLink>
         </template>
         <vs-navbar-item
             v-for="item in menu"
@@ -47,25 +48,25 @@
         <template #right>
             <client-only>
                 <template v-if="authStore.user">
-                    <nuxt-link class="d-sm-none" to="/deliver">
+                    <NuxtLink to="/deliver">
                         <v-btn
                             variant="tonal"
                             size="small"
                             icon="mdi-cart-outline"
                         />
-                    </nuxt-link>
+                    </NuxtLink>
                 </template>
                 <template v-else-if="!authStore.loading">
                     <vs-button class="d-none d-sm-block" type="flat">
-                        <nuxt-link to="/signin">
+                        <NuxtLink to="/signin">
                             Войти
-                        </nuxt-link>
+                        </NuxtLink>
                     </vs-button>
-                    <nuxt-link to="/signup">
+                    <NuxtLink to="/signup">
                         <vs-button class="d-none d-sm-block">
                             Регистрация
                         </vs-button>
-                    </nuxt-link>
+                    </NuxtLink>
                 </template>
             </client-only>
 

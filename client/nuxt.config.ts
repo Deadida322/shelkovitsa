@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { stripGoogleFonts } from './build/plugins/strip-vuesax-fonts';
+
 export default defineNuxtConfig({
     app: {
         head: {
@@ -22,9 +24,9 @@ export default defineNuxtConfig({
             },
         },
     },
-    modules: ['vuetify-nuxt-module', '@nuxt/eslint', '@pinia/nuxt', '@vuesax-alpha/nuxt'],
+    modules: ['vuetify-nuxt-module', '@nuxt/eslint', '@pinia/nuxt', '@vuesax-alpha/nuxt', '@nuxt/image', '@nuxtjs/google-fonts'],
     devtools: { enabled: false },
-    css: ['~/assets/main.scss'],
+    css: ['~/assets/main.scss', 'vuesax-alpha/theme-chalk/index.css'],
     vite: {
         css: {
             preprocessorOptions: {
@@ -39,7 +41,22 @@ export default defineNuxtConfig({
                 host: 'localhost',
             },
         },
-
+        build: {
+            sourcemap: process.env.NODE_ENV === 'production', // или true/false явно
+        },
+        plugins: [
+            stripGoogleFonts(),
+        ],
+        ssr: {
+            noExternal: ['@vueuse/core', 'vuesax-alpha'], // пакеты, которые нужно обрабатывать Rollup
+        },
+    },
+    nitro: {
+        sourceMap: true,
+        // Оптимизация минификации
+        minify: true,
+        // Компрессия ответов
+        compressPublicAssets: true,
     },
     hooks: {
         'vite:extendConfig': function (viteInlineConfig) {
@@ -66,7 +83,6 @@ export default defineNuxtConfig({
             prerender: false,
             ssr: false,
         },
-
         '/admin': {
             ssr: false,
             headers: { 'cache-control': 'no-cache' },
@@ -87,4 +103,18 @@ export default defineNuxtConfig({
     experimental: {
         payloadExtraction: true,
     },
+    image: {
+        quality: 80,
+        format: ['webp'],
+        provider: 'static',
+    },
+    googleFonts: {
+        families: {
+            'Open Sans': [400, 500, 600], // нужные веса
+        },
+        display: 'swap', // обязательно для хорошей оценки Core Web Vitals
+        download: true, // 🔑 ключевая опция — скачивает шрифты локально
+        inject: true, // автоматически добавляет @font-face в CSS
+    },
+
 });

@@ -1,11 +1,12 @@
 <script setup>
     import { useCartStore } from '@/stores/cart';
     import { computed, watch } from 'vue';
-    import { notification } from 'vuesax-alpha/lib/components/notification/src/notify.js';
+    import { VsNotification } from 'vuesax-alpha';
     import { useDisplay } from 'vuetify/lib/framework.mjs';
+    import sImage from '~/components/sImage.vue';
+    import SValidation from '~/components/sValidation.vue';
 
     const route = useRoute();
-    const shopItem = ref({});
     const config = useRuntimeConfig();
     const base = config.public.apiBase;
     const cartStore = useCartStore();
@@ -20,8 +21,19 @@
     const displayedImage = ref(``);
     const showImageViewer = ref(false);
     const imageViewerIndex = ref(0);
-    const loading = ref(true);
     const { mobile } = useDisplay();
+
+    const { data: shopItem, pending: loading } = await useAsyncData('shopItem', async () => {
+        return await $api(`/api/product-article/${route.params.id}`, { method: 'POST' });
+    }, {
+        default: () => {},
+    });
+
+    const logo = computed(() => {
+        const logo = shopItem.value.productFiles?.find(item => item.isLogo)?.name || shopItem.value.productFiles?.[0]?.name;
+        return logo ? `${base}/static/${logo}` : '';
+    });
+    displayedImage.value = logo.value;
 
     function addToCart() {
         const item = {
@@ -35,17 +47,12 @@
             logo: shopItem.value.productFiles.find(item => item.isLogo).name,
         };
         cartStore.updateCart(item);
-        notification({
+        VsNotification({
             title: 'Добавлено!',
             content: `Отличный выбор! Товар добавлен в корзину`,
             position: 'bottom-center',
         });
     };
-
-    const logo = computed(() => {
-        const logo = shopItem.value.productFiles?.find(item => item.isLogo)?.name || shopItem.value.productFiles?.[0]?.name;
-        return logo ? `${base}/static/${logo}` : '';
-    });
 
     const productImages = computed(() => {
         return shopItem.value.productFiles?.map(file => `${base}/static/${file.name}`) || [];
@@ -81,18 +88,13 @@
             ],
         });
     }
+    watch(() => cartInfo.value.size, (val) => {
+        payload.value = {
+            ...payload.value,
+            productSizeId: val,
+        };
 
-    useAsyncData(() => {
-        watch(() => cartInfo.value.size, (val) => {
-            payload.value = {
-                ...payload.value,
-                productSizeId: val,
-            };
-
-            delete cartInfo.value.color;
-        }, {
-            immediate: true,
-        });
+        delete cartInfo.value.color;
     });
 
     watch(() => cartInfo.value.color, (val) => {
@@ -160,7 +162,7 @@
             />
             <div class="catalog-item__container">
                 <div class="catalog-item__images mt-4">
-                    <v-img
+                    <SImage
                         cover
                         class="image-main"
                         :height=" mobile ? '400px' : '300px'"
@@ -176,7 +178,7 @@
                             v-for="({ name }, key) in shopItem.productFiles"
                             :key="key"
                         >
-                            <v-img
+                            <SImage
                                 cover
                                 class="carousel-image"
                                 height="200px"
@@ -187,7 +189,7 @@
                         </s-slide>
                     </s-carousel>
                 </div>
-                <s-validate
+                <SValidation
                     v-slot="{ submit }"
                     class="catalog-item__info mt-2"
                     @submit="addToCart"
@@ -206,31 +208,29 @@
                     </div>
                     <div class="item-info__to-cart mt-4 d-flex flex-column align-end">
                         <div class="item-info__select-container">
-                            <client-only>
-                                <div class="item-info__select">
-                                    <s-select
-                                        v-model="cartInfo.size"
-                                        required
-                                        label="Размер"
-                                        class="item-info__select"
-                                        placeholder="Укажите размер"
-                                        :options="shopItem.productSizes"
-                                        label-key="name"
-                                    />
-                                </div>
-                                <div class="item-info__select">
-                                    <s-select
-                                        v-model="cartInfo.color"
-                                        :disabled="!cartInfo.size"
-                                        required
-                                        class="item-info__select"
-                                        placeholder="Укажите цвет"
-                                        label="Цвет"
-                                        label-key="name"
-                                        :options="shopItem.productColors"
-                                    />
-                                </div>
-                            </client-only>
+                            <div class="item-info__select">
+                                <s-select
+                                    v-model="cartInfo.size"
+                                    required
+                                    label="Размер"
+                                    class="item-info__select"
+                                    placeholder="Укажите размер"
+                                    :options="shopItem.productSizes"
+                                    label-key="name"
+                                />
+                            </div>
+                            <div class="item-info__select">
+                                <s-select
+                                    v-model="cartInfo.color"
+                                    :disabled="!cartInfo.size"
+                                    required
+                                    class="item-info__select"
+                                    placeholder="Укажите цвет"
+                                    label="Цвет"
+                                    label-key="name"
+                                    :options="shopItem.productColors"
+                                />
+                            </div>
                         </div>
                         <s-count-input
                             v-model="cartInfo.amount"
@@ -255,7 +255,7 @@
                             </vs-button>
                         </div>
                     </div>
-                </s-validate>
+                </SValidation>
             </div>
         </div>
     </div>
