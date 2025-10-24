@@ -65,11 +65,11 @@
             });
             getProduct();
             emit('updateProduct');
-        }).catch(() => {
+        }).catch((e) => {
             getProduct();
             VsNotification({
                 title: 'Ошибка!',
-                content: 'Продукт не был обновлён',
+                content: `Продукт не был обновлён: ${e.data.error.message}`,
                 position: 'bottom-center',
                 border: 'danger',
             });
