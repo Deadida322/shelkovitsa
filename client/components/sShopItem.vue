@@ -9,6 +9,9 @@
     const config = useRuntimeConfig();
     const base = config.public.apiBase;
     const getLogo = props.item.productFiles?.find(item => item.isLogo)?.name || props.item.productFiles?.[0]?.name;
+    
+    // Формируем пути к изображениям с учетом оптимизации
+    const imageSrc = `${base}/static/${getLogo}`;
 </script>
 
 <template>
@@ -17,7 +20,15 @@
             <h3>{{ item.name }}</h3>
         </template>
         <template #img>
-            <img :src="`${base}/static/${getLogo}`" alt="">
+            <img 
+                :src="imageSrc" 
+                :alt="item.name"
+                loading="lazy"
+                decoding="async"
+                width="300"
+                height="300"
+                style="object-fit: cover;"
+            >
         </template>
         <template #text>
             <p>{{ item.description }}</p>

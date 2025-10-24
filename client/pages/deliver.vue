@@ -199,7 +199,7 @@
             <h2 class="text-h6 mt-4">
                 Оформление заказа
             </h2>
-            <s-validate v-slot="{ submit }" @submit="nextStep">
+            <s-validation v-slot="{ submit }" @submit="nextStep">
                 <v-stepper
                     v-model="step"
                     class="deliver__stepper"
@@ -311,7 +311,7 @@
                         </vs-button>
                     </div>
                 </v-stepper>
-            </s-validate>
+            </s-validation>
         </template>
 
         <vs-alert

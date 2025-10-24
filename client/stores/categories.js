@@ -1,3 +1,4 @@
+import { ref, useNuxtApp } from '#imports';
 import { defineStore } from 'pinia';
 
 export const useCategoriesStore = defineStore('categories', () => {

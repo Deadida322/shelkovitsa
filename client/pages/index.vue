@@ -1,9 +1,12 @@
 <script setup>
     import advantages from '~/assets/js/advantages';
+    import SImage from '~/components/sImage.vue';
 
     const { $api } = useNuxtApp();
     const isLoading = ref(false);
     const populateItems = ref([]);
+
+    // Добавляем предзагрузку ключевых ресурсов
     useHead({
         title: 'Шелковица - интернет-магазин нижнего белья',
         meta: [
@@ -24,29 +27,40 @@
         ],
         link: [
             { rel: 'canonical', href: 'https://shelkovitsa.ru/' },
+            // Предзагрузка ключевых изображений
+            { rel: 'preload', as: 'image', href: '/main.webp' },
         ],
     });
 
-    useAsyncData(() => {
-        isLoading.value = true;
-        $api('/api/product-article/populate').then((res) => {
-            populateItems.value = res;
-        }).finally(() => {
-            isLoading.value = false;
-        });
-    });
+    // Оптимизируем загрузку данных
+    const { data, pending } = await useAsyncData(
+        'popularProducts',
+        () => $api('/api/product-article/populate'),
+        {
+            server: true,
+            lazy: false,
+            default: () => [],
+        },
+    );
+
+    // Используем данные из useAsyncData
+    populateItems.value = data.value || [];
+    isLoading.value = pending.value;
 </script>
 
 <template>
     <div class="about-page">
         <div class="about-page__header header">
-            <v-img
-                gradient="to top right, rgba(100,115,201,.33), rgba(25,32,72,.7)"
+            <SImage
+                gradient="linear-gradient(to top right, rgba(100,115,201,.33), rgba(25,32,72,.7))"
                 class="header__image"
                 src="/main.webp"
+                webp-src="/main.webp"
                 cover
                 height="400px"
                 alt="Шелковица - интернет-магазин нижнего белья"
+                eager
+                sizes="100vw"
             >
                 <div class="d-flex flex-column justify-center align-center header__image-container">
                     <div class="text-h2 header__title">
@@ -59,7 +73,7 @@
                         с сохранением демократического уровня цен, доступного практически каждому покупателю.
                     </div>
                 </div>
-            </v-img>
+            </SImage>
         </div>
 
         <h2 class="text-h6 mt-4 text-center">
@@ -93,7 +107,7 @@
             </template>
             <template v-else>
                 <s-shop-item
-                    v-for="(item, key) in populateItems.splice(0, 3)"
+                    v-for="(item, key) in populateItems.slice(0, 3)"
                     :key="key"
                     :item="item"
                     @click="navigateTo(`/catalog/${item.id}`)"
