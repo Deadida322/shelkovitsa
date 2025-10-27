@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { Repository } from 'typeorm';
-import * as path from 'path';
-import * as fs from 'node:fs';
 import * as xlsx from 'node-xlsx';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 import { getColorsPath } from 'src/helpers/storageHelper';
@@ -20,7 +18,7 @@ export class InitService {
 			const colorsPath = await getColorsPath();
 			const workSheetsFromFile = xlsx.parse(colorsPath);
 			//берем второй лист в экселе
-			const data = workSheetsFromFile[1].data;
+			const data = workSheetsFromFile[0].data;
 			//отбираем 2 колонку
 			const allColors = Array.from(new Set(data.map((el) => el[1])));
 

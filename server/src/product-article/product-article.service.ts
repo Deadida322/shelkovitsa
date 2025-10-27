@@ -211,7 +211,8 @@ export class ProductArticleService {
 		await this.productArticleRepository.update(
 			{},
 			{
-				is_deleted: true
+				is_deleted: true,
+				isVisible: false
 			}
 		);
 	}
@@ -287,7 +288,7 @@ export class ProductArticleService {
 		let index = 0;
 		for (const row of data) {
 			try {
-				if (index !== 0) {
+				if (index !== -1) {
 					const product: ParseProductArticleDto = {
 						article: row[13] ?? '',
 						color: {
@@ -295,10 +296,12 @@ export class ProductArticleService {
 							url: row[5] ?? ''
 						},
 						size: row[6] ?? '',
-						amount: Number(row[18] ?? 0),
-						price: Number(row[7] ?? 0),
+						amount: Number(row[18]),
+						price: Number(row[7]),
 						country: row[9] ?? '',
-						description: row[10] ?? ''
+						description: row[10] ?? '',
+						productSubcategory: row[2] ?? '',
+						name: row[16] ?? ''
 					};
 
 					// Функция для проверки пустых значений на любом уровне вложенности
@@ -307,7 +310,7 @@ export class ProductArticleService {
 							obj === null ||
 							obj === undefined ||
 							obj === '' ||
-							obj === 0
+							Number.isNaN(obj)
 						) {
 							return true;
 						}
@@ -325,7 +328,7 @@ export class ProductArticleService {
 							obj === null ||
 							obj === undefined ||
 							obj === '' ||
-							obj === 0
+							Number.isNaN(obj)
 						) {
 							return false;
 						}
@@ -350,7 +353,7 @@ export class ProductArticleService {
 							`В строке ${index + 1} есть пустые или нулевые значения`
 						]);
 					} else {
-						console.log(`Спаршенный продукт: ${JSON.stringify(product)}`);
+						// console.log(`Спаршенный продукт: ${JSON.stringify(product)}`);
 						product.article = String(product.article).trim();
 						product.color.name = capitalizeFirstLetter(
 							String(product.color.name).trim()
@@ -372,13 +375,15 @@ export class ProductArticleService {
 
 			return buffer;
 		}
-		return undefined;
+		const buffer = xlsx.build([{ name: 'Ошибок нет', data: [], options: {} }]);
+
+		return buffer;
 	}
 
 	private async getColorMap(): Promise<Map<string, string>> {
 		const colorsPath = await getColorsPath();
 		const workSheetsFromFile = xlsx.parse(colorsPath);
-		const data = workSheetsFromFile[1].data;
+		const data = workSheetsFromFile[0].data;
 
 		const colorMap = new Map();
 		data.forEach((el) => {
@@ -398,7 +403,17 @@ export class ProductArticleService {
 		productDto: ParseProductArticleDto,
 		colorMap: Map<string, string>
 	): Promise<void> {
-		const { amount, article, color, price, size, country } = productDto;
+		const {
+			amount,
+			article,
+			color,
+			price,
+			size,
+			country,
+			name,
+			description,
+			productSubcategory
+		} = productDto;
 
 		const mappedColor = colorMap.get(color.name);
 		if (!mappedColor) {
@@ -410,6 +425,20 @@ export class ProductArticleService {
 		await queryRunner.startTransaction();
 
 		try {
+			const productSubcategoryRepository =
+				queryRunner.manager.getRepository(ProductSubcategory);
+
+			const existProductSubcategory = await productSubcategoryRepository.findOne({
+				where: {
+					name: productSubcategory,
+					is_deleted: false
+				}
+			});
+
+			if (!existProductSubcategory) {
+				throw new Error(`Не найдена подкатегория`);
+			}
+
 			const productArticleRepository =
 				queryRunner.manager.getRepository(ProductArticle);
 			let productArticle = await productArticleRepository.findOne({
@@ -421,14 +450,20 @@ export class ProductArticleService {
 				productArticle = await productArticleRepository.save({
 					article,
 					price,
-					country
+					country,
+					productSubcategory: existProductSubcategory,
+					name,
+					description
 				});
 			} else {
 				await productArticleRepository.update(
 					{ id: productArticle.id },
 					{
 						price,
-						is_deleted: false
+						is_deleted: false,
+						productSubcategory: existProductSubcategory,
+						name,
+						description
 					}
 				);
 			}
@@ -488,6 +523,8 @@ export class ProductArticleService {
 				}
 			});
 
+			console.log(productDto);
+
 			if (existProduct) {
 				await productRepository.update(
 					{
@@ -507,8 +544,10 @@ export class ProductArticleService {
 			}
 
 			await queryRunner.commitTransaction();
+			console.log(1);
 		} catch (err) {
 			await queryRunner.rollbackTransaction();
+			console.log(2);
 			throw err;
 		} finally {
 			await queryRunner.release();
@@ -643,11 +682,7 @@ export class ProductArticleService {
 			}
 		});
 
-		if (
-			!productArticle ||
-			!productArticle.productFiles ||
-			!productArticle.productFiles.length
-		) {
+		if (!productArticle?.productFiles?.length) {
 			throw new BadRequestException('Не найдено такого файла');
 		}
 
@@ -687,53 +722,169 @@ export class ProductArticleService {
 			throw new BadRequestException('Не найден такой артикул!');
 		}
 
+		if (payload.productColorIds || payload.productSizeIds) {
+			const actualColors = Array.from(
+				new Set(
+					payload.productColorIds ??
+						productArticle.products.map((product) => product.productColor.id)
+				)
+			);
+			const actualSizes = Array.from(
+				new Set(
+					payload.productSizeIds ??
+						productArticle.products.map((product) => product.productSize.id)
+				)
+			);
+			console.log(actualColors);
+			console.log(actualSizes);
+
+			await this.productRepository.update({ productArticle }, { is_deleted: true });
+
+			const newProducts = [];
+			const productsToRestore = [];
+			const currentProducts = productArticle.products;
+
+			for (const colorId of actualColors) {
+				for (const sizeId of actualSizes) {
+					// Проверяем, существует ли уже такая комбинация цвета и размера (активная)
+					const existingActiveProduct = currentProducts.find(
+						(product) =>
+							product.productColor?.id === colorId &&
+							product.productSize?.id === sizeId &&
+							!product.is_deleted
+					);
+
+					// Проверяем, существует ли удаленная комбинация цвета и размера
+					const existingDeletedProduct = currentProducts.find(
+						(product) =>
+							product.productColor?.id === colorId &&
+							product.productSize?.id === sizeId &&
+							product.is_deleted
+					);
+
+					// Если комбинация активна, пропускаем
+					if (existingActiveProduct) {
+						continue;
+					}
+
+					// Если комбинация удалена, восстанавливаем её
+					if (existingDeletedProduct) {
+						productsToRestore.push(existingDeletedProduct);
+						continue;
+					}
+
+					// Если комбинации нет вообще, создаем новый продукт
+					// Проверяем существование цвета
+					const existingColor = await this.productColorRepository.findOne({
+						where: { id: colorId }
+					});
+
+					// Проверяем существование размера
+					const existingSize = await this.productSizeRepository.findOne({
+						where: { id: sizeId }
+					});
+
+					// Выбрасываем ошибки если не найдены цвет или размер
+					if (!existingColor) {
+						throw new BadRequestException(`Цвет с ID ${colorId} не найден`);
+					}
+
+					if (!existingSize) {
+						throw new BadRequestException(`Размер с ID ${sizeId} не найден`);
+					}
+
+					const newProduct = this.productRepository.create({
+						productArticle: productArticle,
+						productColor: existingColor,
+						productSize: existingSize,
+						amount: 0 // По умолчанию количество 0
+					});
+					newProducts.push(newProduct);
+				}
+			}
+
+			// Восстанавливаем удаленные продукты
+			if (productsToRestore.length > 0) {
+				await this.productRepository.update(
+					productsToRestore.map((p) => p.id),
+					{ is_deleted: false }
+				);
+			}
+
+			// Создаем новые продукты
+			if (newProducts.length > 0) {
+				await this.productRepository.save(newProducts);
+			}
+		}
+
+		// Обновляем основные поля продукта
+		const updateData: Partial<ProductArticle> = {};
+		if (payload.name !== undefined) updateData.name = payload.name;
+		if (payload.description !== undefined)
+			updateData.description = payload.description;
+		if (payload.isVisible !== undefined) updateData.isVisible = payload.isVisible;
+		if (payload.is_deleted !== undefined) updateData.is_deleted = payload.is_deleted;
+
+		if (Object.keys(updateData).length > 0) {
+			await this.productArticleRepository.update(payload.id, updateData);
+		}
+
+		// Получаем обновленный продукт с новыми связями
+		const updatedProductArticle = await this.productArticleRepository.findOne({
+			where: {
+				id: payload.id
+			},
+			relations: {
+				products: {
+					productColor: true,
+					productSize: true
+				}
+			}
+		});
+
 		if (
 			payload.isVisible &&
 			typeof payload.isVisible == 'boolean' &&
 			payload.isVisible
 		) {
-			if (!productArticle.name && !payload.name) {
+			if (!updatedProductArticle.name && !payload.name) {
 				throw new BadRequestException('Нельзя выводить продукт, отсутствует имя');
 			}
 
-			const validFiles = productArticle.productFiles.filter((el) => !el.is_deleted);
-			if (!validFiles || !validFiles.length) {
+			const validFiles =
+				updatedProductArticle.productFiles?.filter((el) => !el.is_deleted) || [];
+			if (!validFiles?.length) {
 				throw new BadRequestException(
 					'Нельзя выводить продукт, отсутствуют файлы'
 				);
 			}
 
 			if (
-				!productArticle.productSubcategory ||
-				!productArticle.productSubcategory.id ||
-				productArticle.productSubcategory.is_deleted
+				!updatedProductArticle.productSubcategory?.id ||
+				updatedProductArticle.productSubcategory.is_deleted
 			) {
 				throw new BadRequestException(
 					'Нельзя выводить продукт, отсутствует привязка к подкатегории'
 				);
 			}
 
-			const validProducts = productArticle.products.filter((el) => !el.is_deleted);
-			if (!validProducts || !validProducts.length) {
+			const validProducts =
+				updatedProductArticle.products?.filter((el) => !el.is_deleted) || [];
+			if (!validProducts?.length) {
 				throw new BadRequestException(
 					'Нельзя выводить продукт, отсутствуют цвета или размеры продукта'
 				);
 			}
 		}
 
-		const updateProductArticle = await this.productArticleRepository.save({
-			...productArticle,
-			...payload
-		});
+		const res = convertToClass(FullProductArticleAdminDto, updatedProductArticle);
 
-		const res = convertToClass(FullProductArticleAdminDto, updateProductArticle);
-
-		const mappedColors = updateProductArticle.products.map((el) =>
+		const mappedColors = (updatedProductArticle.products || []).map((el) =>
 			convertToClass(ProductColorDto, el.productColor)
 		);
 		res.productColors = filterDuplicateObjectById<ProductColorDto>(mappedColors);
 
-		const mappedSizes = updateProductArticle.products.map((el) =>
+		const mappedSizes = (updatedProductArticle.products || []).map((el) =>
 			convertToClass(ProductSizeDto, el.productSize)
 		);
 

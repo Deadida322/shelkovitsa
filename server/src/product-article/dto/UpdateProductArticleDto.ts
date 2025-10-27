@@ -1,5 +1,5 @@
-import { Expose, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Expose } from 'class-transformer';
+import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, IsArray } from 'class-validator';
 
 import 'reflect-metadata';
 
@@ -28,4 +28,16 @@ export class UpdateProductArticleDto {
 	@IsBoolean()
 	@Expose()
 	is_deleted?: boolean;
+
+	@IsOptional()
+	@IsArray()
+	@IsInt({ each: true })
+	@Expose()
+	productColorIds?: number[];
+
+	@IsOptional()
+	@IsArray()
+	@IsInt({ each: true })
+	@Expose()
+	productSizeIds?: number[];
 }

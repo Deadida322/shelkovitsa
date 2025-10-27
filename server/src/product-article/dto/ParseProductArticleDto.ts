@@ -23,4 +23,10 @@ export class ParseProductArticleDto {
 
 	@Expose()
 	description?: string;
+
+	@Expose()
+	productSubcategory?: string;
+
+	@Expose()
+	name: string;
 }
