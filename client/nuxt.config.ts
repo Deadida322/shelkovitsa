@@ -53,9 +53,6 @@ export default defineNuxtConfig({
     },
     nitro: {
         sourceMap: true,
-        // Оптимизация минификации
-        minify: true,
-        // Компрессия ответов
         compressPublicAssets: true,
     },
     hooks: {
