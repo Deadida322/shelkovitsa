@@ -57,11 +57,12 @@
                     </NuxtLink>
                 </template>
                 <template v-else-if="!authStore.loading">
-                    <vs-button class="d-none d-sm-block" type="flat">
-                        <NuxtLink to="/signin">
+                    <NuxtLink to="/signin">
+                        <vs-button class="d-none d-sm-block" type="flat">
                             Войти
-                        </NuxtLink>
-                    </vs-button>
+                        </vs-button>
+                    </NuxtLink>
+
                     <NuxtLink to="/signup">
                         <vs-button class="d-none d-sm-block">
                             Регистрация

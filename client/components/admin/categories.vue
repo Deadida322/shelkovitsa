@@ -1,35 +1,35 @@
 <script setup>
-const { $api } = useNuxtApp();
-const categories = ref([]);
-const editableCategory = ref({});
-const editableSubCategory = ref({});
+    const { $api } = useNuxtApp();
+    const categories = ref([]);
+    const editableCategory = ref({});
+    const editableSubCategory = ref({});
 
-function getCategories() {
-    $api('/api/product-category').then((data) => {
-        categories.value = data;
+    function getCategories() {
+        $api('/api/product-category').then((data) => {
+            categories.value = data;
+        });
+    }
+    getCategories();
+
+    const choosen = ref(0);
+    const onSubSave = ref(() => {
+        $api('/api/product-category/subcategory/create', { method: 'POST', body: editableSubCategory.value }).then(() => {
+            editableSubCategory.value = {};
+            getCategories();
+        });
     });
-}
-getCategories();
 
-const choosen = ref(0);
-const onSubSave = ref(() => {
-    $api('/api/product-category/subcategory/create', { method: 'POST', body: editableSubCategory.value }).then(() => {
-        editableSubCategory.value = {};
-        getCategories();
-    });
-});
+    function onSave() {
+        $api('/api/product-category/create', { method: 'POST', body: { name: editableCategory.value.name } }).then(() => {
+            editableCategory.value = {};
+            getCategories();
+        });
+    }
 
-function onSave() {
-    $api('/api/product-category/create', { method: 'POST', body: { name: editableCategory.value.name } }).then(() => {
-        editableCategory.value = {};
-        getCategories();
-    });
-}
-
-function onSubAdd(category) {
-    editableSubCategory.value.categoryId = category.id;
-    editableSubCategory.value.name = '';
-}
+    function onSubAdd(category) {
+        editableSubCategory.value.categoryId = category.id;
+        editableSubCategory.value.name = '';
+    }
 </script>
 
 <template>
@@ -56,15 +56,34 @@ function onSubAdd(category) {
                     </ul>
                     <div class="d-flex justify-center">
                         <template v-if="editableSubCategory.categoryId >= 0">
-                            <s-validate v-slot="{ submit }" class="d-flex flex-column w-100" @submit="onSubSave">
-                                <s-input v-model="editableSubCategory.name" placeholder="Подкатегория" required density="compact" variant="solo" />
-                                <v-btn class="mt-2" prepend-icon="mdi-ыфму" color="red" @click="submit">
+                            <s-validation
+                                v-slot="{ submit }"
+                                class="d-flex flex-column w-100"
+                                @submit="onSubSave"
+                            >
+                                <s-input
+                                    v-model="editableSubCategory.name"
+                                    placeholder="Подкатегория"
+                                    required
+                                    density="compact"
+                                    variant="solo"
+                                />
+                                <v-btn
+                                    class="mt-2"
+                                    prepend-icon="mdi-ыфму"
+                                    color="red"
+                                    @click="submit"
+                                >
                                     Сохранить
                                 </v-btn>
-                            </s-validate>
+                            </s-validation>
                         </template>
                         <template v-else>
-                            <v-btn prepend-icon="mdi-plus" color="red" @click="onSubAdd(category)">
+                            <v-btn
+                                prepend-icon="mdi-plus"
+                                color="red"
+                                @click="onSubAdd(category)"
+                            >
                                 Подкатегория
                             </v-btn>
                         </template>
@@ -74,15 +93,34 @@ function onSubAdd(category) {
         </v-expansion-panels>
         <div class="mt-4 d-flex justify-center">
             <template v-if="editableCategory.isAdd">
-                <s-validate v-slot="{ submit }" class="d-flex flex-column w-100" @submit="onSave">
-                    <s-input v-model="editableCategory.name" placeholder="Категория" required density="compact" variant="solo" />
-                    <v-btn class="mt-2" prepend-icon="mdi-ыфму" color="red" @click="submit">
+                <s-validation
+                    v-slot="{ submit }"
+                    class="d-flex flex-column w-100"
+                    @submit="onSave"
+                >
+                    <s-input
+                        v-model="editableCategory.name"
+                        placeholder="Категория"
+                        required
+                        density="compact"
+                        variant="solo"
+                    />
+                    <v-btn
+                        class="mt-2"
+                        prepend-icon="mdi-ыфму"
+                        color="red"
+                        @click="submit"
+                    >
                         Сохранить
                     </v-btn>
-                </s-validate>
+                </s-validation>
             </template>
             <template v-else>
-                <v-btn prepend-icon="mdi-plus" color="red" @click="editableCategory.isAdd = true">
+                <v-btn
+                    prepend-icon="mdi-plus"
+                    color="red"
+                    @click="editableCategory.isAdd = true"
+                >
                     Категория
                 </v-btn>
             </template>

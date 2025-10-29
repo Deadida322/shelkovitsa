@@ -19,6 +19,7 @@
         "@vuelidate/validators": "^2.0.4",
         "@vuesax-alpha/icons-vue": "^0.0.2-beta.12",
         "@vuesax-alpha/nuxt": "^0.0.5",
+        "@vueuse/shared": "^9.13.0",
         "lodash": "^4.17.21",
         "maska": "^3.2.0",
         "nuxt": "^3.10.3",
