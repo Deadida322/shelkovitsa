@@ -1,5 +1,5 @@
 <script setup>
-    import { useCategoriesStore } from '#imports';
+    import { useCategoriesStore, useMappingStore } from '#imports';
 
     import { VsNotification } from 'vuesax-alpha';
     import { VFileUpload } from 'vuetify/labs/VFileUpload';
@@ -14,7 +14,11 @@
             default: false,
         },
     });
+
     const emit = defineEmits(['update:visible', 'update:model-value', 'updateProduct']);
+
+    const { plainColors, plainSizes } = storeToRefs(useMappingStore());
+
     const categoriesStore = useCategoriesStore();
     const config = useRuntimeConfig();
     const { $api } = useNuxtApp();
@@ -51,10 +55,18 @@
         console.error('Ошибка загрузки изображения в админке:', event.target.src);
     }
 
+    function mapProduct(product) {
+        return {
+            ...product,
+            productSizeIds: product.productSizes.map(({ id }) => id),
+            productColorIds: product.productColors.map(({ id }) => id),
+        };
+    }
+
     async function updateProduct() {
         await $api('/api/product-article/admin/productArticle', {
             method: 'PATCH',
-            body: { productArticleId: item.value.id, ...item.value },
+            body: { productArticleId: item.value.id, ...mapProduct(item.value) },
         }).then(() => {
             loading.value = false;
             VsNotification({
@@ -179,6 +191,24 @@
                     :items="categoriesStore.categories.find(item => item.id === category)?.productSubcategories || []"
                     @update:model-value="bindSubcategory"
                 />
+                <v-combobox
+                    v-model="item.productSizes"
+                    label="Размеры"
+                    item-title="name"
+                    multiple
+                    chips
+                    :items="plainSizes"
+                    @blur="updateProduct"
+                />
+                <v-combobox
+                    v-model="item.productColors"
+                    label="Цвета"
+                    item-title="name"
+                    multiple
+                    chips
+                    :items="plainColors"
+                    @blur="updateProduct"
+                />
                 <v-switch
                     v-model="item.isVisible"
                     label="Продукт видимый?"
@@ -193,6 +223,7 @@
                     color="red"
                     @update:model-value="updateProduct"
                 />
+
                 <s-carousel
                     class="admin-images-carousel mt-4"
                     :items-per-page="1.8"
