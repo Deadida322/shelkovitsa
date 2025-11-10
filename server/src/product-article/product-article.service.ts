@@ -31,7 +31,12 @@ import * as xlsx from 'node-xlsx';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import * as moment from 'moment';
 import { UploadImageDto } from './dto/UploadImageDto';
-import { getColorsPath, moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
+import {
+	getColorsPath,
+	getSizesPath,
+	moveFileToStatic,
+	removeFile
+} from 'src/helpers/storageHelper';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { CommonImageDto } from './dto/CommonImageDto';
@@ -285,6 +290,7 @@ export class ProductArticleService {
 		}
 		const errorRows: string[][] = [];
 		const colorMap = await this.getColorMap();
+		const sizeMap = await this.getSizeMap();
 		let index = 0;
 		for (const row of data) {
 			try {
@@ -359,7 +365,7 @@ export class ProductArticleService {
 							String(product.color.name).trim()
 						);
 						product.size = String(product.size).trim();
-						await this.parseArticleProduct(product, colorMap);
+						await this.parseArticleProduct(product, colorMap, sizeMap);
 					}
 				}
 			} catch (err) {
@@ -399,9 +405,26 @@ export class ProductArticleService {
 		return colorMap;
 	}
 
+	private async getSizeMap(): Promise<Map<string, string>> {
+		const sizesPath = await getSizesPath();
+		const workSheetsFromFile = xlsx.parse(sizesPath);
+		const data = workSheetsFromFile[0].data;
+
+		const sizeMap = new Map();
+		data.forEach((el) => {
+			const firstEl = String(el[0]).trim().toUpperCase();
+			const secondEl = String(el[1]).trim().toUpperCase();
+			if (firstEl && secondEl) {
+				sizeMap.set(firstEl, secondEl);
+			}
+		});
+		return sizeMap;
+	}
+
 	private async parseArticleProduct(
 		productDto: ParseProductArticleDto,
-		colorMap: Map<string, string>
+		colorMap: Map<string, string>,
+		sizeMap: Map<string, string>
 	): Promise<void> {
 		const {
 			amount,
@@ -418,6 +441,11 @@ export class ProductArticleService {
 		const mappedColor = colorMap.get(color.name);
 		if (!mappedColor) {
 			throw new Error(`Нет такого цвета в файле преобразования`);
+		}
+
+		const mappedSize = sizeMap.get(size);
+		if (!mappedSize) {
+			throw new Error(`Нет такого размера в файле преобразования`);
 		}
 
 		const queryRunner = this.dataSource.createQueryRunner();
@@ -491,13 +519,13 @@ export class ProductArticleService {
 
 			let productSize = await productSizeRepository.findOne({
 				where: {
-					name: size
+					name: mappedSize
 				}
 			});
 
 			if (!productSize) {
 				productSize = await productSizeRepository.save({
-					name: size
+					name: mappedSize
 				});
 			} else {
 				await productSizeRepository.update(
@@ -523,8 +551,6 @@ export class ProductArticleService {
 				}
 			});
 
-			console.log(productDto);
-
 			if (existProduct) {
 				await productRepository.update(
 					{
@@ -544,10 +570,8 @@ export class ProductArticleService {
 			}
 
 			await queryRunner.commitTransaction();
-			console.log(1);
 		} catch (err) {
 			await queryRunner.rollbackTransaction();
-			console.log(2);
 			throw err;
 		} finally {
 			await queryRunner.release();

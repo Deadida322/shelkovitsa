@@ -11,6 +11,7 @@ import {
 import { MemoryStoredFile } from 'nestjs-form-data';
 
 const COLORS_PATH = path.join(process.cwd(), 'docs', 'colors.xlsx');
+const SIZES_PATH = path.join(process.cwd(), 'docs', 'sizes.xlsx');
 
 const baseSrcPath = () => path.join(process.cwd(), process.env.TEMP_PATH);
 const baseDestPath = () => path.join(process.cwd(), process.env.DEST_PATH);
@@ -34,7 +35,7 @@ export function getDestPath(filePath?: string): string {
 export function initDiskStorage() {
 	const srcPath = baseSrcPath();
 	const destPath = baseDestPath();
-	
+
 	try {
 		if (!fs.existsSync(srcPath)) {
 			fsPromises.mkdir(srcPath, { recursive: true });
@@ -45,7 +46,9 @@ export function initDiskStorage() {
 		}
 	} catch (error) {
 		console.error('Ошибка создания директорий:', error);
-		throw new InternalServerErrorException('Не удалось создать необходимые директории');
+		throw new InternalServerErrorException(
+			'Не удалось создать необходимые директории'
+		);
 	}
 }
 
@@ -60,18 +63,6 @@ export const fileInterceptor = FileInterceptor('file', {
 		}
 	})
 });
-
-// export const logoInterceptor = FileInterceptor('logo', {
-// 	storage: diskStorage({
-// 		destination: function (req, file, cb) {
-// 			const path = getSrcPath();
-// 			cb(null, path);
-// 		},
-// 		filename: function (req, file, cb) {
-// 			cb(null, `${Date.now()}-${file.originalname}`); //Appending extension
-// 		}
-// 	})
-// });
 
 export function imagesInterceptor(filesCount: number = 10) {
 	return FilesInterceptor('images', filesCount, {
@@ -138,4 +129,13 @@ export async function getColorsPath() {
 		);
 	}
 	return COLORS_PATH;
+}
+
+export async function getSizesPath() {
+	if (!(await existsFile(SIZES_PATH))) {
+		throw new InternalServerErrorException(
+			'Файл для преобразования размеров не найден'
+		);
+	}
+	return SIZES_PATH;
 }
