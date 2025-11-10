@@ -52,6 +52,7 @@ async function bootstrap() {
 
 	const initService = app.get(InitService);
 	initService.initColors();
+	initService.initSizes();
 
 	console.log(`App started at http://localhost:${process.env.PORT}`);
 }
