@@ -35,8 +35,13 @@ import {
 	getColorsPath,
 	getSizesPath,
 	moveFileToStatic,
-	removeFile
+	removeFile,
+	getDestPath
 } from 'src/helpers/storageHelper';
+import * as https from 'https';
+import * as http from 'http';
+import * as fsPromises from 'fs/promises';
+import * as path from 'path';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { CommonImageDto } from './dto/CommonImageDto';
@@ -421,6 +426,82 @@ export class ProductArticleService {
 		return sizeMap;
 	}
 
+	private async downloadImageFromUrl(
+		imageUrl: string,
+		colorName: string
+	): Promise<string> {
+		return new Promise((resolve, reject) => {
+			let url: URL;
+			try {
+				url = new URL(imageUrl);
+			} catch (error) {
+				reject(new Error(`Невалидный URL: ${imageUrl}`));
+				return;
+			}
+
+			const protocol = url.protocol === 'https:' ? https : http;
+
+			const request = protocol.get(imageUrl, (response) => {
+				if (!response.statusCode || response.statusCode !== 200) {
+					reject(
+						new Error(
+							`Не удалось скачать изображение: статус ${response.statusCode || 'неизвестен'}`
+						)
+					);
+					return;
+				}
+
+				const contentType = response.headers['content-type'] || '';
+				let extension = 'jpg';
+				if (contentType.includes('png')) {
+					extension = 'png';
+				} else if (contentType.includes('webp')) {
+					extension = 'webp';
+				} else if (contentType.includes('jpeg')) {
+					extension = 'jpg';
+				} else {
+					// Пытаемся определить расширение из URL
+					const urlExtension = path.extname(url.pathname).toLowerCase();
+					if (urlExtension) {
+						extension = urlExtension.substring(1); // Убираем точку
+					}
+				}
+
+				const chunks: Buffer[] = [];
+				response.on('data', (chunk) => {
+					chunks.push(chunk);
+				});
+
+				response.on('end', async () => {
+					try {
+						const buffer = Buffer.concat(chunks);
+						const hash = (Math.random() + 1).toString(36).substring(5);
+						const fileName = `color-${colorName.toLowerCase().replace(/\s+/g, '-')}-${hash}.${extension}`;
+						const destPath = getDestPath(fileName);
+						await fsPromises.writeFile(destPath, buffer);
+						resolve(fileName);
+					} catch (error) {
+						reject(error);
+					}
+				});
+
+				response.on('error', (error) => {
+					reject(error);
+				});
+			});
+
+			// Устанавливаем таймаут 10 секунд для запроса
+			request.setTimeout(10000, () => {
+				request.destroy();
+				reject(new Error(`Таймаут при скачивании изображения: ${imageUrl}`));
+			});
+
+			request.on('error', (error) => {
+				reject(error);
+			});
+		});
+	}
+
 	private async parseArticleProduct(
 		productDto: ParseProductArticleDto,
 		colorMap: Map<string, string>,
@@ -506,13 +587,49 @@ export class ProductArticleService {
 			if (!productColor) {
 				throw new Error(`В БД не найден такой цвет`);
 			} else {
-				await productColorRepository.update(
-					{
-						id: productColor.id,
-						url: productColor.url
-					},
-					{ is_deleted: false }
-				);
+				// Если у цвета нет URL и в Excel есть URL, скачиваем и сохраняем изображение
+				if (!productColor.url && color.url && color.url.trim() !== '') {
+					try {
+						const imageFileName = await this.downloadImageFromUrl(
+							color.url.trim(),
+							mappedColor
+						);
+						await productColorRepository.update(
+							{
+								id: productColor.id
+							},
+							{
+								is_deleted: false,
+								url: color.url.trim(),
+								image: imageFileName
+							}
+						);
+					} catch (error) {
+						// Если не удалось скачать изображение, не блокируем парсинг
+						// Сохраняем только URL, изображение будет отсутствовать
+						await productColorRepository.update(
+							{
+								id: productColor.id
+							},
+							{
+								is_deleted: false,
+								url: color.url.trim()
+							}
+						);
+						const errorMessage =
+							error instanceof Error ? error.message : String(error);
+						console.error(
+							`[Парсинг] Не удалось скачать изображение для цвета "${mappedColor}" (URL: ${color.url.trim()}): ${errorMessage}`
+						);
+					}
+				} else {
+					await productColorRepository.update(
+						{
+							id: productColor.id
+						},
+						{ is_deleted: false }
+					);
+				}
 			}
 
 			const productSizeRepository = queryRunner.manager.getRepository(ProductSize);
