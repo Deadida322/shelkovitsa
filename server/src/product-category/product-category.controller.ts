@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	ParseIntPipe,
+	Patch,
+	Post
+} from '@nestjs/common';
 import { ProductCategoryService } from './product-category.service';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
 import { ProductCategoryDto } from './dto/ProductCategoryDto';
@@ -30,6 +39,12 @@ export class ProductCategoryController {
 		return this.productCategoryService.updateCategory(payload);
 	}
 
+	@Delete('delete/:id')
+	@AdminAuth()
+	async delete(@Param('id', ParseIntPipe) id: number) {
+		return this.productCategoryService.deleteCategory(id);
+	}
+
 	@Post('/subcategory/create')
 	@AdminAuth()
 	async createSubCategory(
@@ -44,6 +59,12 @@ export class ProductCategoryController {
 		@Body() payload: UpdateProductSubcategoryDto
 	): Promise<ProductSubcategoryDto> {
 		return this.productCategoryService.updateSubCategory(payload);
+	}
+
+	@Delete('subcategory/delete/:id')
+	@AdminAuth()
+	async deleteSubcategory(@Param('id', ParseIntPipe) id: number) {
+		return this.productCategoryService.deleteSubcategory(id);
 	}
 
 	@Post('/subcategory/bindProduct')

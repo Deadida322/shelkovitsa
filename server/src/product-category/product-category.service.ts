@@ -78,12 +78,43 @@ export class ProductCategoryService {
 			throw new BadRequestException('Нет такой категории!');
 		}
 
-		const updateCategory = await this.productCategoryRepository.save({
-			id,
-			name
-		});
+		const updateCategory = await this.productCategoryRepository.update(
+			{
+				id
+			},
+			{
+				name
+			}
+		);
 
 		return convertToJson(ProductCategoryDto, updateCategory);
+	}
+
+	async deleteCategory(id: number): Promise<void> {
+		const category = await this.productCategoryRepository.findOne({
+			where: {
+				id,
+				...baseWhere
+			},
+			relations: {
+				productSubcategories: true
+			}
+		});
+		if (!category) {
+			throw new BadRequestException('Нет такой категории!');
+		}
+		if (category.productSubcategories.some((el) => !el.is_deleted)) {
+			throw new BadRequestException('К категории еще привязаны подкатегории!');
+		}
+
+		await this.productCategoryRepository.update(
+			{
+				id
+			},
+			{
+				is_deleted: true
+			}
+		);
 	}
 
 	async createSubCategory({
@@ -106,14 +137,16 @@ export class ProductCategoryService {
 				name
 			}
 		});
-		if (subcategory && !subcategory.is_deleted) {
-			throw new BadRequestException('Такая подкатегория уже существует!');
-		} else if (subcategory && subcategory.is_deleted) {
-			subcategory = (
-				await this.productSubcategoryRepository.update(subcategory.id, {
-					is_deleted: false
-				})
-			)[0];
+		if (subcategory) {
+			if (subcategory.is_deleted) {
+				subcategory = (
+					await this.productSubcategoryRepository.update(subcategory.id, {
+						is_deleted: false
+					})
+				)[0];
+			} else {
+				throw new BadRequestException('Такая подкатегория уже существует!');
+			}
 		} else {
 			subcategory = await this.productSubcategoryRepository.save({
 				name,
@@ -157,6 +190,34 @@ export class ProductCategoryService {
 		});
 
 		return convertToJson(ProductSubcategoryDto, res);
+	}
+
+	async deleteSubcategory(id: number): Promise<void> {
+		const subcategory = await this.productSubcategoryRepository.findOne({
+			where: {
+				id,
+				...baseWhere
+			},
+			relations: {
+				productArticles: true
+			}
+		});
+
+		if (!subcategory) {
+			throw new BadRequestException('Нет такой подкатегории!');
+		}
+		if (subcategory.productArticles.some((el) => !el.is_deleted)) {
+			throw new BadRequestException('К подкатегории еще привязаны продукты!');
+		}
+
+		await this.productSubcategoryRepository.update(
+			{
+				id
+			},
+			{
+				is_deleted: true
+			}
+		);
 	}
 
 	async bindProductToSubcategory({
