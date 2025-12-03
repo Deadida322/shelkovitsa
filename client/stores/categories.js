@@ -5,8 +5,8 @@ export const useCategoriesStore = defineStore('categories', () => {
     const categories = ref([]);
 
     const { $api } = useNuxtApp();
-    const getCategories = () => {
-        $api('/api/product-category')
+    const getCategories = async () => {
+        return await $api('/api/product-category')
             .then((res) => {
                 categories.value = res;
             });

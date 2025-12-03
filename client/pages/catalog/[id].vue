@@ -147,6 +147,17 @@
     function handleImageError(event) {
         console.error('Ошибка загрузки изображения:', event.target.src);
     };
+
+    const shopColorImage = computed(() => {
+        if (!cartInfo.value.color)
+            return null;
+        const color = shopItem.value.productColors.find(({ id }) => id === cartInfo.value.color);
+        if (color.image)
+            return `${base}/static/${color?.image}`;
+        if (color.url)
+            return color.url;
+        return null;
+    });
 </script>
 
 <template>
@@ -219,7 +230,7 @@
                                     label-key="name"
                                 />
                             </div>
-                            <div class="item-info__select">
+                            <div class="item-info__select color-container">
                                 <s-select
                                     v-model="cartInfo.color"
                                     :disabled="!cartInfo.size"
@@ -230,6 +241,9 @@
                                     label-key="name"
                                     :options="shopItem.productColors"
                                 />
+                                <div v-if="shopColorImage" class="color-square">
+                                    <img :src="shopColorImage" alt="цвет отображения">
+                                </div>
                             </div>
                         </div>
                         <s-count-input
@@ -272,6 +286,25 @@
             grid-template-columns: auto;
             grid-template-rows: repeat(2, 1fr);
         }
+    }
+}
+
+.color-container {
+    display: flex;
+    gap: 8px
+}
+.color-square {
+    border: 1px solid black;
+    border-radius: 4px;
+    width: 42px;
+    height: 42px;
+    align-self: flex-end;
+    overflow: hidden;
+
+    img {
+        object-fit: cover;
+        height: 100%;
+        width: 100%;
     }
 }
 
