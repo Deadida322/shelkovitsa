@@ -58,15 +58,16 @@
     function mapProduct(product) {
         return {
             ...product,
-            productSizeIds: product.productSizes.map(({ id }) => id),
-            productColorIds: product.productColors.map(({ id }) => id),
+            productSizeIds: (product.productSizes || []).map(({ id }) => id),
+            productColorIds: (product.productColors || []).map(({ id }) => id),
         };
     }
 
     async function updateProduct() {
+        const mappedProduct = mapProduct(item.value);
         await $api('/api/product-article/admin/productArticle', {
             method: 'PATCH',
-            body: { productArticleId: item.value.id, ...mapProduct(item.value) },
+            body: { productArticleId: item.value.id, ...mappedProduct },
         }).then(() => {
             loading.value = false;
             VsNotification({
@@ -168,12 +169,14 @@
                     v-model="item.name"
                     hide-details="auto"
                     label="Название"
+                    :disabled="item.is_deleted"
                     @blur="updateProduct"
                 />
                 <v-text-field
                     v-model="item.description"
                     hide-details="auto"
                     label="Описание"
+                    :disabled="item.is_deleted"
                     @blur="updateProduct"
                 />
                 <v-select
@@ -181,6 +184,7 @@
                     label="Категория"
                     item-title="name"
                     item-value="id"
+                    :disabled="item.is_deleted"
                     :items="categoriesStore.categories"
                 />
                 <v-select
@@ -188,6 +192,7 @@
                     label="Подкатегория"
                     item-title="name"
                     item-value="id"
+                    :disabled="item.is_deleted"
                     :items="categoriesStore.categories.find(item => item.id === category)?.productSubcategories || []"
                     @update:model-value="bindSubcategory"
                 />
@@ -197,6 +202,7 @@
                     item-title="name"
                     multiple
                     chips
+                    :disabled="item.is_deleted"
                     :items="plainSizes"
                     @blur="updateProduct"
                 />
@@ -206,12 +212,14 @@
                     item-title="name"
                     multiple
                     chips
+                    :disabled="item.is_deleted"
                     :items="plainColors"
                     @blur="updateProduct"
                 />
                 <v-switch
                     v-model="item.isVisible"
                     label="Продукт видимый?"
+                    :disabled="item.is_deleted"
                     hide-details
                     color="red"
                     @update:model-value="updateProduct"
@@ -267,6 +275,7 @@
                     title="Добавить фото"
                     density="compact"
                     variant="comfortable"
+                    :disabled="item.is_deleted"
                     @update:model-value="updateImage"
                 />
             </v-card-text>

@@ -1,14 +1,10 @@
 <script setup>
     const { $api } = useNuxtApp();
-    const categories = ref([]);
     const editableCategory = ref({});
     const editableSubCategory = ref({});
-
-    function getCategories() {
-        $api('/api/product-category').then((data) => {
-            categories.value = data;
-        });
-    }
+    const categoriesStore = useCategoriesStore();
+    const { getCategories } = categoriesStore;
+    const { categories } = storeToRefs(categoriesStore);
     getCategories();
 
     const choosen = ref(0);
@@ -26,6 +22,32 @@
         });
     }
 
+    function onDeleteSubCategory(id) {
+        $api(`/api/product-category/subcategory/delete/${id}`, { method: 'DELETE' }).then(() => {
+            editableCategory.value = {};
+            getCategories();
+        }).catch(({ response }) => {
+            VsNotification({
+                title: 'Ошибка!',
+                content: response?._data?.error?.message,
+                position: 'bottom-center',
+                border: 'danger',
+            });
+        });
+    }
+    function onDeleteCategory(id) {
+        $api(`/api/product-category/delete/${id}`, { method: 'DELETE' }).then(() => {
+            editableCategory.value = {};
+            getCategories();
+        }).catch(({ response }) => {
+            VsNotification({
+                title: 'Ошибка!',
+                content: response?._data?.error?.message,
+                position: 'bottom-center',
+                border: 'danger',
+            });
+        });
+    }
     function onSubAdd(category) {
         editableSubCategory.value.categoryId = category.id;
         editableSubCategory.value.name = '';
@@ -41,7 +63,7 @@
         >
             <v-expansion-panel
                 v-for="category in categories"
-                :key="category"
+                :key="category.id"
                 :title="category.name"
             >
                 <v-expansion-panel-text class="pa-2">
@@ -52,6 +74,13 @@
                             class="mb-2"
                         >
                             {{ subcategory.name }}
+                            <v-btn
+                                size="x-small"
+                                color="error"
+                                class="ml-2"
+                                icon="mdi-trash-can-outline"
+                                @click="onDeleteSubCategory(subcategory.id)"
+                            />
                         </li>
                     </ul>
                     <div class="d-flex justify-center">
@@ -87,6 +116,18 @@
                                 Подкатегория
                             </v-btn>
                         </template>
+                    </div>
+                    <div class="d-flex">
+                        <v-spacer />
+                        <v-btn
+                            size="small"
+                            color="error"
+                            class="ml-2 mt-4"
+                            append-icon="mdi-trash-can-outline"
+                            @click="onDeleteCategory(category.id)"
+                        >
+                            Удалить категорию
+                        </v-btn>
                     </div>
                 </v-expansion-panel-text>
             </v-expansion-panel>

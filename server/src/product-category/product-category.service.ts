@@ -32,7 +32,10 @@ export class ProductCategoryService {
 	async getList(): Promise<ListProductCategoryDto[]> {
 		const cats = await this.productCategoryRepository.find({
 			where: {
-				...baseWhere
+				...baseWhere,
+				productSubcategories: {
+					...baseWhere
+				}
 			},
 			relations: {
 				productSubcategories: true
@@ -124,7 +127,6 @@ export class ProductCategoryService {
 		const category = await this.productCategoryRepository.findOne({
 			where: {
 				id: categoryId,
-				...baseWhere
 			}
 		});
 		if (!category) {
