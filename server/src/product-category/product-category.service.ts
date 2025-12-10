@@ -12,7 +12,6 @@ import { baseWhere } from 'src/common/utils';
 import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
 import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
 import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
-import { ProductArticleDto } from 'src/product-article/dto/ProductArticleDto';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 
@@ -20,29 +19,35 @@ import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticl
 export class ProductCategoryService {
 	constructor(
 		@InjectRepository(ProductCategory)
-		private productCategoryRepository: Repository<ProductCategory>,
+		private readonly productCategoryRepository: Repository<ProductCategory>,
 
 		@InjectRepository(ProductSubcategory)
-		private productSubcategoryRepository: Repository<ProductSubcategory>,
+		private readonly productSubcategoryRepository: Repository<ProductSubcategory>,
 
 		@InjectRepository(ProductArticle)
-		private productArticleRepository: Repository<ProductArticle>
+		private readonly productArticleRepository: Repository<ProductArticle>
 	) {}
 
 	async getList(): Promise<ListProductCategoryDto[]> {
 		const cats = await this.productCategoryRepository.find({
 			where: {
-				...baseWhere,
-				productSubcategories: {
-					...baseWhere
-				}
+				...baseWhere
 			},
 			relations: {
 				productSubcategories: true
 			}
 		});
+		const catsRes = cats.map((el) => {
+			const productSubcategories = el.productSubcategories.filter(
+				(ps) => !ps.is_deleted
+			);
+			return {
+				...el,
+				productSubcategories
+			};
+		});
 
-		return convertToJsonMany(ListProductCategoryDto, cats);
+		return convertToJsonMany(ListProductCategoryDto, catsRes);
 	}
 
 	async createCategory({
@@ -126,7 +131,7 @@ export class ProductCategoryService {
 	}: CreateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
 		const category = await this.productCategoryRepository.findOne({
 			where: {
-				id: categoryId,
+				id: categoryId
 			}
 		});
 		if (!category) {
