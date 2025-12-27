@@ -1,6 +1,9 @@
 import {
 	Body,
 	Controller,
+	Get,
+	Param,
+	ParseIntPipe,
 	Patch,
 	Post,
 	Req
@@ -46,5 +49,17 @@ export class OrderController {
 	async createOrder(@Body() payload: CreateOrderDto, @Req() request: Request) {
 		let userId = request.user?.id ?? undefined;
 		return this.orderService.create(payload, userId);
+	}
+
+	@Post('admin/retry-telegram/:orderId')
+	@AdminAuth()
+	async retryTelegramMessage(@Param('orderId', ParseIntPipe) orderId: number) {
+		return this.orderService.retryTelegramMessage(orderId);
+	}
+
+	@Get('admin/failed-telegram')
+	@AdminAuth()
+	async getOrdersWithFailedTelegram() {
+		return this.orderService.getOrdersWithFailedTelegramMessages();
 	}
 }

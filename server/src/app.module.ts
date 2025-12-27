@@ -21,8 +21,10 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { InitModule } from './init/init.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
 	imports: [
+		ScheduleModule.forRoot(),
 		configuration,
 		TypeOrmModule,
 		JwtModule.register({

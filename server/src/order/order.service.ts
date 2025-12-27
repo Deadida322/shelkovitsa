@@ -4,9 +4,11 @@ import {
 	InternalServerErrorException,
 	Optional
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderStatus } from 'src/db/entities/Order';
-import { DataSource, In, Repository } from 'typeorm';
+import { TelegramOrderMessage, TelegramMessageStatus } from 'src/db/entities/TelegramOrderMessage';
+import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { CreateOrderDto } from './dto/CreateOrderDto';
 import { OrderProduct } from 'src/db/entities/OrderProduct';
 import { Product } from 'src/db/entities/Product';
@@ -34,7 +36,8 @@ const orderRelations = {
 			productColor: true,
 			productSize: true
 		}
-	}
+	},
+	telegramMessage: true
 };
 @Injectable()
 export class OrderService {
@@ -43,6 +46,8 @@ export class OrderService {
 		private readonly orderRepository: Repository<Order>,
 		@InjectRepository(Product)
 		private readonly productRepository: Repository<Product>,
+		@InjectRepository(TelegramOrderMessage)
+		private readonly telegramMessageRepository: Repository<TelegramOrderMessage>,
 		private readonly dataSource: DataSource,
 		@Optional()
 		@InjectBot()
@@ -145,6 +150,15 @@ export class OrderService {
 			});
 			await queryRunner.manager.save(OrderProduct, ops);
 
+			// Создаем запись Telegram сообщения в рамках той же транзакции
+			// чтобы админ всегда видел статус отправки
+			const telegramMessage = queryRunner.manager.create(TelegramOrderMessage, {
+				order,
+				status: TelegramMessageStatus.PENDING,
+				retryCount: 0
+			});
+			await queryRunner.manager.save(TelegramOrderMessage, telegramMessage);
+
 			await queryRunner.commitTransaction();
 
 			const newOrder = await queryRunner.manager.findOne(Order, {
@@ -154,7 +168,11 @@ export class OrderService {
 				relations: orderRelations
 			});
 
-			this.sendTgCreateOrder(newOrder);
+			// Отправляем Telegram сообщение асинхронно, не блокируя ответ
+			this.sendTgCreateOrder(newOrder).catch((error) => {
+				console.error('Ошибка при асинхронной отправке Telegram сообщения:', error);
+			});
+
 			return convertToJson(OrderDto, newOrder);
 		} catch (err) {
 			await queryRunner.rollbackTransaction();
@@ -211,20 +229,27 @@ export class OrderService {
 		return convertToJson(OrderDto, updatedOrder);
 	}
 
-	async sendTgCreateOrder(newOrder: Order) {
+	async sendTgCreateOrder(newOrder: Order, isRetry: boolean = false) {
 		// Проверяем наличие бота и токена перед отправкой
 		if (!this.bot) {
-			console.warn('Telegram бот недоступен, сообщение не отправлено');
+			await this.updateTelegramStatus(newOrder.id, TelegramMessageStatus.FAILED, null, 'Telegram бот недоступен');
 			return;
 		}
 
-		try {
-			const chatTgIdRaw = this.configService.get<string>('CHAT_TG_ID');
-			if (!chatTgIdRaw) {
-				console.warn('CHAT_TG_ID не настроен, сообщение в Telegram не отправлено');
-				return;
-			}
+		const chatTgIdRaw = this.configService.get<string>('CHAT_TG_ID');
+		if (!chatTgIdRaw) {
+			await this.updateTelegramStatus(newOrder.id, TelegramMessageStatus.FAILED, null, 'CHAT_TG_ID не настроен');
+			return;
+		}
 
+		// Устанавливаем статус "в процессе отправки"
+		if (!isRetry) {
+			await this.updateTelegramStatus(newOrder.id, TelegramMessageStatus.PENDING);
+		} else {
+			await this.updateTelegramStatus(newOrder.id, TelegramMessageStatus.RETRYING);
+		}
+
+		try {
 			// Преобразуем строку в число, если это число, иначе оставляем строкой
 			// Telegram принимает и числовые ID, и строковые (для каналов/групп)
 			// Для групп ID отрицательный (например: -4953504334)
@@ -238,37 +263,296 @@ export class OrderService {
 			const html = [
 				`<u>Новый заказ #${newOrder.id}:</u>\n`,
 				`<strong>Сумма:</strong> ${newOrder.price}\n`,
-				`<strong>Кол-во позиций:</strong> ${newOrder.orderProducts.length}\n`
+				`<strong>Кол-во позиций:</strong> ${newOrder.orderProducts?.length || 0}\n`
 			];
 
 			const parse_html = html.join('');
-			await this.bot.telegram.sendMessage(chatTgId, parse_html, {
+			const message = await this.bot.telegram.sendMessage(chatTgId, parse_html, {
 				parse_mode: 'HTML'
 			});
+
+			// Успешная отправка - сохраняем статус и ID сообщения
+			await this.updateTelegramStatus(
+				newOrder.id,
+				TelegramMessageStatus.SENT,
+				message.message_id,
+				null,
+				new Date()
+			);
+
+			console.log(`✅ Telegram сообщение успешно отправлено для заказа #${newOrder.id}, message_id: ${message.message_id}`);
 		} catch (error: any) {
-			// Логируем ошибку, но не прерываем выполнение
+			// Обработка ошибок с сохранением статуса
 			const errorMessage = error?.response?.description || error?.message || error;
-			const chatTgId = this.configService.get<string>('CHAT_TG_ID');
 			
+			// Получаем текущий retryCount из базы
+			const telegramMessage = await this.telegramMessageRepository.findOne({
+				where: { order: { id: newOrder.id } }
+			});
+			const retryCount = (telegramMessage?.retryCount || 0) + 1;
+
+			await this.updateTelegramStatus(
+				newOrder.id,
+				TelegramMessageStatus.FAILED,
+				null,
+				errorMessage,
+				null,
+				retryCount
+			);
+
 			if (errorMessage?.includes('upgraded to a supergroup')) {
 				console.error(
 					`\n⚠️  Группа была преобразована в супергруппу!\n` +
-					`Старый ID: ${chatTgId}\n` +
+					`Старый ID: ${chatTgIdRaw}\n` +
 					`Нужно обновить CHAT_TG_ID в .env файле на новый ID супергруппы.\n` +
-					`Новый ID можно увидеть в URL группы в Telegram Web (после #): web.telegram.org/k/#-XXXXXXXXXX\n` +
-					`Или получить через API: добавьте временный код для получения ID чата.\n`
+					`Новый ID можно увидеть в URL группы в Telegram Web (после #): web.telegram.org/k/#-XXXXXXXXXX\n`
 				);
 			} else if (errorMessage?.includes('chat not found')) {
 				console.error(
 					`\n❌ Чат не найден. Проверьте:\n` +
-					`1. CHAT_TG_ID в .env: ${chatTgId || 'не установлен'}\n` +
+					`1. CHAT_TG_ID в .env: ${chatTgIdRaw || 'не установлен'}\n` +
 					`2. Бот добавлен в группу и имеет права на отправку сообщений\n` +
 					`3. Если группа была преобразована в супергруппу - обновите ID\n` +
 					`   (ID виден в URL Telegram Web после символа #)\n`
 				);
 			} else {
-				console.error('Ошибка при отправке сообщения в Telegram:', errorMessage);
+				console.error(`❌ Ошибка при отправке сообщения в Telegram для заказа #${newOrder.id}:`, errorMessage);
 			}
+		}
+	}
+
+	/**
+	 * Обновляет статус Telegram сообщения для заказа
+	 */
+	private async updateTelegramStatus(
+		orderId: number,
+		status: TelegramMessageStatus,
+		messageId: number | null = null,
+		errorMessage: string | null = null,
+		sentAt: Date | null = null,
+		retryCount: number | null = null
+	) {
+		try {
+			// Ищем существующую запись или создаем новую
+			let telegramMessage = await this.telegramMessageRepository.findOne({
+				where: { order: { id: orderId } },
+				relations: ['order']
+			});
+
+			if (!telegramMessage) {
+				// Создаем новую запись
+				const order = await this.orderRepository.findOne({
+					where: { id: orderId }
+				});
+
+				if (!order) {
+					console.error(`Заказ #${orderId} не найден`);
+					return;
+				}
+
+				telegramMessage = this.telegramMessageRepository.create({
+					order,
+					status,
+					retryCount: retryCount || 0
+				});
+			}
+
+			// Обновляем поля
+			telegramMessage.status = status;
+
+			if (messageId !== null) {
+				telegramMessage.telegramMessageId = messageId;
+			}
+
+			if (errorMessage !== null) {
+				telegramMessage.errorMessage = errorMessage;
+			}
+
+			if (sentAt !== null) {
+				telegramMessage.sentAt = sentAt;
+			}
+
+			if (retryCount !== null) {
+				telegramMessage.retryCount = retryCount;
+			}
+
+			await this.telegramMessageRepository.save(telegramMessage);
+		} catch (error) {
+			console.error(`Ошибка при обновлении статуса Telegram для заказа #${orderId}:`, error);
+		}
+	}
+
+	/**
+	 * Реотправка Telegram сообщения для заказа
+	 */
+	async retryTelegramMessage(orderId: number): Promise<{ success: boolean; message?: string }> {
+		const order = await this.orderRepository.findOne({
+			where: { id: orderId },
+			relations: orderRelations
+		});
+
+		if (!order) {
+			return { success: false, message: 'Заказ не найден' };
+		}
+
+		if (!this.bot) {
+			return { success: false, message: 'Telegram бот недоступен' };
+		}
+
+		const chatTgIdRaw = this.configService.get<string>('CHAT_TG_ID');
+		if (!chatTgIdRaw) {
+			return { success: false, message: 'CHAT_TG_ID не настроен' };
+		}
+
+		// Получаем информацию о Telegram сообщении
+		const telegramMessage = await this.telegramMessageRepository.findOne({
+			where: { order: { id: orderId } }
+		});
+
+		// Проверяем, не превышен ли лимит попыток (например, 5 попыток)
+		const maxRetries = 5;
+		if ((telegramMessage?.retryCount || 0) >= maxRetries) {
+			return {
+				success: false,
+				message: `Превышен лимит попыток отправки (${maxRetries}). Статус: ${telegramMessage?.status}`
+			};
+		}
+
+		// Если сообщение уже успешно отправлено, не отправляем повторно
+		if (telegramMessage?.status === TelegramMessageStatus.SENT) {
+			return {
+				success: true,
+				message: `Сообщение уже успешно отправлено (message_id: ${telegramMessage.telegramMessageId})`
+			};
+		}
+
+		await this.sendTgCreateOrder(order, true);
+
+		// Проверяем результат после отправки
+		const updatedTelegramMessage = await this.telegramMessageRepository.findOne({
+			where: { order: { id: orderId } }
+		});
+
+		if (updatedTelegramMessage?.status === TelegramMessageStatus.SENT) {
+			return {
+				success: true,
+				message: `Сообщение успешно отправлено (message_id: ${updatedTelegramMessage.telegramMessageId})`
+			};
+		} else {
+			return {
+				success: false,
+				message: `Не удалось отправить сообщение. Ошибка: ${updatedTelegramMessage?.errorMessage || 'Неизвестная ошибка'}`
+			};
+		}
+	}
+
+	/**
+	 * Получить список заказов с неотправленными Telegram сообщениями
+	 */
+	async getOrdersWithFailedTelegramMessages(): Promise<Order[]> {
+		const failedMessages = await this.telegramMessageRepository.find({
+			where: {
+				status: TelegramMessageStatus.FAILED
+			},
+			relations: ['order']
+		});
+
+		const orderIds = failedMessages
+			.map((msg) => msg.order?.id)
+			.filter((id): id is number => id !== undefined);
+
+		if (orderIds.length === 0) {
+			return [];
+		}
+
+		return await this.orderRepository.find({
+			where: {
+				id: In(orderIds),
+				...baseWhere
+			},
+			relations: orderRelations,
+			order: {
+				created_at: 'DESC'
+			}
+		});
+	}
+
+	/**
+	 * Автоматическая реотправка неотправленных Telegram сообщений
+	 * Выполняется каждые 20 минут
+	 */
+	@Cron('*/2 * * * *')
+	async retryFailedTelegramMessages() {
+		if (!this.bot) {
+			console.log('[Cron] Telegram бот недоступен, пропуск автоматической реотправки');
+			return;
+		}
+
+		const chatTgIdRaw = this.configService.get<string>('CHAT_TG_ID');
+		if (!chatTgIdRaw) {
+			console.log('[Cron] CHAT_TG_ID не настроен, пропуск автоматической реотправки');
+			return;
+		}
+
+		try {
+			// Получаем все неотправленные сообщения с ограничением по количеству попыток
+			const maxRetries = 5;
+			const failedMessages = await this.telegramMessageRepository.find({
+				where: {
+					status: TelegramMessageStatus.FAILED,
+					retryCount: LessThan(maxRetries)
+				},
+				relations: ['order', 'order.orderProducts']
+			});
+
+			if (failedMessages.length === 0) {
+				console.log('[Cron] Нет неотправленных сообщений для реотправки');
+				return;
+			}
+
+			console.log(`[Cron] Найдено ${failedMessages.length} неотправленных сообщений. Начинаю реотправку...`);
+
+			let successCount = 0;
+			let failCount = 0;
+
+			for (const telegramMessage of failedMessages) {
+				if (!telegramMessage.order) {
+					continue;
+				}
+
+				try {
+					// Обновляем статус на RETRYING
+					telegramMessage.status = TelegramMessageStatus.RETRYING;
+					await this.telegramMessageRepository.save(telegramMessage);
+
+					// Пытаемся отправить сообщение
+					await this.sendTgCreateOrder(telegramMessage.order, true);
+
+					// Проверяем результат
+					const updatedMessage = await this.telegramMessageRepository.findOne({
+						where: { id: telegramMessage.id }
+					});
+
+					if (updatedMessage?.status === TelegramMessageStatus.SENT) {
+						successCount++;
+						console.log(`[Cron] ✅ Успешно отправлено сообщение для заказа #${telegramMessage.order.id}`);
+					} else {
+						failCount++;
+					}
+				} catch (error: any) {
+					failCount++;
+					console.error(
+						`[Cron] ❌ Ошибка при реотправке сообщения для заказа #${telegramMessage.order.id}:`,
+						error.message
+					);
+				}
+			}
+
+			console.log(
+				`[Cron] Реотправка завершена. Успешно: ${successCount}, Ошибок: ${failCount}, Всего: ${failedMessages.length}`
+			);
+		} catch (error: any) {
+			console.error('[Cron] Критическая ошибка при автоматической реотправке:', error);
 		}
 	}
 

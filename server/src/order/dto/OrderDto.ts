@@ -3,6 +3,7 @@ import 'reflect-metadata';
 import { DeliveryTypeDto } from 'src/delivery-type/dto/DeliveryTypeDto';
 import { OrderProductDto } from './OrderProductDto';
 import { OrderStatus } from 'src/db/entities/Order';
+import { TelegramOrderMessageDto } from './TelegramOrderMessageDto';
 
 export class OrderDto {
 	@Expose()
@@ -37,6 +38,10 @@ export class OrderDto {
 	@Expose()
 	@Transform((status) => convertConferenceUserStatus(status.value))
 	status: string;
+
+	@Expose()
+	@Type(() => TelegramOrderMessageDto)
+	telegramMessage?: TelegramOrderMessageDto;
 }
 
 function convertConferenceUserStatus(type: any): string {
