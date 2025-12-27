@@ -481,7 +481,7 @@ export class OrderService {
 	 * Автоматическая реотправка неотправленных Telegram сообщений
 	 * Выполняется каждые 20 минут
 	 */
-	@Cron('*/2 * * * *')
+	@Cron('*/20 * * * *')
 	async retryFailedTelegramMessages() {
 		if (!this.bot) {
 			console.log('[Cron] Telegram бот недоступен, пропуск автоматической реотправки');

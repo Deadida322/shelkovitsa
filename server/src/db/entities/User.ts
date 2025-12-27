@@ -2,7 +2,7 @@ import {
 	Entity,
 	Column,
 	PrimaryGeneratedColumn,
-	ManyToOne
+	OneToMany
 } from 'typeorm';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
@@ -29,6 +29,6 @@ export class User extends BaseEntity {
 	basket!: string;
 
 	@Type(() => Order)
-	@ManyToOne(() => Order, (order) => order.user)
+	@OneToMany(() => Order, (order) => order.user)
 	orders?: Order[];
 }
