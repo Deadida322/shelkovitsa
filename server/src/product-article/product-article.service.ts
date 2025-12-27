@@ -13,7 +13,15 @@ import {
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { Between, DataSource, ILike, In, Like, Repository } from 'typeorm';
+import {
+	Between,
+	DataSource,
+	ILike,
+	In,
+	Like,
+	Repository,
+	getMetadataArgsStorage
+} from 'typeorm';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 import { Product } from 'src/db/entities/Product';
@@ -324,65 +332,19 @@ export class ProductArticleService {
 								: []
 					};
 
-					// Функция для проверки пустых значений на любом уровне вложенности
-					const hasEmptyValues = (obj: any): boolean => {
-						if (
-							obj === null ||
-							obj === undefined ||
-							obj === '' ||
-							Number.isNaN(obj)
-						) {
-							return true;
-						}
-						if (typeof obj === 'object') {
-							return Object.values(obj).some((value) =>
-								hasEmptyValues(value)
-							);
-						}
-						return false;
-					};
+					// Валидация обязательных полей на основе метаданных TypeORM
+					const validationResult = this.validateRequiredFields(product);
 
-					// Функция для проверки заполненных значений на любом уровне вложенности
-					const hasFilledValues = (obj: any): boolean => {
-						if (
-							obj === null ||
-							obj === undefined ||
-							obj === '' ||
-							Number.isNaN(obj)
-						) {
-							return false;
-						}
-						if (typeof obj === 'object') {
-							return Object.values(obj).some((value) =>
-								hasFilledValues(value)
-							);
-						}
-						return true;
-					};
-
-					const hasEmpty = hasEmptyValues(product);
-					const hasFilled = hasFilledValues(product);
-
-					if(index < 10) {
-						console.log(JSON.stringify(product))
-						
-					}
-					if (!hasFilled) {
-						// Если все поля пустые - ничего не делаем
-					} else if (hasEmpty) {
-						// Если есть хотя бы одно заполненное, но есть и пустые - ошибка
+					if (!validationResult.isValid) {
+						// Если отсутствуют обязательные поля - добавляем в ошибки
 						errorRows.push([
 							...row,
 							'',
-							`В строке ${index + 1} есть пустые или нулевые значения`
+							`В строке ${index + 1} отсутствуют обязательные поля: ${validationResult.errors.join(', ')}`
 						]);
 					} else {
-						// console.log(`Спаршенный продукт: ${JSON.stringify(product)}`);
-						product.article = String(product.article).trim();
-						product.color.name = capitalizeFirstLetter(
-							String(product.color.name).trim()
-						);
-						product.size = String(product.size).trim();
+						// Если все обязательные поля заполнены - нормализуем и обрабатываем
+						this.normalizeOptionalFields(product);
 						await this.parseArticleProduct(product, colorMap, sizeMap);
 					}
 				}
@@ -402,6 +364,155 @@ export class ProductArticleService {
 		const buffer = xlsx.build([{ name: 'Ошибок нет', data: [], options: {} }]);
 
 		return buffer;
+	}
+
+	/**
+	 * Валидация обязательных полей на основе метаданных TypeORM
+	 * Проверяет поля сущностей ProductArticle и Product
+	 */
+	private validateRequiredFields(
+		product: ParseProductArticleDto
+	): { isValid: boolean; errors: string[] } {
+		const errors: string[] = [];
+		const metadataStorage = getMetadataArgsStorage();
+
+		// Получаем метаданные для ProductArticle
+		const productArticleColumns = metadataStorage.columns.filter(
+			(column) => column.target === ProductArticle
+		);
+
+		// Получаем метаданные для Product
+		const productColumns = metadataStorage.columns.filter(
+			(column) => column.target === Product
+		);
+
+		// Проверка обязательных полей ProductArticle
+		// article - обязательное (нет nullable: true)
+		const articleColumn = productArticleColumns.find((col) => col.propertyName === 'article');
+		if (!articleColumn || articleColumn.options?.nullable !== true) {
+			if (!product.article || String(product.article).trim() === '') {
+				errors.push('article');
+			}
+		}
+
+		// price - обязательное (нет nullable: true)
+		const priceColumn = productArticleColumns.find((col) => col.propertyName === 'price');
+		if (!priceColumn || priceColumn.options?.nullable !== true) {
+			if (
+				product.price === undefined ||
+				product.price === null ||
+				Number.isNaN(product.price)
+			) {
+				errors.push('price');
+			}
+		}
+
+		// Проверка обязательных полей Product
+		// amount - обязательное (есть default, но проверяем наличие)
+		const amountColumn = productColumns.find((col) => col.propertyName === 'amount');
+		if (amountColumn && amountColumn.options?.nullable !== true) {
+			if (
+				product.amount === undefined ||
+				product.amount === null ||
+				Number.isNaN(product.amount)
+			) {
+				errors.push('amount');
+			}
+		}
+
+		// Проверка обязательных полей для связи и маппинга
+		// color.name - обязательное для маппинга
+		if (!product.color?.name || String(product.color.name).trim() === '') {
+			errors.push('color.name');
+		}
+
+		// size - обязательное для маппинга
+		if (!product.size || String(product.size).trim() === '') {
+			errors.push('size');
+		}
+
+		// productSubcategory - обязательное для связи
+		if (!product.productSubcategory || String(product.productSubcategory).trim() === '') {
+			errors.push('productSubcategory');
+		}
+
+		return {
+			isValid: errors.length === 0,
+			errors
+		};
+	}
+
+	/**
+	 * Очистка и нормализация полей на основе метаданных TypeORM
+	 * Автоматически обрабатывает обязательные и необязательные поля
+	 */
+	private normalizeOptionalFields(product: ParseProductArticleDto): void {
+		const metadataStorage = getMetadataArgsStorage();
+		const productArticleColumns = metadataStorage.columns.filter(
+			(column) => column.target === ProductArticle
+		);
+
+		// Обрабатываем все строковые поля ProductArticle на основе метаданных
+		for (const column of productArticleColumns) {
+			const fieldName = column.propertyName;
+			const isNullable = column.options?.nullable === true;
+			const columnType = column.options?.type;
+
+			// Пропускаем нестроковые поля и служебные
+			if (
+				fieldName === 'id' ||
+				fieldName === 'isVisible' ||
+				fieldName === 'is_deleted' ||
+				columnType === 'decimal' ||
+				columnType === 'number' ||
+				!fieldName
+			) {
+				continue;
+			}
+
+			// Проверяем, есть ли это поле в ParseProductArticleDto
+			if (!(fieldName in product)) {
+				continue;
+			}
+
+			const value = (product as any)[fieldName];
+
+			// Для обязательных строковых полей - просто trim
+			if (!isNullable && value !== undefined && value !== null) {
+				if (typeof value === 'string') {
+					(product as any)[fieldName] = value.trim();
+				}
+			}
+
+			// Для необязательных строковых полей - trim и преобразование пустых в undefined
+			if (isNullable && value !== undefined && value !== null) {
+				if (typeof value === 'string') {
+					const trimmedValue = value.trim();
+					(product as any)[fieldName] = trimmedValue === '' ? undefined : trimmedValue;
+				}
+			}
+		}
+
+		// Специальная обработка обязательных полей для маппинга и связей
+		// article - обязательное поле
+		if (product.article) {
+			product.article = String(product.article).trim();
+		}
+
+		// color.name - обязательное для маппинга, требует capitalizeFirstLetter
+		if (product.color?.name) {
+			product.color.name = capitalizeFirstLetter(String(product.color.name).trim());
+		}
+
+		// size - обязательное для маппинга
+		if (product.size) {
+			product.size = String(product.size).trim();
+		}
+
+		// productSubcategory - обязательное для связи
+		if (product.productSubcategory) {
+			product.productSubcategory = String(product.productSubcategory).trim();
+		}
 	}
 
 	private async getColorMap(): Promise<Map<string, string>> {
