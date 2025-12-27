@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsInt, IsOptional, IsPositive, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, Min } from 'class-validator';
 import 'reflect-metadata';
 
 export class GetDetailProductArticleDto {

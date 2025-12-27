@@ -18,7 +18,6 @@ import {
 	DataSource,
 	ILike,
 	In,
-	Like,
 	Repository,
 	getMetadataArgsStorage
 } from 'typeorm';

@@ -4,15 +4,11 @@ import {
 	IsInt,
 	IsNotEmpty,
 	IsNumber,
-	IsNumberString,
 	IsOptional,
 	IsString
 } from 'class-validator';
 import {
-	HasMimeType,
-	IsFile,
 	IsFiles,
-	MaxFileSize,
 	MemoryStoredFile
 } from 'nestjs-form-data';
 import 'reflect-metadata';

@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer';
+import { Expose } from 'class-transformer';
 import { IsInt, IsNotEmpty, IsPositive } from 'class-validator';
 import 'reflect-metadata';
 
