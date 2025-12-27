@@ -8,5 +8,8 @@ export class ProductFileDto {
 	name!: string;
 
 	@Expose()
+	url?: string;
+
+	@Expose()
 	isLogo!: boolean;
 }

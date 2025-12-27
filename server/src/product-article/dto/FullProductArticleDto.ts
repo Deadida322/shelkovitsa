@@ -16,6 +16,12 @@ export class FullProductArticleDto {
 	description?: string;
 
 	@Expose()
+	brand?: string;
+
+	@Expose()
+	composition?: string;
+
+	@Expose()
 	article!: string;
 
 	@Expose()

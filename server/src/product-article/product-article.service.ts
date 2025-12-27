@@ -311,6 +311,8 @@ export class ProductArticleService {
 						price: Number(row[7]),
 						country: row[9] ?? '',
 						description: row[10] ?? '',
+						brand: row[3] ?? '',
+						composition: row[11] ?? '',
 						productSubcategory: row[2] ?? '',
 						name: row[16] ?? '',
 						imageUrls:
@@ -603,6 +605,8 @@ export class ProductArticleService {
 			country,
 			name,
 			description,
+			brand,
+			composition,
 			productSubcategory
 		} = productDto;
 
@@ -649,7 +653,9 @@ export class ProductArticleService {
 					country,
 					productSubcategory: existProductSubcategory,
 					name,
-					description
+					description,
+					brand,
+					composition
 				});
 			} else {
 				await productArticleRepository.update(
@@ -659,7 +665,9 @@ export class ProductArticleService {
 						is_deleted: false,
 						productSubcategory: existProductSubcategory,
 						name,
-						description
+						description,
+						brand,
+						composition
 					}
 				);
 			}
@@ -798,14 +806,33 @@ export class ProductArticleService {
 						continue;
 					}
 
+					const trimmedUrl = imageUrl.trim();
+
+					// Проверяем, существует ли уже файл с таким URL для данного продукта
+					const existingFile = await productFileRepository.findOne({
+						where: {
+							product: {
+								id: productArticle.id
+							},
+							url: trimmedUrl,
+							is_deleted: false
+						}
+					});
+
+					// Если файл с таким URL уже существует - пропускаем
+					if (existingFile) {
+						continue;
+					}
+
 					try {
 						const imageFileName = await this.downloadProductImageFromUrl(
-							imageUrl.trim(),
+							trimmedUrl,
 							article
 						);
 
 						await productFileRepository.save({
 							name: imageFileName,
+							url: trimmedUrl,
 							isLogo: isFirstLogo,
 							product: productArticle
 						});
@@ -819,7 +846,7 @@ export class ProductArticleService {
 						const errorMessage =
 							error instanceof Error ? error.message : String(error);
 						console.error(
-							`[Парсинг] Не удалось скачать изображение продукта "${article}" (URL: ${imageUrl.trim()}): ${errorMessage}`
+							`[Парсинг] Не удалось скачать изображение продукта "${article}" (URL: ${trimmedUrl}): ${errorMessage}`
 						);
 					}
 				}
