@@ -29,4 +29,7 @@ export class ParseProductArticleDto {
 
 	@Expose()
 	name: string;
+
+	@Expose()
+	imageUrls: string[] = [];
 }

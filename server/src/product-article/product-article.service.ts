@@ -312,7 +312,14 @@ export class ProductArticleService {
 						country: row[9] ?? '',
 						description: row[10] ?? '',
 						productSubcategory: row[2] ?? '',
-						name: row[16] ?? ''
+						name: row[16] ?? '',
+						imageUrls:
+							row[15] && String(row[15]).trim()
+								? String(row[15])
+										.split(';')
+										.map((url) => url.trim())
+										.filter((url) => url.length > 0)
+								: []
 					};
 
 					// Функция для проверки пустых значений на любом уровне вложенности
@@ -354,6 +361,10 @@ export class ProductArticleService {
 					const hasEmpty = hasEmptyValues(product);
 					const hasFilled = hasFilledValues(product);
 
+					if(index < 10) {
+						console.log(JSON.stringify(product))
+						
+					}
 					if (!hasFilled) {
 						// Если все поля пустые - ничего не делаем
 					} else if (hasEmpty) {
@@ -477,6 +488,82 @@ export class ProductArticleService {
 						const buffer = Buffer.concat(chunks);
 						const hash = (Math.random() + 1).toString(36).substring(5);
 						const fileName = `color-${colorName.toLowerCase().replace(/\s+/g, '-')}-${hash}.${extension}`;
+						const destPath = getDestPath(fileName);
+						await fsPromises.writeFile(destPath, buffer);
+						resolve(fileName);
+					} catch (error) {
+						reject(error);
+					}
+				});
+
+				response.on('error', (error) => {
+					reject(error);
+				});
+			});
+
+			// Устанавливаем таймаут 10 секунд для запроса
+			request.setTimeout(10000, () => {
+				request.destroy();
+				reject(new Error(`Таймаут при скачивании изображения: ${imageUrl}`));
+			});
+
+			request.on('error', (error) => {
+				reject(error);
+			});
+		});
+	}
+
+	private async downloadProductImageFromUrl(
+		imageUrl: string,
+		article: string
+	): Promise<string> {
+		return new Promise((resolve, reject) => {
+			let url: URL;
+			try {
+				url = new URL(imageUrl);
+			} catch (error) {
+				reject(new Error(`Невалидный URL: ${imageUrl}`));
+				return;
+			}
+
+			const protocol = url.protocol === 'https:' ? https : http;
+
+			const request = protocol.get(imageUrl, (response) => {
+				if (!response.statusCode || response.statusCode !== 200) {
+					reject(
+						new Error(
+							`Не удалось скачать изображение: статус ${response.statusCode || 'неизвестен'}`
+						)
+					);
+					return;
+				}
+
+				const contentType = response.headers['content-type'] || '';
+				let extension = 'jpg';
+				if (contentType.includes('png')) {
+					extension = 'png';
+				} else if (contentType.includes('webp')) {
+					extension = 'webp';
+				} else if (contentType.includes('jpeg')) {
+					extension = 'jpg';
+				} else {
+					// Пытаемся определить расширение из URL
+					const urlExtension = path.extname(url.pathname).toLowerCase();
+					if (urlExtension) {
+						extension = urlExtension.substring(1); // Убираем точку
+					}
+				}
+
+				const chunks: Buffer[] = [];
+				response.on('data', (chunk) => {
+					chunks.push(chunk);
+				});
+
+				response.on('end', async () => {
+					try {
+						const buffer = Buffer.concat(chunks);
+						const hash = (Math.random() + 1).toString(36).substring(5);
+						const fileName = `product-${article.toLowerCase().replace(/\s+/g, '-')}-${hash}.${extension}`;
 						const destPath = getDestPath(fileName);
 						await fsPromises.writeFile(destPath, buffer);
 						resolve(fileName);
@@ -684,6 +771,58 @@ export class ProductArticleService {
 				};
 
 				await productRepository.save(productPayload);
+			}
+
+			// Обработка изображений продукта
+			if (productDto.imageUrls && productDto.imageUrls.length > 0) {
+				const productFileRepository =
+					queryRunner.manager.getRepository(ProductFile);
+
+				// Получаем существующие файлы продукта
+				const existingFiles = await productFileRepository.find({
+					where: {
+						product: {
+							id: productArticle.id
+						},
+						is_deleted: false
+					}
+				});
+
+				// Определяем, нужно ли устанавливать isLogo: true
+				// Если файлов нет, первый успешно загруженный будет логотипом
+				let isFirstLogo = existingFiles.length === 0;
+
+				// Обрабатываем каждое изображение
+				for (const imageUrl of productDto.imageUrls) {
+					if (!imageUrl || imageUrl.trim() === '') {
+						continue;
+					}
+
+					try {
+						const imageFileName = await this.downloadProductImageFromUrl(
+							imageUrl.trim(),
+							article
+						);
+
+						await productFileRepository.save({
+							name: imageFileName,
+							isLogo: isFirstLogo,
+							product: productArticle
+						});
+
+						// Только первое успешно загруженное изображение будет логотипом
+						if (isFirstLogo) {
+							isFirstLogo = false;
+						}
+					} catch (error) {
+						// Если не удалось скачать изображение, не блокируем парсинг
+						const errorMessage =
+							error instanceof Error ? error.message : String(error);
+						console.error(
+							`[Парсинг] Не удалось скачать изображение продукта "${article}" (URL: ${imageUrl.trim()}): ${errorMessage}`
+						);
+					}
+				}
 			}
 
 			await queryRunner.commitTransaction();
