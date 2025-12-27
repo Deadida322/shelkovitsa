@@ -48,11 +48,15 @@ import { InitModule } from './init/init.module';
 		// TelegrafModule.forRoot({
 		// 	token: process.env.TELEGRAM_TOKEN
 		// }),
-		TelegrafModule.forRootAsync({
-			useFactory: () => ({
-				token: process.env.TELEGRAM_TOKEN
-			})
-		}),
+		...(process.env.TELEGRAM_TOKEN
+			? [
+					TelegrafModule.forRootAsync({
+						useFactory: () => ({
+							token: process.env.TELEGRAM_TOKEN
+						})
+					})
+				]
+			: []),
 		ProductModule,
 		AuthModule,
 		AppModule,

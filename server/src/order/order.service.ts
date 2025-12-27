@@ -1,7 +1,8 @@
 import {
 	BadRequestException,
 	Injectable,
-	InternalServerErrorException
+	InternalServerErrorException,
+	Optional
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order, OrderStatus } from 'src/db/entities/Order';
@@ -43,8 +44,9 @@ export class OrderService {
 		@InjectRepository(Product)
 		private readonly productRepository: Repository<Product>,
 		private readonly dataSource: DataSource,
+		@Optional()
 		@InjectBot()
-		private readonly bot: Telegraf,
+		private readonly bot: Telegraf | undefined,
 		private readonly configService: ConfigService
 	) {}
 
@@ -210,16 +212,84 @@ export class OrderService {
 	}
 
 	async sendTgCreateOrder(newOrder: Order) {
-		const chatTgId = this.configService.getOrThrow<number>('CHAT_TG_ID');
-		const html = [
-			`<u>Новый заказ #${newOrder.id}:</u>\n`,
-			`<strong>Сумма:</strong> ${newOrder.price}\n`,
-			`<strong>Кол-во позиций:</strong> ${newOrder.orderProducts.length}\n`
-		];
+		// Проверяем наличие бота и токена перед отправкой
+		if (!this.bot) {
+			console.warn('Telegram бот недоступен, сообщение не отправлено');
+			return;
+		}
 
-		const parse_html = html.join('');
-		this.bot.telegram.sendMessage(chatTgId, parse_html, {
-			parse_mode: 'HTML'
-		});
+		try {
+			const chatTgIdRaw = this.configService.get<string>('CHAT_TG_ID');
+			if (!chatTgIdRaw) {
+				console.warn('CHAT_TG_ID не настроен, сообщение в Telegram не отправлено');
+				return;
+			}
+
+			// Преобразуем строку в число, если это число, иначе оставляем строкой
+			// Telegram принимает и числовые ID, и строковые (для каналов/групп)
+			// Для групп ID отрицательный (например: -4953504334)
+			const trimmedId = chatTgIdRaw.trim();
+			const chatTgId = /^-?\d+$/.test(trimmedId)
+				? Number(trimmedId)
+				: trimmedId;
+			
+			console.log(`Отправка сообщения в Telegram чат с ID: ${chatTgId} (тип: ${typeof chatTgId})`);
+
+			const html = [
+				`<u>Новый заказ #${newOrder.id}:</u>\n`,
+				`<strong>Сумма:</strong> ${newOrder.price}\n`,
+				`<strong>Кол-во позиций:</strong> ${newOrder.orderProducts.length}\n`
+			];
+
+			const parse_html = html.join('');
+			await this.bot.telegram.sendMessage(chatTgId, parse_html, {
+				parse_mode: 'HTML'
+			});
+		} catch (error: any) {
+			// Логируем ошибку, но не прерываем выполнение
+			const errorMessage = error?.response?.description || error?.message || error;
+			const chatTgId = this.configService.get<string>('CHAT_TG_ID');
+			
+			if (errorMessage?.includes('upgraded to a supergroup')) {
+				console.error(
+					`\n⚠️  Группа была преобразована в супергруппу!\n` +
+					`Старый ID: ${chatTgId}\n` +
+					`Нужно обновить CHAT_TG_ID в .env файле на новый ID супергруппы.\n` +
+					`Новый ID можно увидеть в URL группы в Telegram Web (после #): web.telegram.org/k/#-XXXXXXXXXX\n` +
+					`Или получить через API: добавьте временный код для получения ID чата.\n`
+				);
+			} else if (errorMessage?.includes('chat not found')) {
+				console.error(
+					`\n❌ Чат не найден. Проверьте:\n` +
+					`1. CHAT_TG_ID в .env: ${chatTgId || 'не установлен'}\n` +
+					`2. Бот добавлен в группу и имеет права на отправку сообщений\n` +
+					`3. Если группа была преобразована в супергруппу - обновите ID\n` +
+					`   (ID виден в URL Telegram Web после символа #)\n`
+				);
+			} else {
+				console.error('Ошибка при отправке сообщения в Telegram:', errorMessage);
+			}
+		}
+	}
+
+	/**
+	 * Вспомогательный метод для получения ID чата
+	 * Можно вызвать временно для отладки
+	 */
+	async getChatId(chatUsernameOrId: string | number) {
+		if (!this.bot) {
+			console.warn('Telegram бот недоступен');
+			return;
+		}
+
+		try {
+			const chat = await this.bot.telegram.getChat(chatUsernameOrId);
+			console.log(`ID чата: ${chat.id}`);
+			console.log(`Тип чата: ${chat.type}`);
+			console.log(`Название: ${'title' in chat ? chat.title : 'N/A'}`);
+			return chat.id;
+		} catch (error: any) {
+			console.error('Ошибка при получении информации о чате:', error.message);
+		}
 	}
 }
