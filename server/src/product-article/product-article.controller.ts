@@ -13,6 +13,16 @@ import {
 	UploadedFile,
 	UseInterceptors
 } from '@nestjs/common';
+import {
+	ApiTags,
+	ApiOperation,
+	ApiResponse,
+	ApiBearerAuth,
+	ApiCookieAuth,
+	ApiBody,
+	ApiParam,
+	ApiConsumes
+} from '@nestjs/swagger';
 import { FullProductArticleDto } from '../product-article/dto/FullProductArticleDto';
 
 import { UploadProductArticleFileDto } from '../product-article/dto/UploadProductArticleFileDto';
@@ -32,6 +42,7 @@ import { UploadImageDto } from './dto/UploadImageDto';
 import { CommonImageDto } from './dto/CommonImageDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 
+@ApiTags('Product Article')
 @Controller('product-article')
 export class ProductArticleController {
 	constructor(private readonly productArticleService: ProductArticleService) {}
@@ -67,11 +78,18 @@ export class ProductArticleController {
 	// разобраться с путями
 
 	@Post('getList')
+	@ApiOperation({ summary: 'Получить список артикулов продуктов' })
+	@ApiResponse({ status: 200, description: 'Список артикулов' })
+	@ApiBody({ type: GetProductArticleListDto })
 	async getList(@Body() getListDto: GetProductArticleListDto) {
 		return this.productArticleService.getList(getListDto, false);
 	}
 
 	@Post(':id')
+	@ApiOperation({ summary: 'Получить артикул продукта по ID' })
+	@ApiParam({ name: 'id', type: 'number', description: 'ID артикула' })
+	@ApiResponse({ status: 200, description: 'Артикул продукта', type: FullProductArticleDto })
+	@ApiBody({ type: GetDetailProductArticleDto })
 	async getProductArticle(
 		@Param('id') id: number,
 		@Body() payload: GetDetailProductArticleDto
@@ -80,6 +98,8 @@ export class ProductArticleController {
 	}
 
 	@Get('populate')
+	@ApiOperation({ summary: 'Получить популярные артикулы продуктов' })
+	@ApiResponse({ status: 200, description: 'Список популярных артикулов' })
 	async getPopulateList() {
 		return this.productArticleService.getPopulateList();
 	}

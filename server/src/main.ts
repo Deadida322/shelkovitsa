@@ -8,6 +8,7 @@ import * as cookieParser from 'cookie-parser';
 import { InitService } from './init/init.service';
 import helmet from 'helmet';
 import * as express from 'express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
 	initDiskStorage();
@@ -48,6 +49,36 @@ async function bootstrap() {
 
 	app.useGlobalFilters(new HttpExceptionFilter());
 	app.use(cookieParser());
+
+	// Swagger configuration
+	const config = new DocumentBuilder()
+		.setTitle('Shelkovitsa API')
+		.setDescription('API документация для Shelkovitsa сервера')
+		.setVersion('1.0')
+		.addBearerAuth(
+			{
+				type: 'http',
+				scheme: 'bearer',
+				bearerFormat: 'JWT',
+				name: 'JWT',
+				description: 'Enter JWT token',
+				in: 'header'
+			},
+			'JWT-auth'
+		)
+		.addCookieAuth('access_token', {
+			type: 'apiKey',
+			in: 'cookie',
+			name: 'access_token'
+		})
+		.build();
+	const document = SwaggerModule.createDocument(app, config);
+	SwaggerModule.setup('api/docs', app, document, {
+		swaggerOptions: {
+			persistAuthorization: true
+		}
+	});
+
 	await app.listen(process.env.PORT);
 
 	const initService = app.get(InitService);
