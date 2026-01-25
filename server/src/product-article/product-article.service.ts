@@ -13,7 +13,14 @@ import {
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { Between, DataSource, ILike, In, Like, Repository } from 'typeorm';
+import {
+	Between,
+	DataSource,
+	ILike,
+	In,
+	Repository,
+	getMetadataArgsStorage
+} from 'typeorm';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 import { Product } from 'src/db/entities/Product';
@@ -311,65 +318,32 @@ export class ProductArticleService {
 						price: Number(row[7]),
 						country: row[9] ?? '',
 						description: row[10] ?? '',
+						brand: row[3] ?? '',
+						composition: row[11] ?? '',
 						productSubcategory: row[2] ?? '',
-						name: row[16] ?? ''
+						name: row[16] ?? '',
+						imageUrls:
+							row[15] && String(row[15]).trim()
+								? String(row[15])
+										.split(';')
+										.map((url) => url.trim())
+										.filter((url) => url.length > 0)
+								: []
 					};
 
-					// Функция для проверки пустых значений на любом уровне вложенности
-					const hasEmptyValues = (obj: any): boolean => {
-						if (
-							obj === null ||
-							obj === undefined ||
-							obj === '' ||
-							Number.isNaN(obj)
-						) {
-							return true;
-						}
-						if (typeof obj === 'object') {
-							return Object.values(obj).some((value) =>
-								hasEmptyValues(value)
-							);
-						}
-						return false;
-					};
+					// Валидация обязательных полей на основе метаданных TypeORM
+					const validationResult = this.validateRequiredFields(product);
 
-					// Функция для проверки заполненных значений на любом уровне вложенности
-					const hasFilledValues = (obj: any): boolean => {
-						if (
-							obj === null ||
-							obj === undefined ||
-							obj === '' ||
-							Number.isNaN(obj)
-						) {
-							return false;
-						}
-						if (typeof obj === 'object') {
-							return Object.values(obj).some((value) =>
-								hasFilledValues(value)
-							);
-						}
-						return true;
-					};
-
-					const hasEmpty = hasEmptyValues(product);
-					const hasFilled = hasFilledValues(product);
-
-					if (!hasFilled) {
-						// Если все поля пустые - ничего не делаем
-					} else if (hasEmpty) {
-						// Если есть хотя бы одно заполненное, но есть и пустые - ошибка
+					if (!validationResult.isValid) {
+						// Если отсутствуют обязательные поля - добавляем в ошибки
 						errorRows.push([
 							...row,
 							'',
-							`В строке ${index + 1} есть пустые или нулевые значения`
+							`В строке ${index + 1} отсутствуют обязательные поля: ${validationResult.errors.join(', ')}`
 						]);
 					} else {
-						// console.log(`Спаршенный продукт: ${JSON.stringify(product)}`);
-						product.article = String(product.article).trim();
-						product.color.name = capitalizeFirstLetter(
-							String(product.color.name).trim()
-						);
-						product.size = String(product.size).trim();
+						// Если все обязательные поля заполнены - нормализуем и обрабатываем
+						this.normalizeOptionalFields(product);
 						await this.parseArticleProduct(product, colorMap, sizeMap);
 					}
 				}
@@ -389,6 +363,155 @@ export class ProductArticleService {
 		const buffer = xlsx.build([{ name: 'Ошибок нет', data: [], options: {} }]);
 
 		return buffer;
+	}
+
+	/**
+	 * Валидация обязательных полей на основе метаданных TypeORM
+	 * Проверяет поля сущностей ProductArticle и Product
+	 */
+	private validateRequiredFields(
+		product: ParseProductArticleDto
+	): { isValid: boolean; errors: string[] } {
+		const errors: string[] = [];
+		const metadataStorage = getMetadataArgsStorage();
+
+		// Получаем метаданные для ProductArticle
+		const productArticleColumns = metadataStorage.columns.filter(
+			(column) => column.target === ProductArticle
+		);
+
+		// Получаем метаданные для Product
+		const productColumns = metadataStorage.columns.filter(
+			(column) => column.target === Product
+		);
+
+		// Проверка обязательных полей ProductArticle
+		// article - обязательное (нет nullable: true)
+		const articleColumn = productArticleColumns.find((col) => col.propertyName === 'article');
+		if (!articleColumn || articleColumn.options?.nullable !== true) {
+			if (!product.article || String(product.article).trim() === '') {
+				errors.push('article');
+			}
+		}
+
+		// price - обязательное (нет nullable: true)
+		const priceColumn = productArticleColumns.find((col) => col.propertyName === 'price');
+		if (!priceColumn || priceColumn.options?.nullable !== true) {
+			if (
+				product.price === undefined ||
+				product.price === null ||
+				Number.isNaN(product.price)
+			) {
+				errors.push('price');
+			}
+		}
+
+		// Проверка обязательных полей Product
+		// amount - обязательное (есть default, но проверяем наличие)
+		const amountColumn = productColumns.find((col) => col.propertyName === 'amount');
+		if (amountColumn && amountColumn.options?.nullable !== true) {
+			if (
+				product.amount === undefined ||
+				product.amount === null ||
+				Number.isNaN(product.amount)
+			) {
+				errors.push('amount');
+			}
+		}
+
+		// Проверка обязательных полей для связи и маппинга
+		// color.name - обязательное для маппинга
+		if (!product.color?.name || String(product.color.name).trim() === '') {
+			errors.push('color.name');
+		}
+
+		// size - обязательное для маппинга
+		if (!product.size || String(product.size).trim() === '') {
+			errors.push('size');
+		}
+
+		// productSubcategory - обязательное для связи
+		if (!product.productSubcategory || String(product.productSubcategory).trim() === '') {
+			errors.push('productSubcategory');
+		}
+
+		return {
+			isValid: errors.length === 0,
+			errors
+		};
+	}
+
+	/**
+	 * Очистка и нормализация полей на основе метаданных TypeORM
+	 * Автоматически обрабатывает обязательные и необязательные поля
+	 */
+	private normalizeOptionalFields(product: ParseProductArticleDto): void {
+		const metadataStorage = getMetadataArgsStorage();
+		const productArticleColumns = metadataStorage.columns.filter(
+			(column) => column.target === ProductArticle
+		);
+
+		// Обрабатываем все строковые поля ProductArticle на основе метаданных
+		for (const column of productArticleColumns) {
+			const fieldName = column.propertyName;
+			const isNullable = column.options?.nullable === true;
+			const columnType = column.options?.type;
+
+			// Пропускаем нестроковые поля и служебные
+			if (
+				fieldName === 'id' ||
+				fieldName === 'isVisible' ||
+				fieldName === 'is_deleted' ||
+				columnType === 'decimal' ||
+				columnType === 'number' ||
+				!fieldName
+			) {
+				continue;
+			}
+
+			// Проверяем, есть ли это поле в ParseProductArticleDto
+			if (!(fieldName in product)) {
+				continue;
+			}
+
+			const value = (product as any)[fieldName];
+
+			// Для обязательных строковых полей - просто trim
+			if (!isNullable && value !== undefined && value !== null) {
+				if (typeof value === 'string') {
+					(product as any)[fieldName] = value.trim();
+				}
+			}
+
+			// Для необязательных строковых полей - trim и преобразование пустых в undefined
+			if (isNullable && value !== undefined && value !== null) {
+				if (typeof value === 'string') {
+					const trimmedValue = value.trim();
+					(product as any)[fieldName] = trimmedValue === '' ? undefined : trimmedValue;
+				}
+			}
+		}
+
+		// Специальная обработка обязательных полей для маппинга и связей
+		// article - обязательное поле
+		if (product.article) {
+			product.article = String(product.article).trim();
+		}
+
+		// color.name - обязательное для маппинга, требует capitalizeFirstLetter
+		if (product.color?.name) {
+			product.color.name = capitalizeFirstLetter(String(product.color.name).trim());
+		}
+
+		// size - обязательное для маппинга
+		if (product.size) {
+			product.size = String(product.size).trim();
+		}
+
+		// productSubcategory - обязательное для связи
+		if (product.productSubcategory) {
+			product.productSubcategory = String(product.productSubcategory).trim();
+		}
 	}
 
 	private async getColorMap(): Promise<Map<string, string>> {
@@ -502,6 +625,82 @@ export class ProductArticleService {
 		});
 	}
 
+	private async downloadProductImageFromUrl(
+		imageUrl: string,
+		article: string
+	): Promise<string> {
+		return new Promise((resolve, reject) => {
+			let url: URL;
+			try {
+				url = new URL(imageUrl);
+			} catch (error) {
+				reject(new Error(`Невалидный URL: ${imageUrl}`));
+				return;
+			}
+
+			const protocol = url.protocol === 'https:' ? https : http;
+
+			const request = protocol.get(imageUrl, (response) => {
+				if (!response.statusCode || response.statusCode !== 200) {
+					reject(
+						new Error(
+							`Не удалось скачать изображение: статус ${response.statusCode || 'неизвестен'}`
+						)
+					);
+					return;
+				}
+
+				const contentType = response.headers['content-type'] || '';
+				let extension = 'jpg';
+				if (contentType.includes('png')) {
+					extension = 'png';
+				} else if (contentType.includes('webp')) {
+					extension = 'webp';
+				} else if (contentType.includes('jpeg')) {
+					extension = 'jpg';
+				} else {
+					// Пытаемся определить расширение из URL
+					const urlExtension = path.extname(url.pathname).toLowerCase();
+					if (urlExtension) {
+						extension = urlExtension.substring(1); // Убираем точку
+					}
+				}
+
+				const chunks: Buffer[] = [];
+				response.on('data', (chunk) => {
+					chunks.push(chunk);
+				});
+
+				response.on('end', async () => {
+					try {
+						const buffer = Buffer.concat(chunks);
+						const hash = (Math.random() + 1).toString(36).substring(5);
+						const fileName = `product-${article.toLowerCase().replace(/\s+/g, '-')}-${hash}.${extension}`;
+						const destPath = getDestPath(fileName);
+						await fsPromises.writeFile(destPath, buffer);
+						resolve(fileName);
+					} catch (error) {
+						reject(error);
+					}
+				});
+
+				response.on('error', (error) => {
+					reject(error);
+				});
+			});
+
+			// Устанавливаем таймаут 10 секунд для запроса
+			request.setTimeout(10000, () => {
+				request.destroy();
+				reject(new Error(`Таймаут при скачивании изображения: ${imageUrl}`));
+			});
+
+			request.on('error', (error) => {
+				reject(error);
+			});
+		});
+	}
+
 	private async parseArticleProduct(
 		productDto: ParseProductArticleDto,
 		colorMap: Map<string, string>,
@@ -516,6 +715,8 @@ export class ProductArticleService {
 			country,
 			name,
 			description,
+			brand,
+			composition,
 			productSubcategory
 		} = productDto;
 
@@ -562,7 +763,9 @@ export class ProductArticleService {
 					country,
 					productSubcategory: existProductSubcategory,
 					name,
-					description
+					description,
+					brand,
+					composition
 				});
 			} else {
 				await productArticleRepository.update(
@@ -572,7 +775,9 @@ export class ProductArticleService {
 						is_deleted: false,
 						productSubcategory: existProductSubcategory,
 						name,
-						description
+						description,
+						brand,
+						composition
 					}
 				);
 			}
@@ -684,6 +889,77 @@ export class ProductArticleService {
 				};
 
 				await productRepository.save(productPayload);
+			}
+
+			// Обработка изображений продукта
+			if (productDto.imageUrls && productDto.imageUrls.length > 0) {
+				const productFileRepository =
+					queryRunner.manager.getRepository(ProductFile);
+
+				// Получаем существующие файлы продукта
+				const existingFiles = await productFileRepository.find({
+					where: {
+						product: {
+							id: productArticle.id
+						},
+						is_deleted: false
+					}
+				});
+
+				// Определяем, нужно ли устанавливать isLogo: true
+				// Если файлов нет, первый успешно загруженный будет логотипом
+				let isFirstLogo = existingFiles.length === 0;
+
+				// Обрабатываем каждое изображение
+				for (const imageUrl of productDto.imageUrls) {
+					if (!imageUrl || imageUrl.trim() === '') {
+						continue;
+					}
+
+					const trimmedUrl = imageUrl.trim();
+
+					// Проверяем, существует ли уже файл с таким URL для данного продукта
+					const existingFile = await productFileRepository.findOne({
+						where: {
+							product: {
+								id: productArticle.id
+							},
+							url: trimmedUrl,
+							is_deleted: false
+						}
+					});
+
+					// Если файл с таким URL уже существует - пропускаем
+					if (existingFile) {
+						continue;
+					}
+
+					try {
+						const imageFileName = await this.downloadProductImageFromUrl(
+							trimmedUrl,
+							article
+						);
+
+						await productFileRepository.save({
+							name: imageFileName,
+							url: trimmedUrl,
+							isLogo: isFirstLogo,
+							product: productArticle
+						});
+
+						// Только первое успешно загруженное изображение будет логотипом
+						if (isFirstLogo) {
+							isFirstLogo = false;
+						}
+					} catch (error) {
+						// Если не удалось скачать изображение, не блокируем парсинг
+						const errorMessage =
+							error instanceof Error ? error.message : String(error);
+						console.error(
+							`[Парсинг] Не удалось скачать изображение продукта "${article}" (URL: ${trimmedUrl}): ${errorMessage}`
+						);
+					}
+				}
 			}
 
 			await queryRunner.commitTransaction();

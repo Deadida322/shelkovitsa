@@ -7,6 +7,13 @@ import {
 	Req,
 	Res
 } from '@nestjs/common';
+import {
+	ApiTags,
+	ApiOperation,
+	ApiResponse,
+	ApiCookieAuth,
+	ApiBody
+} from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/db/entities/User';
 import { Repository } from 'typeorm';
@@ -32,6 +39,7 @@ const cookieOptions: ICookieOptions = {
 	path: '/'
 };
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
 	constructor(
@@ -41,6 +49,10 @@ export class AuthController {
 	) {}
 
 	@Post('register')
+	@ApiOperation({ summary: 'Регистрация нового пользователя' })
+	@ApiResponse({ status: 201, description: 'Пользователь зарегистрирован', type: UserDto })
+	@ApiResponse({ status: 400, description: 'Ошибка валидации или пользователь уже существует' })
+	@ApiBody({ type: RegisterDto })
 	async register(
 		@Body() registerDto: RegisterDto,
 		@Res({ passthrough: true }) response: Response
@@ -72,6 +84,10 @@ export class AuthController {
 	}
 
 	@Post('login')
+	@ApiOperation({ summary: 'Вход в систему' })
+	@ApiResponse({ status: 200, description: 'Успешный вход', type: UserDto })
+	@ApiResponse({ status: 401, description: 'Неверные учетные данные' })
+	@ApiBody({ type: LoginDto })
 	async login(
 		@Body() loginDto: LoginDto,
 		@Res({ passthrough: true }) response: Response
@@ -83,6 +99,9 @@ export class AuthController {
 
 	@Get('me')
 	@Auth()
+	@ApiOperation({ summary: 'Получить информацию о текущем пользователе' })
+	@ApiCookieAuth('access_token')
+	@ApiResponse({ status: 200, description: 'Информация о пользователе', type: UserDto })
 	async getMe(@Req() request: Request): Promise<UserDto> {
 		if (request.user) {
 			const isAdmin = await this.authService.isUserAdmin(request.user);

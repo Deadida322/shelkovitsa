@@ -12,6 +12,11 @@ export class ProductFile extends BaseEntity {
 	name!: string;
 
 	@Column({
+		nullable: true
+	})
+	url?: string;
+
+	@Column({
 		default: false
 	})
 	isLogo!: boolean;

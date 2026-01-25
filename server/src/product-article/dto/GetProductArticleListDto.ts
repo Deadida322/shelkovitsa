@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsInt, IsOptional, IsPositive, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import 'reflect-metadata';
 import { GetListDto } from 'src/common/dto/GetListDto';
 

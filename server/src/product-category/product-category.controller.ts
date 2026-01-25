@@ -8,6 +8,15 @@ import {
 	Patch,
 	Post
 } from '@nestjs/common';
+import {
+	ApiTags,
+	ApiOperation,
+	ApiResponse,
+	ApiBearerAuth,
+	ApiCookieAuth,
+	ApiBody,
+	ApiParam
+} from '@nestjs/swagger';
 import { ProductCategoryService } from './product-category.service';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
 import { ProductCategoryDto } from './dto/ProductCategoryDto';
@@ -19,16 +28,24 @@ import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
 import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
 
+@ApiTags('Product Category')
 @Controller('product-category')
 export class ProductCategoryController {
 	constructor(private readonly productCategoryService: ProductCategoryService) {}
 	@Get()
+	@ApiOperation({ summary: 'Получить список категорий продуктов' })
+	@ApiResponse({ status: 200, description: 'Список категорий', type: [ListProductCategoryDto] })
 	async getList(): Promise<ListProductCategoryDto[]> {
 		return this.productCategoryService.getList();
 	}
 
 	@Post('create')
 	@AdminAuth()
+	@ApiOperation({ summary: 'Создать категорию продукта (админ)' })
+	@ApiBearerAuth('JWT-auth')
+	@ApiCookieAuth('access_token')
+	@ApiResponse({ status: 201, description: 'Категория создана', type: ProductCategoryDto })
+	@ApiBody({ type: CreateProductCategoryDto })
 	async create(@Body() payload: CreateProductCategoryDto): Promise<ProductCategoryDto> {
 		return this.productCategoryService.createCategory(payload);
 	}

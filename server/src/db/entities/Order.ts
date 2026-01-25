@@ -1,9 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne, OneToOne } from 'typeorm';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { OrderProduct } from './OrderProduct';
 import { DeliveryType } from './DeliveryType';
 import { User } from './User';
+import { TelegramOrderMessage } from './TelegramOrderMessage';
 
 export enum OrderStatus {
 	CREATE = 'create',
@@ -68,4 +69,11 @@ export class Order extends BaseEntity {
 		default: OrderStatus.CREATE
 	})
 	status: OrderStatus;
+
+	@Type(() => TelegramOrderMessage)
+	@OneToOne(() => TelegramOrderMessage, (telegramMessage) => telegramMessage.order, {
+		nullable: true,
+		eager: false
+	})
+	telegramMessage?: TelegramOrderMessage;
 }

@@ -21,8 +21,10 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { InitModule } from './init/init.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
 	imports: [
+		ScheduleModule.forRoot(),
 		configuration,
 		TypeOrmModule,
 		JwtModule.register({
@@ -48,11 +50,15 @@ import { InitModule } from './init/init.module';
 		// TelegrafModule.forRoot({
 		// 	token: process.env.TELEGRAM_TOKEN
 		// }),
-		TelegrafModule.forRootAsync({
-			useFactory: () => ({
-				token: process.env.TELEGRAM_TOKEN
-			})
-		}),
+		...(process.env.TELEGRAM_TOKEN
+			? [
+					TelegrafModule.forRootAsync({
+						useFactory: () => ({
+							token: process.env.TELEGRAM_TOKEN
+						})
+					})
+				]
+			: []),
 		ProductModule,
 		AuthModule,
 		AppModule,

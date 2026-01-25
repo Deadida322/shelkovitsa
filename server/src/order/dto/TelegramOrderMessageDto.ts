@@ -1,15 +1,13 @@
 import { Expose } from 'class-transformer';
 
-export class ProductFileDto {
+export class TelegramOrderMessageDto {
 	@Expose()
 	id!: number;
 
 	@Expose()
-	name!: string;
+	status!: string;
 
 	@Expose()
-	url?: string;
-
-	@Expose()
-	isLogo!: boolean;
+	errorMessage?: string;
 }
+

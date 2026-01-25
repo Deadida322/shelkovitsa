@@ -25,8 +25,17 @@ export class ParseProductArticleDto {
 	description?: string;
 
 	@Expose()
+	brand?: string;
+
+	@Expose()
+	composition?: string;
+
+	@Expose()
 	productSubcategory?: string;
 
 	@Expose()
 	name: string;
+
+	@Expose()
+	imageUrls: string[] = [];
 }

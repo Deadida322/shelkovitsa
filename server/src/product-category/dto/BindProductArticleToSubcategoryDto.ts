@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { IsInt, IsNotEmpty } from 'class-validator';
 
 export class BindProductArticleToSubcategoryDto {
 	@IsNotEmpty()

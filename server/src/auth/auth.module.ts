@@ -7,7 +7,7 @@ import { UserService } from 'src/user/user.service';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './auth.guard';
 import { ConfigModule } from '@nestjs/config';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([User]), ConfigModule],

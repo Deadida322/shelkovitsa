@@ -1,5 +1,5 @@
-import { Expose, Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsNumberString, Min } from 'class-validator';
+import { Expose } from 'class-transformer';
+import { IsInt, IsNotEmpty, Min } from 'class-validator';
 import 'reflect-metadata';
 
 export class CommonImageDto {

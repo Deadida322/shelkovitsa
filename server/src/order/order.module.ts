@@ -5,10 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from 'src/db/entities/Order';
 import { OrderProduct } from 'src/db/entities/OrderProduct';
 import { Product } from 'src/db/entities/Product';
+import { TelegramOrderMessage } from 'src/db/entities/TelegramOrderMessage';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-	imports: [TypeOrmModule.forFeature([Order, OrderProduct, Product]), ConfigModule],
+	imports: [TypeOrmModule.forFeature([Order, OrderProduct, Product, TelegramOrderMessage]), ConfigModule],
 	controllers: [OrderController],
 	providers: [OrderService]
 })
