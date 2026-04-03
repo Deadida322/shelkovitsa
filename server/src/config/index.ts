@@ -9,7 +9,7 @@ export default ConfigModule.forRoot({
 			DB_USER: process.env.DB_USER,
 			DB_PASSWORD: process.env.DB_PASSWORD,
 			DB_NAME: process.env.DB_NAME,
-			NODE_ENV: process.env.DB_NAME || 'development',
+			NODE_ENV: process.env.NODE_ENV || 'development',
 			LOG_LEVEL: process.env.LOG_LEVEL,
 			IS_LOGGING_ROUTE: process.env.IS_LOGGING_ROUTE,
 
