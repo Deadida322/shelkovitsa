@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { MemoryStoredFile } from 'nestjs-form-data';
 
-const COLORS_PATH = path.join(process.cwd(), 'docs', 'colors.xlsx');
-const SIZES_PATH = path.join(process.cwd(), 'docs', 'sizes.xlsx');
+const COLORS_PATH = path.join(process.cwd(), 'data', 'colors.xlsx');
+const SIZES_PATH = path.join(process.cwd(), 'data', 'sizes.xlsx');
 
 const baseSrcPath = () => path.join(process.cwd(), process.env.TEMP_PATH);
 const baseDestPath = () => path.join(process.cwd(), process.env.DEST_PATH);
