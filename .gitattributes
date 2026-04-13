@@ -1,0 +1,2 @@
+# Скрипты деплоя только с переводом строк LF (иначе на Linux: bash\r: No such file)
+deploy/*.sh text eol=lf

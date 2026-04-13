@@ -1,275 +1,255 @@
-# Развертывание проекта Shelkovitsa
+# Развёртывание Shelkovitsa
 
-## 🎯 Обзор проекта
+Основные сценарии — **от root** (`sudo`).
 
-**Shelkovitsa** - интернет-магазин нижнего белья с современной архитектурой:
+| Скрипт | Назначение |
+|--------|------------|
+| [`install-server.sh`](./install-server.sh) | Чистый сервер: пакеты, **nvm** + Node, PostgreSQL при `DB_PASSWORD`, `/var/www/certbot` |
+| [`setup-nginx-ssl.sh`](./setup-nginx-ssl.sh) | **Один раз:** временный nginx (ACME) → **certbot** → полный [`nginx.conf`](./nginx.conf) в **`/etc/nginx/nginx.conf`** |
+| [`deploy.sh`](./deploy.sh) | Git, **`/temp`**, сборка, миграции, systemd; **конфиг nginx не трогает** (уже настроен шагом выше) |
+| [`issue-ssl.sh`](./issue-ssl.sh) | Только **certbot** (вызывается из `setup-nginx-ssl.sh`; отдельно — для перевыпуска / доп. имён) |
 
-- **Backend**: NestJS API на порту 8000
-- **Frontend**: Nuxt.js на порту 3000 (гибридный режим)
-- **Домен**: shelkovitsa.ru
-- **Веб-сервер**: Nginx с SSL
+Дополнительно: [`SSL-SETUP.md`](./SSL-SETUP.md), [`FRONTEND-MODES.md`](./FRONTEND-MODES.md), [`clear-cache.sh`](./clear-cache.sh), шаблоны [`nginx-acme-only.conf`](./nginx-acme-only.conf), [`nginx-bootstrap-site.conf`](./nginx-bootstrap-site.conf).
 
-## 🏗️ Архитектура
+### Ошибка `bash\r: No such file` или `/usr/bin/env: 'bash\r'`
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     Nginx       │    │   Nuxt.js       │    │   NestJS API   │
-│   (Port 80/443) │───▶│   (Port 3000)   │───▶│   (Port 8000)  │
-│   Reverse Proxy │    │   Hybrid Mode   │    │   Backend API  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+Скрипты должны иметь окончания строк **LF** (Unix). Если копировали с Windows и в редакторе стоят **CRLF**, shebang ломается: система ищет интерпретатор `bash\r`. На сервере исправьте:
 
-## 📋 Предварительные требования
-
-- Ubuntu 20.04+ или аналогичная Linux система
-- Node.js 18+
-- Nginx
-- Git
-- SSL сертификаты (Let's Encrypt)
-
-## 🚀 Быстрое развертывание
-
-### 1. Клонирование репозитория
 ```bash
-sudo mkdir -p /var/www/shelkovitsa
-cd /var/www/shelkovitsa
-sudo git clone <your-repo-url> .
-sudo chown -R www-data:www-data /var/www/shelkovitsa
+sed -i 's/\r$//' /root/deploy/*.sh
+# или: apt install dos2unix && dos2unix /root/deploy/*.sh
 ```
 
-### 2. Установка зависимостей
+В репозитории для `deploy/*.sh` задан [`.gitattributes`](../.gitattributes) с `eol=lf`, чтобы при клоне на Linux строки были корректные.
+
+**Переменная `GIT_REPO`** используется только в **`deploy.sh`**, не в `install-server.sh`. Установка ОС и БД: только `DB_PASSWORD`, `DB_USER`, `DB_NAME` и параметры Node/nvm. Если передали `GIT_REPO` в `install-server.sh`, он **игнорируется** — это нормально.
+
+### Проверка доступа к репозиторию по SSH (GitHub)
+
+После добавления публичного ключа в GitHub → **Settings → SSH and GPG keys**:
+
 ```bash
-# Backend
-cd /var/www/shelkovitsa/server
-sudo npm ci --production
-
-# Frontend
-cd /var/www/shelkovitsa/client
-sudo npm ci
+# Должно вывести приветствие и ваш логин (или спросить подтверждение fingerprint при первом разе)
+ssh -T git@github.com
 ```
 
-### 3. Настройка SSL сертификатов
+Проверка именно вашего URL без полного клона:
+
 ```bash
-# Установка certbot
-sudo apt update
-sudo apt install -y certbot python3-certbot-nginx
-
-# Получение SSL сертификатов
-sudo certbot --nginx -d shelkovitsa.ru -d www.shelkovitsa.ru
+git ls-remote git@github.com:Deadida322/shelkovitsa.git
 ```
 
-### 4. Развертывание
+Если видите хеши коммитов — доступ на чтение есть. Ошибки `Permission denied (publickey)` — ключ не подхватился: проверьте `ssh-add -l`, путь к ключу (`~/.ssh/id_ed25519`), а для root — что ключ лежит в `/root/.ssh/` и права `chmod 600` на приватный ключ.
+
+Затем клон выполняйте через **`deploy.sh`** (из каталога с скриптом, где лежит копия `deploy/`):
+
 ```bash
-cd /var/www/shelkovitsa
-sudo chmod +x deploy/deploy.sh
-sudo ./deploy/deploy.sh
+cd /root/deploy
+export GIT_REPO='git@github.com:Deadida322/shelkovitsa.git'
+sudo -E ./deploy.sh
 ```
 
-**⚠️ Важно**: Frontend зависит от Backend API во время сборки. Скрипт автоматически:
-1. Собирает Backend
-2. **Настраивает nginx с SSL сертификатами**
-3. Запускает Backend
-4. Собирает Frontend (с доступным API через nginx)
-5. Останавливает временный Backend
-6. Запускает финальные сервисы
+*(Скрипт остановится без `server/.env` — тогда скопируйте `.env.example`, настройте и снова запустите `deploy.sh`.)*
 
-## 🔧 Ручное развертывание
+## Перед первым запуском (репозитория на сервере ещё нет)
 
-### Backend (NestJS)
+**Нужна ли папка проекта заранее?** Обычно **нет**. Если запускаете [`deploy.sh`](./deploy.sh) с переменной **`GIT_REPO`**, скрипт сам создаст родительский каталог (например `/var/www`) и выполнит **`git clone`** в **`PROJECT_DIR`** (по умолчанию `/var/www/shelkovitsa`). Не создавайте вручную пустой каталог `/var/www/shelkovitsa` без `.git` — в этом случае `deploy.sh` завершится с ошибкой.
 
-1. **Сборка**:
+**От какого пользователя:** оба скрипта — **только от root** (`sudo ./install-server.sh`, `sudo ./deploy.sh`). Отдельный Unix-пользователь для деплоя не нужен: после `git` дерево может принадлежать **root**; [`deploy.sh`](./deploy.sh) сам выставит **chmod** на проект и **chown www-data** на каталоги записи (`server/temp`, `docs`, `static`). Процессы Node в systemd идут от **www-data**.
+
+**Права до деплоя:** ничего специально не выставляйте. После появления `server/.env` сделайте **`chown root:www-data server/.env`** и **`chmod 640 server/.env`**, чтобы **www-data** мог читать секреты, а остальные пользователи ОС — нет.
+
+**Что физически положить на сервер до клона:** достаточно скопировать каталог **`deploy/`** (или хотя бы `install-server.sh` и `deploy.sh`) в удобное место, например `/root/shelkovitsa-deploy/`, выставить **`chmod +x *.sh`**, затем запускать оттуда. Полный клон репозитория до этого **не обязателен**, если первый раз используете **`deploy.sh`** с **`GIT_REPO`**.
+
+**Типичный порядок:** `install-server.sh` → код в **`PROJECT_DIR`** (`git clone` или `deploy.sh` + **`GIT_REPO`**) → **`server/.env`**, **`client/.env`** → один раз **`setup-nginx-ssl.sh`** (nginx + сертификат) → дальше только **`deploy.sh`** при обновлениях.
+
+## Кто чем владеет и что запускает
+
+| Учётная запись | Роль |
+|----------------|------|
+| **root** | Установка (`install-server.sh`), деплой (`deploy.sh`), master-процесс nginx, certbot, `/etc` |
+| **postgres** | Демон PostgreSQL |
+| **www-data** | Воркеры nginx; процессы Node в `shelkovitsa-backend` и `shelkovitsa-frontend` |
+| Роль в БД (`DB_USER` в `.env`) | Подключение приложения к PostgreSQL (не пользователь ОС) |
+
+Дерево проекта: `chmod 755` для чтения процессами `www-data`. Запись: `server/temp`, `server/docs`, `server/static` — **`www-data:www-data`**. Файл **`server/.env`**: `chown root:www-data`, `chmod 640`.
+
+## 1. Чистый сервер
+
 ```bash
-cd /var/www/shelkovitsa/server
-npm run build
+cd /path/to/shelkovitsa/deploy   # или скопируйте скрипты на сервер
+chmod +x install-server.sh deploy.sh
+
+export DB_PASSWORD='пароль_роли_БД'
+sudo -E ./install-server.sh
 ```
 
-2. **Systemd сервис**:
+Заполните **`server/.env`**, затем один раз выполните **[`setup-nginx-ssl.sh`](./setup-nginx-ssl.sh)** (см. [SSL-SETUP.md](./SSL-SETUP.md)) или ручной сценарий из документа.
+
+## 2. Первый деплой
+
+**Вариант A — репозиторий уже склонирован**, есть **`server/.env`**, **`client/.env`**, nginx и сертификат уже настроены (**`setup-nginx-ssl.sh`** один раз выполнен):
+
 ```bash
-sudo systemctl enable shelkovitsa-backend
-sudo systemctl start shelkovitsa-backend
+cd /var/www/shelkovitsa/deploy
+export DOMAIN=test.shelkovitsa.ru
+sudo -E ./deploy.sh
 ```
 
-### Frontend (Nuxt.js)
+**Вариант B — кода на сервере ещё нет:** положите на сервер файл `deploy/deploy.sh` (или весь каталог `deploy/`), задайте URL:
 
-**⚠️ Важно**: Frontend требует работающий Backend API через nginx для сборки!
-
-1. **Настройка nginx** (обязательно):
 ```bash
-sudo cp /var/www/shelkovitsa/deploy/nginx.conf /etc/nginx/nginx.conf
-sudo nginx -t
-sudo systemctl reload nginx
+chmod +x deploy.sh
+export GIT_REPO='https://github.com/ваш-орг/shelkovitsa.git'
+export GIT_BRANCH=main
+sudo -E ./deploy.sh
 ```
 
-2. **Запуск Backend** (обязательно):
+Скрипт клонирует репозиторий в `PROJECT_DIR`. Если после клона нет `server/.env`, шаг остановится — скопируйте `server/.env.example` → `server/.env`, настройте БД и снова запустите `sudo ./deploy.sh` из `deploy/` уже внутри клона.
+
+### Deploy уже запускали, скрипт упал — появился только `server/.env`
+
+Сделайте по порядку (подставьте свой домен, например `test.shelkovitsa.ru`):
+
+1. **`server/.env`** — заполните БД, JWT, `CORS=https://ваш-домен`, `TEMP_PATH`/`DEST_PATH` как в [server/.env.example](../server/.env.example). Права:
+   ```bash
+   sudo chown root:www-data /var/www/shelkovitsa/server/.env
+   sudo chmod 640 /var/www/shelkovitsa/server/.env
+   ```
+
+2. **`client/.env`** в каталоге проекта — нужен для сборки фронта (`BASE_URL` читается при `npm run build`):
+   ```bash
+   cd /var/www/shelkovitsa/client
+   sudo cp .env.example .env
+   # отредактируйте: BASE_URL=https://ваш-домен  (без /api в конце)
+   ```
+   Отдельные «секретные» права на `client/.env` обычно не нужны (там публичный URL); достаточно владельца root и `chmod 644`.
+
+3. **DNS** — A-запись домена на IP сервера.
+
+4. **Один раз — nginx и SSL** (пока нет сертификата, полный [`nginx.conf`](./nginx.conf) с путями Let’s Encrypt не заведётся):
+   ```bash
+   cd /var/www/shelkovitsa/deploy
+   chmod +x setup-nginx-ssl.sh issue-ssl.sh
+   export PROJECT_DIR=/var/www/shelkovitsa
+   export DOMAIN=test.shelkovitsa.ru
+   export EMAIL=you@example.com
+   sudo -E ./setup-nginx-ssl.sh
+   ```
+   Поддомен без `www`: `export SERVER_NAMES='test.shelkovitsa.ru'`. Подробности — [`SSL-SETUP.md`](./SSL-SETUP.md).
+
+5. **Деплой приложения** (конфиг nginx при этом **не перезаписывается**):
+   ```bash
+   export DOMAIN=test.shelkovitsa.ru
+   sudo -E ./deploy.sh
+   ```
+
+## 3. Обычное обновление
+
 ```bash
-cd /var/www/shelkovitsa/server
-PORT=8000 node dist/main.js &
+cd /var/www/shelkovitsa/deploy
+sudo ./deploy.sh
 ```
 
-3. **Сборка Frontend**:
+При необходимости задайте переменные (см. [ниже](#переменные-окружения-и-примеры-запуска)).
+
+## Переменные окружения и примеры запуска
+
+Переменные передаются через **окружение процесса**. Удобные способы:
+
+1. **`export` + `sudo -E`** — `-E` сохраняет ваши `export` при переходе в root (иначе `sudo` их обрежет).
+2. **`sudo env VAR=значение … ./скрипт.sh`** — без `export`, всё в одной строке.
+3. Несколько переменных: `sudo env A=1 B=2 ./deploy.sh` или несколько `export` подряд и один `sudo -E`.
+
+### `install-server.sh`
+
+| Переменная | По умолчанию | Назначение |
+|------------|--------------|------------|
+| `DB_PASSWORD` | *(пусто)* | Пароль роли PostgreSQL; без неё блок создания БД пропускается |
+| `DB_NAME` | `shelkovitsa` | Имя базы |
+| `DB_USER` | `shelkovitsa` | Имя роли в PostgreSQL |
+| `NODE_VERSION` | `20.18.3` | Версия Node для `nvm install` |
+| `NVM_INSTALL_VERSION` | `v0.40.3` | Тег установщика nvm (скрипт с GitHub) |
+| `NVM_DIR` | `/root/.nvm` | Каталог nvm |
+
+**Пример — только пароль БД:**
+
 ```bash
-cd /var/www/shelkovitsa/client
-npm run build
+export DB_PASSWORD='секретный_пароль'
+sudo -E ./install-server.sh
 ```
 
-4. **Systemd сервис**:
+**Пример — свои имя базы и пользователя + версия Node:**
+
 ```bash
-sudo systemctl enable shelkovitsa-frontend
-sudo systemctl start shelkovitsa-frontend
+export DB_PASSWORD='секретный_пароль'
+export DB_NAME=myshop
+export DB_USER=myshop
+export NODE_VERSION=20.19.0
+sudo -E ./install-server.sh
 ```
 
-### Nginx
+**Пример — через `env` без `export`:**
 
-1. **Конфигурация**:
 ```bash
-sudo cp /var/www/shelkovitsa/deploy/nginx.conf /etc/nginx/nginx.conf
-sudo nginx -t
-sudo systemctl reload nginx
+sudo env DB_PASSWORD='секрет' DB_USER=shelkovitsa DB_NAME=shelkovitsa NODE_VERSION=20.18.3 ./install-server.sh
 ```
 
-## 📊 Мониторинг
+### `deploy.sh`
 
-### Проверка статуса сервисов
+| Переменная | По умолчанию | Назначение |
+|------------|--------------|------------|
+| `PROJECT_DIR` | `/var/www/shelkovitsa` | Корень репозитория на диске |
+| `DOMAIN` | `shelkovitsa.ru` | Домен для `NUXT_PUBLIC_API_BASE` в systemd (`https://$DOMAIN`) |
+| `GIT_REPO` | *(пусто)* | URL репозитория; нужен, если `PROJECT_DIR` ещё нет и нужен первый `git clone` |
+| `GIT_BRANCH` | `main` | Ветка для `clone` / `pull` |
+
+Nginx и пути к сертификатам задаются в **`setup-nginx-ssl.sh`**, не здесь.
+
+**Пример — первый клон и нестандартный каталог:**
+
 ```bash
-sudo systemctl status shelkovitsa-backend
-sudo systemctl status shelkovitsa-frontend
-sudo systemctl status nginx
+export GIT_REPO='https://github.com/ваш-орг/shelkovitsa.git'
+export GIT_BRANCH=main
+export PROJECT_DIR=/srv/www/shelkovitsa
+export DOMAIN=example.com
+sudo -E ./deploy.sh
 ```
 
-### Логи
+**Пример — обновление уже существующего клона:**
+
 ```bash
-# Backend логи
-sudo journalctl -u shelkovitsa-backend -f
-
-# Frontend логи
-sudo journalctl -u shelkovitsa-frontend -f
-
-# Nginx логи
-sudo tail -f /var/log/nginx/access.log
-sudo tail -f /var/log/nginx/error.log
+cd /var/www/shelkovitsa/deploy
+export DOMAIN=shop.example.com
+sudo -E ./deploy.sh
 ```
 
-### Проверка портов
+### `setup-nginx-ssl.sh`
+
+| Переменная | По умолчанию | Назначение |
+|------------|--------------|------------|
+| `PROJECT_DIR` | `/var/www/shelkovitsa` | Где лежит `deploy/nginx.conf` в репозитории |
+| `DOMAIN` | *(обязательно)* | Домен для certbot `-d` |
+| `EMAIL` | *(обязательно)* | Email для Let's Encrypt |
+| `SERVER_NAMES` | `$DOMAIN www.$DOMAIN` | Строка `server_name` в nginx |
+| `LETSENCRYPT_LIVE_NAME` | `$DOMAIN` | Каталог `/etc/letsencrypt/live/<имя>/` в шаблоне [`nginx.conf`](./nginx.conf) |
+| `WEBROOT` | `/var/www/certbot` | Webroot для ACME |
+| `EXTRA_DOMAINS` | *(пусто)* | Дополнительные `-d` для certbot |
+
 ```bash
-sudo netstat -tlnp | grep -E ':(8000|3000|80|443)'
+export PROJECT_DIR=/var/www/shelkovitsa DOMAIN=test.shelkovitsa.ru EMAIL=admin@mail.ru
+export SERVER_NAMES='test.shelkovitsa.ru'
+sudo -E ./setup-nginx-ssl.sh
 ```
 
-## 🔄 Обновление
+**Пример — одной строкой через `env`:**
 
-### Автоматическое обновление
 ```bash
-cd /var/www/shelkovitsa
-sudo ./deploy/deploy.sh
+sudo env GIT_REPO='https://github.com/ваш-орг/shelkovitsa.git' GIT_BRANCH=main PROJECT_DIR=/var/www/shelkovitsa ./deploy.sh
 ```
 
-### Ручное обновление
-```bash
-# 1. Обновление кода
-cd /var/www/shelkovitsa
-sudo git pull origin main
+## Node.js
 
-# 2. Пересборка
-cd server && npm run build
-cd ../client && npm run build
+`install-server.sh` ставит **[nvm](https://github.com/nvm-sh/nvm)** в `/root/.nvm`, затем **`nvm install`** по версии **`NODE_VERSION`** (по умолчанию **20.18.3**). В `/usr/local/bin` создаются ссылки на `node` / `npm` / `npx`, их использует **`deploy.sh`** и systemd.
 
-# 3. Перезапуск сервисов
-sudo systemctl restart shelkovitsa-backend
-sudo systemctl restart shelkovitsa-frontend
-```
-
-## 🚨 Устранение неполадок
-
-### Проблема: Фронтенд не обновляется после деплоя
-```bash
-# Принудительная очистка кэша
-sudo ./deploy/clear-cache.sh
-
-# Или ручная очистка
-sudo rm -rf /var/cache/nginx/*
-sudo rm -rf /var/www/shelkovitsa/client/.nuxt
-sudo rm -rf /var/www/shelkovitsa/client/.output
-sudo systemctl restart nginx
-sudo systemctl restart shelkovitsa-frontend
-```
-
-### Проблема: 502 Bad Gateway
-```bash
-# Проверьте статус сервисов
-sudo systemctl status shelkovitsa-backend
-sudo systemctl status shelkovitsa-frontend
-
-# Перезапустите сервисы
-sudo systemctl restart shelkovitsa-backend
-sudo systemctl restart shelkovitsa-frontend
-```
-
-### Проблема: SSL сертификаты
-```bash
-# Проверьте сертификаты
-sudo certbot certificates
-
-# Обновите сертификаты
-sudo certbot renew
-```
-
-### Проблема: Права доступа
-```bash
-# Исправьте права
-sudo chown -R www-data:www-data /var/www/shelkovitsa
-sudo chmod -R 755 /var/www/shelkovitsa
-```
-
-## 🔒 Безопасность
-
-### Firewall
-```bash
-sudo ufw allow 22    # SSH
-sudo ufw allow 80    # HTTP
-sudo ufw allow 443   # HTTPS
-sudo ufw enable
-```
-
-### SSL настройки
-- Автоматический редирект HTTP → HTTPS
-- HSTS заголовки
-- Современные SSL протоколы
-
-## 📈 Производительность
-
-### Кэширование
-- **Главная страница**: 30 минут (популярные товары)
-- **Каталог**: 30 минут - 1 час
-- **Контакты**: 1 год (статические)
-- **Доставка**: 2 часа
-- **Админка**: без кэширования
-
-### Оптимизация
-- Gzip сжатие
-- HTTP/2
-- Keep-alive соединения
-- Rate limiting
-
-## 🎯 Режимы работы Frontend
-
-### ISR страницы (обновляемые)
-- `/` - главная (30 мин, популярные товары)
-- `/catalog` - каталог (30 мин)
-- `/catalog/**` - товары (1 час)
-- `/deliver` - доставка (2 часа)
-
-### Статические страницы (максимальная производительность)
-- `/contacts` - контакты (1 год)
-
-### SPA страницы (динамические)
-- `/admin` - админка
-- `/signin` - авторизация
-- `/signup` - регистрация
-- `/recover` - восстановление
-
-## 📞 Поддержка
-
-При возникновении проблем:
-1. Проверьте логи сервисов
-2. Проверьте статус портов
-3. Проверьте конфигурацию nginx
-4. Обратитесь к разделу "Устранение неполадок"
+Переопределение версий — через переменные в таблице выше и примеры для `install-server.sh`.

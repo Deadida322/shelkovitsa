@@ -73,3 +73,7 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Сервер (Ubuntu)
+
+Скрипты установки и деплоя: [deploy/README.md](deploy/README.md).
