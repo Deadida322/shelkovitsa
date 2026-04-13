@@ -1,5 +1,29 @@
 # Настройка SSL для проекта Shelkovitsa
 
+## От какого пользователя и куда что пишется
+
+| Действие | Пользователь | Где оказываются файлы |
+|----------|--------------|------------------------|
+| Выпуск сертификата (certbot) | **root** / `sudo` | `/etc/letsencrypt/live/<имя>/` (ключи и цепочка) |
+| Конфиг nginx | **root** / `sudo` | **`/etc/nginx/nginx.conf`** — записывает **[`setup-nginx-ssl.sh`](./setup-nginx-ssl.sh)** (один раз); [`deploy.sh`](./deploy.sh) конфиг **не меняет** |
+| Запуск nginx | systemd | master от **root**, воркеры от **`www-data`** (чтение конфига и сертификатов) |
+
+Руками **`www-data`** ничего в `/etc` не копирует — только администратор.
+
+## Домен и подстановка в nginx
+
+В репозитории [`deploy/nginx.conf`](./nginx.conf) — **шаблон** с `@SERVER_NAMES@` и `@LETSENCRYPT_LIVE@`. Подстановку и запись в **`/etc/nginx/nginx.conf`** делает **[`setup-nginx-ssl.sh`](./setup-nginx-ssl.sh)** (шаг 3 после certbot). При обычном **`deploy.sh`** конфиг nginx **не перезаписывается**.
+
+Переменные для **`setup-nginx-ssl.sh`**: **`DOMAIN`**, **`EMAIL`**, опционально **`SERVER_NAMES`**, **`LETSENCRYPT_LIVE_NAME`**, **`EXTRA_DOMAINS`** — см. [README](README.md).
+
+Рекомендуемый сценарий — один вызов **`setup-nginx-ssl.sh`** (внутри: временный [`nginx-acme-only.conf`](./nginx-acme-only.conf) → **`issue-ssl.sh`** → полный `nginx.conf`).
+
+## Выпуск сертификата
+
+Отдельно можно вызвать только **[`issue-ssl.sh`](./issue-ssl.sh)** (webroot), если nginx на **80** уже отдаёт `/.well-known/`. Обычно удобнее **`setup-nginx-ssl.sh`**, который сам поднимает минимальный nginx для ACME.
+
+Опционально второе имя: `export EXTRA_DOMAINS='www.test.shelkovitsa.ru'`.
+
 ## 🔒 Настройка SSL сертификатов
 
 ### Предварительные требования
@@ -50,25 +74,14 @@ sudo crontab -e
 
 ## 🔧 Настройка Nginx с SSL
 
-### Конфигурация nginx.conf
+### Шаблон и применение
 
-Файл `deploy/nginx.conf` уже настроен для работы с SSL:
+Файл **`deploy/nginx.conf`** — шаблон; в **`/etc/nginx/nginx.conf`** его кладёт **`setup-nginx-ssl.sh`**. При ручном копировании не забудьте заменить плейсхолдеры (`sed` как в скрипте).
 
-- Автоматический редирект HTTP → HTTPS
-- SSL сертификаты Let's Encrypt
-- Современные SSL протоколы
-- HSTS заголовки
-
-### Применение конфигурации
+Проверка конфига:
 
 ```bash
-# Копирование конфигурации
-sudo cp /var/www/shelkovitsa/deploy/nginx.conf /etc/nginx/nginx.conf
-
-# Проверка конфигурации
 sudo nginx -t
-
-# Перезагрузка nginx
 sudo systemctl reload nginx
 ```
 
