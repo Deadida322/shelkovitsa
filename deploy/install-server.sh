@@ -57,11 +57,21 @@ nvm alias default "$NODE_VERSION"
 nvm use default
 
 mkdir -p /usr/local/bin
-NODE_BIN="$(dirname "$(command -v node)")"
-ln -sf "${NODE_BIN}/node" /usr/local/bin/node
-ln -sf "${NODE_BIN}/npm" /usr/local/bin/npm
-ln -sf "${NODE_BIN}/npx" /usr/local/bin/npx
-echo "    symlinks: /usr/local/bin/node -> $(readlink -f /usr/local/bin/node)"
+# Релиз целиком в /opt: systemd (User=www-data) не может exec через /root/.nvm/... (каталог /root закрыт).
+# Одного bin/node в /usr/local недостаточно — у бинаря RPATH на ../lib (libnode и т.д.).
+NODE_VERSION_ROOT="$(dirname "$(dirname "$(command -v node)")")"
+OPT_NODE="/opt/node-${NODE_VERSION}"
+echo "    копия ${NODE_VERSION_ROOT} -> ${OPT_NODE}"
+rm -rf "${OPT_NODE}"
+cp -a "${NODE_VERSION_ROOT}" "${OPT_NODE}"
+chown -R root:root "${OPT_NODE}"
+find "${OPT_NODE}" -type d -exec chmod 755 {} \;
+if [[ -d "${OPT_NODE}/bin" ]]; then find "${OPT_NODE}/bin" -maxdepth 1 -type f -exec chmod 755 {} \;; fi
+[[ -d "${OPT_NODE}/lib" ]] && chmod -R a+r "${OPT_NODE}/lib"
+ln -sf "${OPT_NODE}/bin/node" /usr/local/bin/node
+ln -sf "${OPT_NODE}/bin/npm" /usr/local/bin/npm
+ln -sf "${OPT_NODE}/bin/npx" /usr/local/bin/npx
+echo "    /usr/local/bin/{node,npm,npx} -> ${OPT_NODE}/bin/"
 
 echo "==> apt: nginx, PostgreSQL, git, certbot"
 apt-get install -y \

@@ -22,6 +22,26 @@ sed -i 's/\r$//' /root/deploy/*.sh
 
 В репозитории для `deploy/*.sh` задан [`.gitattributes`](../.gitattributes) с `eol=lf`, чтобы при клоне на Linux строки были корректные.
 
+### `shelkovitsa-backend`: `status=203/EXEC`, `Failed to execute /usr/local/bin/node: Permission denied`
+
+Юниты systemd работают от **www-data**. Симлинк **`/usr/local/bin/node` → `/root/.nvm/.../bin/node`** недопустим: каталог **`/root`** (обычно `700`) не проходим для **www-data**. Нельзя ограничиться копией только **`bin/node`** в `/usr/local`: бинарю нужны **`../lib`** (`libnode.so` и др.). Актуальный [`install-server.sh`](./install-server.sh) **копирует весь релиз** в **`/opt/node-<версия>`** и вешает симлинки в `/usr/local/bin` **уже на `/opt/...`**. На уже настроенном сервере:
+
+```bash
+sudo -i
+VER=20.19.5
+rm -rf "/opt/node-${VER}"
+cp -a "/root/.nvm/versions/node/v${VER}" "/opt/node-${VER}"
+chown -R root:root "/opt/node-${VER}"
+find "/opt/node-${VER}" -type d -exec chmod 755 {} \;
+chmod 755 "/opt/node-${VER}/bin"/*
+[[ -d "/opt/node-${VER}/lib" ]] && chmod -R a+r "/opt/node-${VER}/lib"
+ln -sf "/opt/node-${VER}/bin/node" /usr/local/bin/node
+ln -sf "/opt/node-${VER}/bin/npm" /usr/local/bin/npm
+ln -sf "/opt/node-${VER}/bin/npx" /usr/local/bin/npx
+sudo -u www-data /usr/local/bin/node -v
+systemctl restart shelkovitsa-backend shelkovitsa-frontend
+```
+
 **Переменная `GIT_REPO`** используется только в **`deploy.sh`**, не в `install-server.sh`. Установка ОС и БД: только `DB_PASSWORD`, `DB_USER`, `DB_NAME` и параметры Node/nvm. Если передали `GIT_REPO` в `install-server.sh`, он **игнорируется** — это нормально.
 
 ### Проверка доступа к репозиторию по SSH (GitHub)
