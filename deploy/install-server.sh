@@ -8,7 +8,7 @@
 #   sudo -E ./install-server.sh
 #
 # Опционально: DB_NAME, DB_USER (по умолчанию shelkovitsa / shelkovitsa).
-# Node: NVM_INSTALL_VERSION (тег nvm, по умолчанию v0.40.3), NODE_VERSION (например 20.18.3), NVM_DIR (/root/.nvm).
+# Node: NVM_INSTALL_VERSION (тег nvm, по умолчанию v0.40.3), NODE_VERSION (например 20.19.5), NVM_DIR (/root/.nvm).
 #
 # Модель пользователей:
 #   root     — этот скрипт, apt, certbot, правки /etc
@@ -39,7 +39,7 @@ apt-get install -y curl build-essential ca-certificates
 echo "==> nvm и Node.js"
 export NVM_DIR="${NVM_DIR:-/root/.nvm}"
 NVM_INSTALL_VERSION="${NVM_INSTALL_VERSION:-v0.40.3}"
-NODE_VERSION="${NODE_VERSION:-20.18.3}"
+NODE_VERSION="${NODE_VERSION:-20.19.5}"
 
 if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
 	echo "    установка nvm ($NVM_INSTALL_VERSION)"
