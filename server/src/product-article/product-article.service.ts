@@ -318,26 +318,31 @@ export class ProductArticleService {
 		const sizeMap = await this.getSizeMap();
 		let index = 0;
 		for (const row of data) {
+			const rowValues = Array.isArray(row) ? row : [];
+			const cell = (idx: number): string =>
+				rowValues[idx] === undefined || rowValues[idx] === null
+					? ''
+					: String(rowValues[idx]);
 			try {
 				if (index !== -1) {
 					const product: ParseProductArticleDto = {
-						article: row[13] ?? '',
+						article: cell(13),
 						color: {
-							name: row[4] ?? '',
-							url: row[5] ?? ''
+							name: cell(4),
+							url: cell(5)
 						},
-						size: row[6] ?? '',
-						amount: Number(row[18]),
-						price: Number(row[7]),
-						country: row[9] ?? '',
-						description: row[10] ?? '',
-						brand: row[3] ?? '',
-						composition: row[11] ?? '',
-						productSubcategory: row[2] ?? '',
-						name: row[16] ?? '',
+						size: cell(6),
+						amount: Number(rowValues[18]),
+						price: Number(rowValues[7]),
+						country: cell(9),
+						description: cell(10),
+						brand: cell(3),
+						composition: cell(11),
+						productSubcategory: cell(2),
+						name: cell(16),
 						imageUrls:
-							row[15] && String(row[15]).trim()
-								? String(row[15])
+							rowValues[15] && String(rowValues[15]).trim()
+								? String(rowValues[15])
 										.split(';')
 										.map((url) => url.trim())
 										.filter((url) => url.length > 0)
@@ -350,7 +355,7 @@ export class ProductArticleService {
 					if (!validationResult.isValid) {
 						// Если отсутствуют обязательные поля - добавляем в ошибки
 						errorRows.push([
-							...row,
+							...rowValues,
 							'',
 							`В строке ${index + 1} отсутствуют обязательные поля: ${validationResult.errors.join(', ')}`
 						]);
@@ -361,7 +366,7 @@ export class ProductArticleService {
 					}
 				}
 			} catch (err) {
-				const errRow = [...row, '', `Строка ${index + 1}: `, String(err)];
+				const errRow = [...rowValues, '', `Строка ${index + 1}: `, String(err)];
 				errorRows.push(errRow);
 			} finally {
 				index++;
