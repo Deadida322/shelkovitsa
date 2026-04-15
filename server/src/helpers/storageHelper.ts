@@ -13,8 +13,16 @@ import { MemoryStoredFile } from 'nestjs-form-data';
 const COLORS_PATH = path.join(process.cwd(), 'data', 'colors.xlsx');
 const SIZES_PATH = path.join(process.cwd(), 'data', 'sizes.xlsx');
 
-const baseSrcPath = () => path.join(process.cwd(), process.env.TEMP_PATH);
-const baseDestPath = () => path.join(process.cwd(), process.env.DEST_PATH);
+const resolveStoragePath = (targetPath?: string) => {
+	const safePath = targetPath ?? '';
+	if (path.isAbsolute(safePath)) {
+		return safePath;
+	}
+	return path.join(process.cwd(), safePath);
+};
+
+const baseSrcPath = () => resolveStoragePath(process.env.TEMP_PATH);
+const baseDestPath = () => resolveStoragePath(process.env.DEST_PATH);
 
 export function getSrcPath(filePath?: string): string {
 	const basePath = baseSrcPath();
