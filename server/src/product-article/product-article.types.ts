@@ -6,7 +6,7 @@ export type BaseWhereType = {
 };
 
 export const excelFileType =
-	/(vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|vnd\.ms-excel|octet-stream)/i;
+	/^application\/(vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|vnd\.ms-excel|octet-stream)$/i;
 
 export const imageFileType = '.(jpeg|jpg|png|webp)';
 
