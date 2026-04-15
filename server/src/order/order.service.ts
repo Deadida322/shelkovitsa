@@ -41,6 +41,10 @@ const orderRelations = {
 };
 @Injectable()
 export class OrderService {
+	private isTelegramEnabled(): boolean {
+		return this.configService.get<string>('TELEGRAM_ENABLED') !== 'false';
+	}
+
 	constructor(
 		@InjectRepository(Order)
 		private readonly orderRepository: Repository<Order>,
@@ -230,6 +234,16 @@ export class OrderService {
 	}
 
 	async sendTgCreateOrder(newOrder: Order, isRetry: boolean = false) {
+		if (!this.isTelegramEnabled()) {
+			await this.updateTelegramStatus(
+				newOrder.id,
+				TelegramMessageStatus.FAILED,
+				null,
+				'Telegram отключен (TELEGRAM_ENABLED=false)'
+			);
+			return;
+		}
+
 		// Проверяем наличие бота и токена перед отправкой
 		if (!this.bot) {
 			await this.updateTelegramStatus(newOrder.id, TelegramMessageStatus.FAILED, null, 'Telegram бот недоступен');
@@ -395,6 +409,10 @@ export class OrderService {
 			return { success: false, message: 'Заказ не найден' };
 		}
 
+		if (!this.isTelegramEnabled()) {
+			return { success: false, message: 'Telegram отключен (TELEGRAM_ENABLED=false)' };
+		}
+
 		if (!this.bot) {
 			return { success: false, message: 'Telegram бот недоступен' };
 		}
@@ -483,6 +501,11 @@ export class OrderService {
 	 */
 	@Cron('*/20 * * * *')
 	async retryFailedTelegramMessages() {
+		if (!this.isTelegramEnabled()) {
+			console.log('[Cron] Telegram отключен (TELEGRAM_ENABLED=false), пропуск автоматической реотправки');
+			return;
+		}
+
 		if (!this.bot) {
 			console.log('[Cron] Telegram бот недоступен, пропуск автоматической реотправки');
 			return;

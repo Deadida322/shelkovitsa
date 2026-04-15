@@ -50,11 +50,14 @@ import { ScheduleModule } from '@nestjs/schedule';
 		// TelegrafModule.forRoot({
 		// 	token: process.env.TELEGRAM_TOKEN
 		// }),
-		...(process.env.TELEGRAM_TOKEN
+		...(process.env.TELEGRAM_ENABLED !== 'false' && process.env.TELEGRAM_TOKEN
 			? [
 					TelegrafModule.forRootAsync({
 						useFactory: () => ({
-							token: process.env.TELEGRAM_TOKEN
+							token: process.env.TELEGRAM_TOKEN,
+							// We only send messages from services; do not launch polling/webhook on boot.
+							// This prevents app crash if Telegram API is temporarily unreachable.
+							launchOptions: false
 						})
 					})
 				]
