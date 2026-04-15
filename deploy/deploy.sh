@@ -63,8 +63,10 @@ prepare_server_writable_dirs() {
 }
 
 apply_permissions() {
-	log "права: chmod 755 на дерево проекта; /temp и docs/static — www-data"
-	chmod -R 755 "$PROJECT_DIR"
+	log "права: каталоги 755, файлы 644; .git и node_modules не трогаем (иначе git status — mass mode change). Скрипты в репо не chmod: запуск с другого пути — bash /path/to/script.sh"
+	cd "$PROJECT_DIR" || die "нет каталога $PROJECT_DIR"
+	find . \( -name .git -o -name node_modules \) -prune -o -type d -exec chmod 755 {} +
+	find . \( -name .git -o -name node_modules \) -prune -o -type f -exec chmod 644 {} +
 	prepare_server_writable_dirs
 }
 

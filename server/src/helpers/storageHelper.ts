@@ -38,11 +38,11 @@ export function initDiskStorage() {
 
 	try {
 		if (!fs.existsSync(srcPath)) {
-			fsPromises.mkdir(srcPath, { recursive: true });
+			fs.mkdirSync(srcPath, { recursive: true });
 		}
 
 		if (!fs.existsSync(destPath)) {
-			fsPromises.mkdir(destPath, { recursive: true });
+			fs.mkdirSync(destPath, { recursive: true });
 		}
 	} catch (error) {
 		console.error('Ошибка создания директорий:', error);

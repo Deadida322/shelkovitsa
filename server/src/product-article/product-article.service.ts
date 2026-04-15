@@ -294,8 +294,21 @@ export class ProductArticleService {
 		filePath: string,
 		uploadFileDto: UploadProductArticleFileDto
 	): Promise<Buffer | undefined> {
-		const workSheetsFromFile = xlsx.parse(filePath);
-		const data = workSheetsFromFile[0].data;
+		let workSheetsFromFile: ReturnType<typeof xlsx.parse>;
+		try {
+			workSheetsFromFile = xlsx.parse(filePath);
+		} catch (e) {
+			throw new BadRequestException(
+				`Не удалось открыть Excel: ${e instanceof Error ? e.message : String(e)}`
+			);
+		}
+		const firstSheet = workSheetsFromFile?.[0];
+		if (!firstSheet?.data?.length) {
+			throw new BadRequestException(
+				'В файле нет данных на первом листе (пустой файл или неверный формат)'
+			);
+		}
+		const data = firstSheet.data;
 
 		if (uploadFileDto.isDeletedOther) {
 			await this.clearArticleProducts();
