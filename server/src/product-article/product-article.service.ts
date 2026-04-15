@@ -308,12 +308,12 @@ export class ProductArticleService {
 				'В файле нет данных на первом листе (пустой файл или неверный формат)'
 			);
 		}
-		const data = firstSheet.data;
+		const data = firstSheet.data as unknown[][];
 
 		if (uploadFileDto.isDeletedOther) {
 			await this.clearArticleProducts();
 		}
-		const errorRows: string[][] = [];
+		const errorRows: unknown[][] = [];
 		const colorMap = await this.getColorMap();
 		const sizeMap = await this.getSizeMap();
 		let index = 0;
