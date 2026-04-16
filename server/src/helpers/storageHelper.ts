@@ -21,8 +21,8 @@ const resolveStoragePath = (targetPath?: string) => {
 	return path.join(process.cwd(), safePath);
 };
 
-const baseSrcPath = () => resolveStoragePath(process.env.TEMP_PATH);
-const baseDestPath = () => resolveStoragePath(process.env.DEST_PATH);
+export const baseSrcPath = () => resolveStoragePath(process.env.TEMP_PATH);
+export const baseDestPath = () => resolveStoragePath(process.env.DEST_PATH);
 const getUploadMaxSizeBytes = () => {
 	const rawMb = Number(process.env.UPLOAD_MAX_FILE_SIZE_MB ?? 20);
 	const safeMb = Number.isFinite(rawMb) && rawMb > 0 ? rawMb : 20;

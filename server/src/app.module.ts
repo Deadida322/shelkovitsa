@@ -22,6 +22,7 @@ import { join } from 'path';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { InitModule } from './init/init.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { baseDestPath, baseSrcPath } from './helpers/storageHelper';
 @Module({
 	imports: [
 		ScheduleModule.forRoot(),
@@ -35,7 +36,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 		MulterModule.registerAsync({
 			imports: [ConfigModule],
 			useFactory: async (configService: ConfigService) => ({
-				dest: './temp/src'
+				dest: baseSrcPath()
 			}),
 			inject: [ConfigService]
 		}),
@@ -44,7 +45,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 			isGlobal: true
 		}),
 		ServeStaticModule.forRoot({
-			rootPath: join(__dirname, '..', 'temp/dist'),
+			rootPath: baseDestPath(),
 			serveRoot: '/static'
 		}),
 		// TelegrafModule.forRoot({

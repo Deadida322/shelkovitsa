@@ -90,7 +90,11 @@ export class ProductArticleController {
 	@Post(':id')
 	@ApiOperation({ summary: 'Получить артикул продукта по ID' })
 	@ApiParam({ name: 'id', type: 'number', description: 'ID артикула' })
-	@ApiResponse({ status: 200, description: 'Артикул продукта', type: FullProductArticleDto })
+	@ApiResponse({
+		status: 200,
+		description: 'Артикул продукта',
+		type: FullProductArticleDto
+	})
 	@ApiBody({ type: GetDetailProductArticleDto })
 	async getProductArticle(
 		@Param('id') id: number,
