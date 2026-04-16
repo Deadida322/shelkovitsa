@@ -219,19 +219,82 @@ export class ProductArticleService {
 	}
 
 	private async clearArticleProducts() {
-		await this.productRepository.update(
-			{},
-			{
-				is_deleted: true
+		await this.dataSource.transaction(async (manager) => {
+			const products = await manager.find(Product, {
+				relations: {
+					orderProducts: true,
+					productArticle: true
+				}
+			});
+			const softDeleteProductIds = products
+				.filter((p) => (p.orderProducts?.length || 0) > 0)
+				.map((p) => p.id);
+			const hardDeleteProductIds = products
+				.filter((p) => (p.orderProducts?.length || 0) === 0)
+				.map((p) => p.id);
+
+			if (softDeleteProductIds.length) {
+				await manager
+					.createQueryBuilder()
+					.update(Product)
+					.set({ is_deleted: true })
+					.whereInIds(softDeleteProductIds)
+					.execute();
 			}
-		);
-		await this.productArticleRepository.update(
-			{},
-			{
-				is_deleted: true,
-				isVisible: false
+
+			if (hardDeleteProductIds.length) {
+				await manager
+					.createQueryBuilder()
+					.delete()
+					.from(Product)
+					.whereInIds(hardDeleteProductIds)
+					.execute();
 			}
-		);
+
+			const articles = await manager.find(ProductArticle, {
+				relations: {
+					products: {
+						orderProducts: true
+					}
+				}
+			});
+			const softDeleteArticleIds = articles
+				.filter((article) => article.products?.some((p) => (p.orderProducts?.length || 0) > 0))
+				.map((article) => article.id);
+			const hardDeleteArticleIds = articles
+				.filter((article) => !article.products || article.products.length === 0)
+				.map((article) => article.id);
+
+			if (softDeleteArticleIds.length) {
+				await manager
+					.createQueryBuilder()
+					.update(ProductArticle)
+					.set({
+						is_deleted: true,
+						isVisible: false
+					})
+					.whereInIds(softDeleteArticleIds)
+					.execute();
+			}
+
+			if (hardDeleteArticleIds.length) {
+				await manager
+					.createQueryBuilder()
+					.delete()
+					.from(ProductFile)
+					.where('productId IN (:...articleIds)', {
+						articleIds: hardDeleteArticleIds
+					})
+					.execute();
+
+				await manager
+					.createQueryBuilder()
+					.delete()
+					.from(ProductArticle)
+					.whereInIds(hardDeleteArticleIds)
+					.execute();
+			}
+		});
 	}
 
 	//!!!! TODO недоделано
@@ -316,60 +379,62 @@ export class ProductArticleService {
 		const errorRows: unknown[][] = [];
 		const colorMap = await this.getColorMap();
 		const sizeMap = await this.getSizeMap();
-		let index = 0;
-		for (const row of data) {
+		for (let index = 0; index < data.length; index++) {
+			const row = data[index];
 			const rowValues = Array.isArray(row) ? row : [];
+			const isRowEmpty = rowValues.every(
+				(value) => value === undefined || value === null || String(value).trim() === ''
+			);
+			if (isRowEmpty) {
+				continue;
+			}
 			const cell = (idx: number): string =>
 				rowValues[idx] === undefined || rowValues[idx] === null
 					? ''
 					: String(rowValues[idx]);
 			try {
-				if (index !== -1) {
-					const product: ParseProductArticleDto = {
-						article: cell(13),
-						color: {
-							name: cell(4),
-							url: cell(5)
-						},
-						size: cell(6),
-						amount: Number(rowValues[18]),
-						price: Number(rowValues[7]),
-						country: cell(9),
-						description: cell(10),
-						brand: cell(3),
-						composition: cell(11),
-						productSubcategory: cell(2),
-						name: cell(16),
-						imageUrls:
-							rowValues[15] && String(rowValues[15]).trim()
-								? String(rowValues[15])
-										.split(';')
-										.map((url) => url.trim())
-										.filter((url) => url.length > 0)
-								: []
-					};
+				const product: ParseProductArticleDto = {
+					article: cell(13),
+					color: {
+						name: cell(4),
+						url: cell(5)
+					},
+					size: cell(6),
+					amount: Number(rowValues[18]),
+					price: Number(rowValues[7]),
+					country: cell(9),
+					description: cell(10),
+					brand: cell(3),
+					composition: cell(11),
+					productSubcategory: cell(2),
+					name: cell(16),
+					imageUrls:
+						rowValues[15] && String(rowValues[15]).trim()
+							? String(rowValues[15])
+									.split(';')
+									.map((url) => url.trim())
+									.filter((url) => url.length > 0)
+							: []
+				};
 
-					// Валидация обязательных полей на основе метаданных TypeORM
-					const validationResult = this.validateRequiredFields(product);
+				// Валидация обязательных полей на основе метаданных TypeORM
+				const validationResult = this.validateRequiredFields(product);
 
-					if (!validationResult.isValid) {
-						// Если отсутствуют обязательные поля - добавляем в ошибки
-						errorRows.push([
-							...rowValues,
-							'',
-							`В строке ${index + 1} отсутствуют обязательные поля: ${validationResult.errors.join(', ')}`
-						]);
-					} else {
-						// Если все обязательные поля заполнены - нормализуем и обрабатываем
-						this.normalizeOptionalFields(product);
-						await this.parseArticleProduct(product, colorMap, sizeMap);
-					}
+				if (!validationResult.isValid) {
+					// Если отсутствуют обязательные поля - добавляем в ошибки
+					errorRows.push([
+						...rowValues,
+						'',
+						`В строке ${index + 1} отсутствуют обязательные поля: ${validationResult.errors.join(', ')}`
+					]);
+				} else {
+					// Если все обязательные поля заполнены - нормализуем и обрабатываем
+					this.normalizeOptionalFields(product);
+					await this.parseArticleProduct(product, colorMap, sizeMap);
 				}
 			} catch (err) {
 				const errRow = [...rowValues, '', `Строка ${index + 1}: `, String(err)];
 				errorRows.push(errRow);
-			} finally {
-				index++;
 			}
 		}
 

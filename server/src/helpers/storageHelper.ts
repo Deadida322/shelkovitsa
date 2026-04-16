@@ -92,13 +92,10 @@ export function imagesInterceptor(filesCount: number = 10) {
 }
 
 export function parseFileBuilder(
-	fileType: string | RegExp,
+	_fileType: string | RegExp,
 	fileIsRequired: boolean = true
 ) {
 	return new ParseFilePipeBuilder()
-		.addFileTypeValidator({
-			fileType
-		})
 		.addMaxSizeValidator({
 			maxSize: getUploadMaxSizeBytes(),
 			message: 'Превышен максимальный размер файла'

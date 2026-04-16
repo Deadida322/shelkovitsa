@@ -1,5 +1,6 @@
 import { ProductArticleService } from './product-article.service';
 import {
+	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -13,6 +14,7 @@ import {
 	UploadedFile,
 	UseInterceptors
 } from '@nestjs/common';
+import * as fs from 'node:fs/promises';
 import {
 	ApiTags,
 	ApiOperation,
@@ -163,6 +165,29 @@ export class ProductArticleController {
 		const filePath = getSrcPath(file.filename);
 		if (!(await existsFile(filePath))) {
 			throw new InternalServerErrorException('Файл не найден');
+		}
+		const mimeType = (file?.mimetype || '').toLowerCase();
+		const originalName = file?.originalname || '';
+		const allowedMimeTypes = new Set([
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			'application/vnd.ms-excel',
+			'application/octet-stream'
+		]);
+		const hasValidExtension = /\.(xlsx|xls)$/i.test(originalName);
+		if (!allowedMimeTypes.has(mimeType) && !hasValidExtension) {
+			throw new BadRequestException(
+				`Неверный тип файла: ${mimeType || 'unknown'}. Разрешены только Excel (.xlsx/.xls)`
+			);
+		}
+		const fh = await fs.open(filePath, 'r');
+		const headerBuffer = Buffer.alloc(8);
+		await fh.read(headerBuffer, 0, 8, 0);
+		await fh.close();
+		const signature = headerBuffer.toString('hex');
+		const isXlsx = signature.startsWith('504b0304'); // ZIP
+		const isXls = signature.startsWith('d0cf11e0a1b11ae1'); // OLE Compound File
+		if (!isXlsx && !isXls) {
+			throw new BadRequestException('Файл не похож на Excel (.xlsx/.xls)');
 		}
 		const errorFile = await this.productArticleService.parseExcelFile(
 			filePath,
