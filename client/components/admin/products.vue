@@ -1,106 +1,106 @@
 <script setup>
-import EditModal from './editModal.vue';
+    import EditModal from './editModal.vue';
 
-const { $api } = useNuxtApp();
-const modalShow = ref(false);
-const isDeletedOther = ref(false);
-const loading = ref(false);
-const products = ref([]);
-const page = ref(1);
-const totalItems = ref(0);
-const editableItem = ref({});
-function getProducts() {
-    loading.value = true;
-    return $api('/api/product-article/admin/getList', {
-        method: 'POST',
-        body: {
-            page: page.value - 1,
-            itemsPerPage: 10,
+    const { $api } = useNuxtApp();
+    const modalShow = ref(false);
+    const isDeletedOther = ref(false);
+    const loading = ref(false);
+    const products = ref([]);
+    const page = ref(1);
+    const totalItems = ref(0);
+    const editableItem = ref({});
+    function getProducts() {
+        loading.value = true;
+        return $api('/api/product-article/admin/getList', {
+            method: 'POST',
+            body: {
+                page: page.value - 1,
+                itemsPerPage: 10,
+            },
+        }).then((res) => {
+            products.value = res.data;
+            totalItems.value = res.count;
+            loading.value = false;
+        });
+    }
+
+    getProducts();
+
+    async function updateXlsx(file) {
+        const formData = new FormData();
+        formData.append('file', file, file.name);
+        formData.append('isDeletedOther', isDeletedOther.value);
+        loading.value = true;
+        try {
+            const response = await $api('/api/product-article/uploadProducts', {
+                method: 'PUT',
+                body: formData,
+                responseType: 'blob', // Указываем, что ожидаем бинарный ответ
+            });
+            getProducts();
+
+            // Создаем ссылку для скачивания файла
+            const url = window.URL.createObjectURL(new Blob([response]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'products-errors.xlsx'); // Имя файла
+            document.body.appendChild(link);
+            link.click();
+
+            // Очищаем созданные элементы
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }
+        catch (e) {
+            VsNotification({
+                title: 'Ошибка!',
+                content: e.message,
+                position: 'bottom-center',
+                border: 'error',
+            });
+            loading.value = false;
+        }
+        loading.value = false;
+    }
+
+    const headers = [
+        {
+            title: 'id',
+            value: 'id',
         },
-    }).then((res) => {
-        products.value = res.data;
-        totalItems.value = res.count;
-        loading.value = false;
-    });
-}
+        {
+            title: 'Артикул',
+            value: 'article',
+        },
+        {
+            title: 'Наименование',
+            value: 'name',
+        },
+        {
+            title: 'Описание',
+            value: 'description',
+        },
+        {
+            title: 'Цена',
+            value: 'price',
+        },
+        {
+            title: 'Удалён?',
+            value: 'is_deleted',
+        },
+        {
+            title: 'Виден?',
+            value: 'isVisible',
+        },
+        {
+            value: 'actions',
+        },
+    ];
 
-getProducts();
-
-async function updateXlsx(file) {
-    const formData = new FormData();
-    formData.append('file', file, file.name);
-    formData.append('isDeletedOther', isDeletedOther.value);
-    loading.value = true;
-    try {
-        const response = await $api('/api/product-article/uploadProducts', {
-            method: 'PUT',
-            body: formData,
-            responseType: 'blob', // Указываем, что ожидаем бинарный ответ
-        });
-        getProducts();
-
-        // Создаем ссылку для скачивания файла
-        const url = window.URL.createObjectURL(new Blob([response]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'products-errors.xlsx'); // Имя файла
-        document.body.appendChild(link);
-        link.click();
-
-        // Очищаем созданные элементы
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+    function toggleModal(item) {
+        modalShow.value = true;
+        editableItem.value = item;
     }
-    catch (e) {
-        VsNotification({
-            title: 'Ошибка!',
-            content: e.message,
-            position: 'bottom-center',
-            border: 'error',
-        });
-        loading.value = false;
-    }
-    loading.value = false;
-}
-
-const headers = [
-    {
-        title: 'id',
-        value: 'id',
-    },
-    {
-        title: 'Артикул',
-        value: 'article',
-    },
-    {
-        title: 'Наименование',
-        value: 'name',
-    },
-    {
-        title: 'Описание',
-        value: 'description',
-    },
-    {
-        title: 'Цена',
-        value: 'price',
-    },
-    {
-        title: 'Удалён?',
-        value: 'is_deleted',
-    },
-    {
-        title: 'Виден?',
-        value: 'isVisible',
-    },
-    {
-        value: 'actions',
-    },
-];
-
-function toggleModal(item) {
-    modalShow.value = true;
-    editableItem.value = item;
-}
 </script>
 
 <template>

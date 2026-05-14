@@ -31,6 +31,7 @@
             <vs-button
                 size="small"
                 class="s-count-input__less"
+                :disabled="count <= 1"
                 @click="count ? count -= 1 : void 0"
             >
                 -
@@ -40,6 +41,7 @@
                 class="s-count-input__input"
                 type="number"
                 width="20px"
+                readonly
             />
             <vs-button
                 size="small"

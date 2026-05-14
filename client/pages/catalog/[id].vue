@@ -37,6 +37,7 @@
 
     function addToCart() {
         const item = {
+            id: route.params.id,
             productId: cartInfo.value.productId,
             productSizeId: cartInfo.value.size,
             productColorId: cartInfo.value.color,

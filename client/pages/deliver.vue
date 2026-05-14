@@ -72,18 +72,7 @@
         <h2 class="text-h6 mt-4">
             Ваша корзина
         </h2>
-        <vs-alert
-            shadow
-            class="mt-4"
-            color="#1A5CFF"
-        >
-            <template #icon>
-                <v-icon size="40">
-                    mdi-information
-                </v-icon>
-            </template>
-            Скидка не распространяется на товары участвующие в акции
-        </vs-alert>
+
         <div
             class="deliver__table"
             :class="{ 'pa-4': !cartStore.cart.length }"
@@ -127,7 +116,12 @@
                             />
                         </vs-td>
                         <vs-td>
-                            {{ tr.name }}
+                            <Nuxt-link v-if="tr.id" :to="`/catalog/${tr.id}`">
+                                {{ tr.name }}
+                            </Nuxt-link>
+                            <template v-else>
+                                {{ tr.name }}
+                            </template>
                         </vs-td>
                         <vs-td>
                             {{ mappingStore.colors[tr.productColorId] }}
@@ -139,12 +133,7 @@
                             <s-count-input v-model="tr.amount" @update:model-value="onCountDown($event, i)" />
                         </vs-td>
                         <vs-td width="110px">
-                            <vs-button
-                                disabled
-                                type="flat"
-                            >
-                                <span class="price">{{ tr.price }} ₽</span>
-                            </vs-button>
+                            <span class="price">{{ tr.price }} ₽</span>
                         </vs-td>
                         <vs-td>
                             <vs-button
@@ -179,17 +168,11 @@
                     </nuxt-link>
                 </vs-alert>
             </div>
-            <div class="deliver-table__actions d-flex justify-end pa-4 align-center">
+            <div v-if="cartStore.cart.length" class="deliver-table__actions d-flex justify-end pa-4 align-center price">
                 <div class="text-body1">
-                    Всего:
+                    Всего: &nbsp;
                 </div>
-                <vs-button
-                    class="mr-2 ml-2"
-                    disabled
-                    type="flat"
-                >
-                    {{ cartStore.cart.reduce((a, item) => a += item.price * item.amount, 0) }} ₽
-                </vs-button>
+                {{ cartStore.cart.reduce((a, item) => a += item.price * item.amount, 0) }} ₽
                 <vs-button @click="cartStore.clearCart">
                     Очистить
                 </vs-button>
@@ -313,38 +296,6 @@
                 </v-stepper>
             </s-validation>
         </template>
-
-        <vs-alert
-            class="mt-4 alert"
-            color="#1A5CFF"
-        >
-            <template #icon>
-                <v-icon size="32">
-                    mdi-information
-                </v-icon>
-            </template>
-            <ul class="ml-2">
-                <li>
-                    Просьба указывать в комментарии, что вам нужна примерка
-                </li>
-                <li>
-                    При самовывозе просьба не менее, че за час сообщить, о том, что Вы подъедите за заказом
-                </li>
-                <li>
-                    Пункт выдачи находится по адресу Москва, Леснорядский переулок, д. 18, стр. 19А
-                </li>
-                <li>
-                    Режим работы:
-                    <br>
-                    пн. - пт. 10:00 - 17:00
-                    <br>
-                    сб. - 10:00 - 15:00
-                    <br>
-                    вс. - выходной
-                </li>
-                <li>Заказы принимаются с 10:00 - 18:00 по телефону и круглосуточно через сайт, обрабатываются до 15:00, заказы оставленные после, преносятся на следующий день</li>
-            </ul>
-        </vs-alert>
     </div>
 </template>
 
@@ -363,7 +314,6 @@
     .header {
         &__title {
             color: $primary;
-
         }
 
         &__image {
@@ -379,7 +329,7 @@
     .deliver {
         &__table {
             box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.2);
-            margin-top: 30px;
+            margin-top: 10px;
             border-radius: 12px;
             margin-bottom: 20px;
         }
@@ -403,12 +353,13 @@
         }
     }
 
-     .alert {
+    .alert {
         z-index: -1;
     }
 
     .price {
         text-wrap: nowrap;
+        color: $primary;
     }
 </style>
 
