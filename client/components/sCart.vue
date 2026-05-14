@@ -22,6 +22,10 @@
         navigateTo('/deliver');
         opened.value = false;
     }
+
+    function formatPrice(value) {
+        return Number(value).toFixed(1);
+    }
 </script>
 
 <template>
@@ -69,7 +73,12 @@
                         @error="handleImageError"
                     />
                     <div class="cart-item__text">
-                        <div class="cart-item__title">
+                        <div v-if="item.id" class="cart-item__title">
+                            <Nuxt-link :to="`/catalog/${item.id}`">
+                                {{ item.name }}
+                            </Nuxt-link>
+                        </div>
+                        <div v-else class="cart-item__title">
                             {{ item.name }}
                         </div>
                         <div class="cart-item__subtitle">
@@ -85,7 +94,7 @@
                             />
                         </div>
                         <div class="cart-item__price mt-2">
-                            {{ item.price * item.amount }} <span>₽</span>
+                            {{ formatPrice(item.price * item.amount) }} <span>₽</span>
                         </div>
                     </div>
                 </div>

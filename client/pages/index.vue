@@ -110,6 +110,7 @@
                     v-for="(item, key) in populateItems.slice(0, 3)"
                     :key="key"
                     :item="item"
+                    class="s-shop-carousel__item"
                     @click="navigateTo(`/catalog/${item.id}`)"
                 />
             </template>
@@ -126,13 +127,23 @@
 </template>
 
 <style scoped lang="scss">
-.skeleton {
-    flex: 1;
-}
-.s-shop-carousel {
+    .skeleton {
+        flex: 1;
+    }
+    .s-shop-carousel {
         margin-top: 40px;
         display: flex;
         gap: 20px;
+        @media screen and (max-width: 768px) {
+            flex-direction: column;
+        }
+
+        &__item {
+            @media screen and (max-width: 768px) {
+                max-width: none;
+            }
+
+        }
     }
 
     .about-page {
