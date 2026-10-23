@@ -116,6 +116,19 @@ WantedBy=multi-user.target
 EOF
 }
 
+# Ждём, пока backend ответит на /api/health (до ~60 с)
+wait_healthy() {
+	local name="$1"
+	for _ in $(seq 1 30); do
+		if curl -sf "http://127.0.0.1:8000/api/health" >/dev/null 2>&1; then
+			log "$name: /api/health OK"
+			return 0
+		fi
+		sleep 2
+	done
+	return 1
+}
+
 log "начало (PROJECT_DIR=$PROJECT_DIR DOMAIN=$DOMAIN)"
 sync_repo
 prepare_server_writable_dirs
@@ -130,20 +143,13 @@ npm ci
 npm run build
 
 log "миграции БД"
-npx typeorm-ts-node-esm migration:run -d dist/db/datasource.js
+npx typeorm migration:run -d dist/db/datasource.js
 
 log "временный backend для сборки frontend"
 cd "$PROJECT_DIR/server"
 PORT=8000 HOST=0.0.0.0 nohup /usr/local/bin/node dist/main.js > /tmp/shelkovitsa-backend-temp.log 2>&1 &
 BACKEND_PID=$!
-sleep 8
-for i in $(seq 1 30); do
-	if curl -sf "http://127.0.0.1:8000/api/benefit" >/dev/null 2>&1; then
-		log "backend отвечает"
-		break
-	fi
-	sleep 2
-done
+wait_healthy "временный backend" || die "временный backend не поднялся: /tmp/shelkovitsa-backend-temp.log"
 
 log "frontend: npm ci, build"
 cd "$PROJECT_DIR/client"
@@ -165,6 +171,9 @@ sleep 2
 systemctl start shelkovitsa-backend
 systemctl start shelkovitsa-frontend
 
+wait_healthy "shelkovitsa-backend" || die "backend не отвечает на /api/health: journalctl -u shelkovitsa-backend -n 50 --no-pager"
+systemctl is-active shelkovitsa-frontend && systemctl is-active nginx
+
 log "готово"
-systemctl is-active shelkovitsa-backend && systemctl is-active shelkovitsa-frontend && systemctl is-active nginx
-log "проверка: journalctl -u shelkovitsa-backend -n 20 --no-pager"
+log "первый деплой на пустую БД — создайте администратора:"
+log "  cd $PROJECT_DIR/server && sudo -u www-data npm run admin:create -- <почта> <пароль>"

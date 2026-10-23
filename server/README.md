@@ -143,9 +143,9 @@ http://localhost:8000/api/docs
 
 Проект использует TypeORM для управления миграциями.
 
-**Создание новой миграции:**
+**Создание новой миграции** (по разнице между сущностями и текущей БД):
 ```bash
-npm run migrate:add
+npm run migrate:add -- src/db/migrations/add_something
 ```
 
 **Применение миграций:**
@@ -219,7 +219,7 @@ npm run lint
 npm run format
 
 # Миграции
-npm run migrate:add      # Создать миграцию
+npm run migrate:add -- src/db/migrations/<имя>   # Создать миграцию
 npm run migrate:apply   # Применить миграции
 
 # E2E-тесты (нужен запущенный PostgreSQL)
