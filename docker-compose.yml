@@ -1,5 +1,6 @@
 # Локальное окружение для разработки бэкенда: PostgreSQL с теми же параметрами,
 # что в server/.env.example. Запуск: docker compose up -d
+# Если порт 5432 занят локальным PostgreSQL: POSTGRES_PORT=5433 docker compose up -d
 # Тестовая БД shelkovitsa_test создаётся автоматически при `npm run test:e2e`.
 services:
   postgres:
@@ -10,7 +11,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: shelkovitsa
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
