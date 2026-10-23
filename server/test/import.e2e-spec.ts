@@ -185,6 +185,25 @@ describe('Импорт каталога из Excel (e2e)', () => {
 		expect(m1.productSubcategory.productCategory.name).toBe('Мужское белье');
 	});
 
+	it('остаток «>5» из выгрузки поставщика читается как 5', async () => {
+		const res = await upload([
+			row({ article: 'A-1', amount: '>5' }),
+			row({ article: 'A-2', amount: '> 12', size: 2 }),
+			row({ article: 'A-3', amount: 'много' })
+		]).expect(200);
+
+		expect(errorRows(res.body)).toHaveLength(1);
+		const amounts = (
+			await manager().find(Product, { relations: { productArticle: true } })
+		)
+			.map((p) => [p.productArticle.article, p.amount])
+			.sort();
+		expect(amounts).toEqual([
+			['A-1', 5],
+			['A-2', 12]
+		]);
+	});
+
 	it('строка заголовка выгрузки пропускается', async () => {
 		const header = [
 			'Код',

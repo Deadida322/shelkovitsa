@@ -43,10 +43,18 @@ docker compose up -d
 CREATE DATABASE shelkovitsa;
 ```
 
-5. Примените миграции:
+5. Подготовьте БД для разработки — схема с нуля и тестовые данные одной командой:
 ```bash
-npm run migrate:apply
+npm run dev:setup          # build + db:reset + seed
 ```
+   `seed` создаёт админа (`admin@shelkovitsa.local` / `admin12345`, меняется через
+   `SEED_ADMIN_MAIL` / `SEED_ADMIN_PASSWORD`), способы доставки и импортирует 30 артикулов
+   из `temp-dev/shel_data_new.xlsx` с картинками и публикует их. Опции:
+   `npm run seed -- --articles 200`, `--no-images` (без сети), `--file <xlsx>`.
+   `db:reset` удаляет все данные; оба скрипта не запускаются при `NODE_ENV=production`.
+
+   На проде вместо этого: `npm run migrate:apply` и `npm run admin:create -- <почта> <пароль>`,
+   каталог загружается через админку (импорт Excel сам создаёт категории).
 
 6. Запустите сервер:
 ```bash

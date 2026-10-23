@@ -32,6 +32,16 @@ const COLUMNS = {
 	amount: 18
 } as const;
 
+// Остаток у поставщика: число или «>5» (больше пяти) — берём гарантированный минимум
+export function parseAmount(value: unknown): number {
+	if (typeof value === 'number') {
+		return Math.floor(value);
+	}
+	const text = String(value ?? '').trim();
+	const atLeast = /^>\s*(\d+)$/.exec(text);
+	return atLeast ? Number(atLeast[1]) : text === '' ? NaN : Number(text);
+}
+
 // Что нужно докачать после коммита строки: сеть не должна держать транзакцию
 interface PendingImages {
 	article: ProductArticle;
@@ -53,7 +63,9 @@ export class ProductImportService {
 
 	async importFromExcel(
 		filePath: string,
-		options: UploadProductArticleFileDto
+		options: UploadProductArticleFileDto,
+		// для быстрого сида без сети картинки можно не качать
+		{ downloadImages = true }: { downloadImages?: boolean } = {}
 	): Promise<Buffer> {
 		let workSheetsFromFile: ReturnType<typeof xlsx.parse>;
 		try {
@@ -105,7 +117,9 @@ export class ProductImportService {
 				}
 
 				const pending = await this.importRow(product, colorMap, sizeMap);
-				await this.downloadImages(pending);
+				if (downloadImages) {
+					await this.downloadImages(pending);
+				}
 			} catch (err) {
 				errorRows.push([...rowValues, '', `Строка ${index + 1}: `, String(err)]);
 			}
@@ -136,7 +150,7 @@ export class ProductImportService {
 				url: cell(COLUMNS.colorUrl)
 			},
 			size: cell(COLUMNS.size),
-			amount: Number(rowValues[COLUMNS.amount]),
+			amount: parseAmount(rowValues[COLUMNS.amount]),
 			price: Number(rowValues[COLUMNS.price]),
 			country: optional(COLUMNS.country),
 			description: optional(COLUMNS.description),

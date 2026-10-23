@@ -20,7 +20,10 @@
 		"migrate:add": "@powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./scripts/add-migration.ps1",
 		"migrate:apply": "@powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./scripts/apply-migration.ps1",
 		"test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
-		"admin:create": "node dist/cli/create-admin.js"
+		"admin:create": "node dist/cli/create-admin.js",
+		"db:reset": "node dist/cli/db-reset.js",
+		"seed": "node dist/cli/seed.js",
+		"dev:setup": "npm run build && npm run db:reset && npm run seed"
 	},
 	"dependencies": {
 		"@nestjs/common": "^10.0.0",
