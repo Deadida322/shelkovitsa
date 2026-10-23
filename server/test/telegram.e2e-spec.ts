@@ -1,6 +1,7 @@
+import type { Mock } from 'vitest';
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as request from 'supertest';
+import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { Order } from 'src/db/entities/Order';
 import {
@@ -12,7 +13,7 @@ import { createTestApp, orderPayload, resetDb, seedCatalog } from './utils';
 
 describe('Telegram-уведомления (e2e)', () => {
 	let app: INestApplication;
-	let sendMessage: jest.Mock;
+	let sendMessage: Mock;
 	let service: OrderNotificationService;
 
 	const messageOf = (orderId: number) =>
@@ -36,7 +37,7 @@ describe('Telegram-уведомления (e2e)', () => {
 
 	beforeEach(async () => {
 		await resetDb(app);
-		sendMessage = jest.fn().mockResolvedValue({ message_id: 42 });
+		sendMessage = vi.fn().mockResolvedValue({ message_id: 42 });
 		const config = {
 			get: (key: string) =>
 				({ TELEGRAM_ENABLED: 'true', CHAT_TG_ID: '-100500' })[key] ??

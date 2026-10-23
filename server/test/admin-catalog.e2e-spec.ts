@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import * as fs from 'fs';
-import * as request from 'supertest';
+import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';

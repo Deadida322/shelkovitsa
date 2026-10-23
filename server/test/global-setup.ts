@@ -1,6 +1,8 @@
 import { Client } from 'pg';
 
-// Один раз перед всеми тестами: пересоздать тестовую БД и накатить миграции с нуля
+// Один раз перед всеми тестами: пересоздать тестовую БД.
+// Модули приложения здесь не импортируем — globalSetup выполняется вне Vite-трансформа;
+// миграции накатывает createTestApp.
 export default async function globalSetup() {
 	await import('./setup-env');
 
@@ -15,9 +17,4 @@ export default async function globalSetup() {
 	await admin.query(`DROP DATABASE IF EXISTS "${process.env.DB_NAME}" WITH (FORCE)`);
 	await admin.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
 	await admin.end();
-
-	const { default: dataSource } = await import('../src/db/datasource');
-	await dataSource.initialize();
-	await dataSource.runMigrations();
-	await dataSource.destroy();
 }

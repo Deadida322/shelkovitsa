@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 
 describe('Rate limiting (e2e)', () => {
 	let app: INestApplication;

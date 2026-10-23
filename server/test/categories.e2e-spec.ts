@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { createTestApp, registerAdmin, resetDb, seedCatalog } from './utils';

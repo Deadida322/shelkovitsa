@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import * as request from 'supertest';
+import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { CUSTOMER, createTestApp, registerAgent, resetDb, registerAdmin } from './utils';
 

@@ -147,6 +147,8 @@ http://localhost:8000/api/docs
 ```bash
 npm run migrate:add -- src/db/migrations/add_something
 ```
+Сгенерированный класс добавьте в список [`src/db/migrations/index.ts`](src/db/migrations/index.ts):
+сущности и миграции подключаются явными списками, без glob.
 
 **Применение миграций:**
 ```bash
@@ -222,11 +224,18 @@ npm run format
 npm run migrate:add -- src/db/migrations/<имя>   # Создать миграцию
 npm run migrate:apply   # Применить миграции
 
+# Unit-тесты (src/**/*.spec.ts)
+npm test
+
 # E2E-тесты (нужен запущенный PostgreSQL)
 npm run test:e2e
 ```
 
 ### Тесты
+
+Тесты на [Vitest](https://vitest.dev) — Nest 12 распространяется только как ESM, а Jest его
+не загружает. Декораторы компилирует SWC (`unplugin-swc`), конфиги — [`vitest.config.ts`](vitest.config.ts)
+и [`vitest.e2e.config.ts`](vitest.e2e.config.ts).
 
 E2E-тесты в [`test/`](test/) поднимают приложение целиком и работают с отдельной базой
 `shelkovitsa_test`: она создаётся автоматически, миграции накатываются перед прогоном, а

@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import {
 	ExecutionContext,
 	ForbiddenException,
@@ -31,8 +32,8 @@ const admin = Object.assign(new User(), { ...customer, id: 1, role: UserRole.ADM
 
 describe('AuthGuard', () => {
 	let guard: AuthGuard;
-	let jwt: { verifyAsync: jest.Mock };
-	let users: { findActiveByMailAndId: jest.Mock };
+	let jwt: { verifyAsync: Mock };
+	let users: { findActiveByMailAndId: Mock };
 
 	const run = (handler: keyof Routes, cookie?: string) => {
 		const request: Record<string, any> = {
@@ -47,8 +48,8 @@ describe('AuthGuard', () => {
 	};
 
 	beforeEach(() => {
-		jwt = { verifyAsync: jest.fn() };
-		users = { findActiveByMailAndId: jest.fn() };
+		jwt = { verifyAsync: vi.fn() };
+		users = { findActiveByMailAndId: vi.fn() };
 		guard = new AuthGuard(
 			jwt as unknown as JwtService,
 			new Reflector(),

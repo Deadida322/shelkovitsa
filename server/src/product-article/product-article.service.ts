@@ -5,7 +5,7 @@ import {
 	NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as moment from 'moment';
+import moment from 'moment';
 import {
 	DataSource,
 	EntityManager,

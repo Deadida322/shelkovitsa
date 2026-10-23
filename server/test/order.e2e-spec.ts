@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
 import { TelegramOrderMessage } from 'src/db/entities/TelegramOrderMessage';
@@ -231,7 +231,7 @@ describe('Order (e2e)', () => {
 	});
 
 	it('ошибка вне HttpException отдаётся в едином формате без подробностей', async () => {
-		const spy = jest
+		const spy = vi
 			.spyOn(app.get(DeliveryTypeService), 'getList')
 			.mockRejectedValueOnce(new Error('секретная внутренняя ошибка'));
 

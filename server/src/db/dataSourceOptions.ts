@@ -1,5 +1,6 @@
-import * as path from 'path';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { entities } from './entities';
+import { migrations } from './migrations';
 
 // В CLI значения берутся прямо из process.env и могут отсутствовать —
 // тогда TypeORM сам сообщит об ошибке подключения
@@ -20,8 +21,8 @@ export function createDataSourceOptions(env: DbEnv): PostgresConnectionOptions {
 		username: env.DB_USER,
 		password: env.DB_PASSWORD,
 		database: env.DB_NAME,
-		entities: [path.join(__dirname, 'entities/**{.ts,.js}')],
-		migrations: [path.join(__dirname, 'migrations/**{.ts,.js}')],
+		entities,
+		migrations,
 		logging: false,
 		synchronize: false
 	};

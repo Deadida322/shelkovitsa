@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { HttpExceptionFilter } from './middleware/errorMiddleware';
 import { errorFormatter } from './helpers/errorHelper';

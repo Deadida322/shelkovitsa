@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import * as request from 'supertest';
+import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from 'src/app.module';
 import { configureApp } from 'src/app.setup';
@@ -18,6 +18,9 @@ export async function createTestApp(): Promise<INestApplication> {
 	const moduleRef = await Test.createTestingModule({
 		imports: [AppModule]
 	}).compile();
+
+	// первый файл накатывает схему на свежую БД (до init — его хуки уже читают таблицы)
+	await moduleRef.get(DataSource).runMigrations();
 
 	const app = moduleRef.createNestApplication();
 	configureApp(app);
