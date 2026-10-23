@@ -1,21 +1,13 @@
-import * as fs from 'fs';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import * as os from 'os';
-import * as path from 'path';
-import { downloadImageToStatic } from './imageDownloadHelper';
+import { downloadImage } from './imageDownloadHelper';
 
-describe('downloadImageToStatic', () => {
+describe('downloadImage', () => {
 	const png = Buffer.from('89504e470d0a1a0a', 'hex');
 	let server: http.Server;
 	let base: string;
-	let destDir: string;
-	const previousDest = process.env.DEST_PATH;
 
 	beforeAll(async () => {
-		destDir = fs.mkdtempSync(path.join(os.tmpdir(), 'shelkovitsa-img-'));
-		process.env.DEST_PATH = destDir;
-
 		server = http.createServer((req, res) => {
 			const redirects = /^\/hop\/(\d+)$/.exec(req.url ?? '');
 			if (redirects) {
@@ -39,46 +31,37 @@ describe('downloadImageToStatic', () => {
 
 	afterAll(async () => {
 		await new Promise((resolve) => server.close(resolve));
-		fs.rmSync(destDir, { recursive: true, force: true });
-		process.env.DEST_PATH = previousDest;
 	});
 
-	it('сохраняет картинку в DEST_PATH с префиксом и slug', async () => {
-		const name = await downloadImageToStatic(
-			`${base}/img.png`,
-			'product',
-			'АРТ 12/3'
-		);
-		expect(name).toMatch(/^product-арт-123-[0-9a-f]{8}\.png$/);
-		expect(fs.readFileSync(path.join(destDir, name))).toEqual(png);
+	it('возвращает содержимое и ключ с префиксом и slug', async () => {
+		const image = await downloadImage(`${base}/img.png`, 'product', 'АРТ 12/3');
+		expect(image.key).toMatch(/^product-арт-123-[0-9a-f]{8}\.png$/);
+		expect(image.buffer).toEqual(png);
+		expect(image.contentType).toBe('image/png');
 	});
 
 	it('расширение берётся из URL, если сервер не прислал Content-Type', async () => {
-		expect(await downloadImageToStatic(`${base}/no-type.webp`, 'color', 'x')).toMatch(
-			/\.webp$/
-		);
+		const image = await downloadImage(`${base}/no-type.webp`, 'color', 'x');
+		expect(image.key).toMatch(/\.webp$/);
+		expect(image.contentType).toBe('image/webp');
 	});
 
 	it('идёт по редиректам, но не больше трёх', async () => {
-		await expect(downloadImageToStatic(`${base}/hop/2`, 'p', 'x')).resolves.toMatch(
-			/\.png$/
-		);
-		await expect(downloadImageToStatic(`${base}/hop/5`, 'p', 'x')).rejects.toThrow(
+		await expect(downloadImage(`${base}/hop/2`, 'p', 'x')).resolves.toMatchObject({
+			key: expect.stringMatching(/\.png$/)
+		});
+		await expect(downloadImage(`${base}/hop/5`, 'p', 'x')).rejects.toThrow(
 			/редиректов/
 		);
 	});
 
 	it('отклоняет не-картинки, 404, битые URL и чужие протоколы', async () => {
-		await expect(downloadImageToStatic(`${base}/page`, 'p', 'x')).rejects.toThrow(
+		await expect(downloadImage(`${base}/page`, 'p', 'x')).rejects.toThrow(
 			/не является изображением/
 		);
-		await expect(downloadImageToStatic(`${base}/missing`, 'p', 'x')).rejects.toThrow(
-			/404/
-		);
-		await expect(downloadImageToStatic('not a url', 'p', 'x')).rejects.toThrow(
-			/Невалидный/
-		);
-		await expect(downloadImageToStatic('ftp://x/y.png', 'p', 'x')).rejects.toThrow(
+		await expect(downloadImage(`${base}/missing`, 'p', 'x')).rejects.toThrow(/404/);
+		await expect(downloadImage('not a url', 'p', 'x')).rejects.toThrow(/Невалидный/);
+		await expect(downloadImage('ftp://x/y.png', 'p', 'x')).rejects.toThrow(
 			/протокол/
 		);
 	});

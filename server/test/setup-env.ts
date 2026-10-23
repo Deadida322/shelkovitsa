@@ -22,4 +22,18 @@ const testEnv: Record<string, string> = {
 
 Object.assign(process.env, testEnv);
 
+// Прогон на S3-драйвере (RustFS/MinIO из docker-compose или CI):
+// TEST_STORAGE_DRIVER=s3 TEST_S3_ENDPOINT=http://localhost:9000 npm run test:e2e
+if (process.env.TEST_STORAGE_DRIVER === 's3') {
+	Object.assign(process.env, {
+		STORAGE_DRIVER: 's3',
+		S3_ENDPOINT: process.env.TEST_S3_ENDPOINT ?? 'http://localhost:9000',
+		S3_REGION: 'us-east-1',
+		S3_BUCKET: process.env.TEST_S3_BUCKET ?? 'shelkovitsa-test',
+		S3_ACCESS_KEY: process.env.TEST_S3_ACCESS_KEY ?? 'rustfsadmin',
+		S3_SECRET_KEY: process.env.TEST_S3_SECRET_KEY ?? 'rustfsadmin',
+		S3_FORCE_PATH_STYLE: 'true'
+	});
+}
+
 export {};

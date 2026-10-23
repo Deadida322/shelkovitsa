@@ -1,5 +1,4 @@
 import { INestApplication } from '@nestjs/common';
-import * as fs from 'fs';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
@@ -7,7 +6,7 @@ import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { ProductSize } from 'src/db/entities/ProductSize';
-import { getDestPath } from 'src/helpers/storageHelper';
+import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import {
 	createTestApp,
 	orderPayload,
@@ -28,6 +27,7 @@ describe('Админка каталога (e2e)', () => {
 	let catalog: SeededCatalog;
 
 	const manager = () => app.get(DataSource).manager;
+	const storage = () => app.get<FileStorage>(FILE_STORAGE);
 	const listBody = { page: 0, itemsPerPage: 20 };
 	const publicList = () =>
 		request(app.getHttpServer()).get('/api/product-article').query(listBody);
@@ -208,7 +208,20 @@ describe('Админка каталога (e2e)', () => {
 			await uploadImage().expect(201);
 			let [first, second] = await files();
 			expect([first.isLogo, second.isLogo]).toEqual([true, false]);
-			expect(fs.existsSync(getDestPath(first.name))).toBe(true);
+			expect(await storage().exists(first.name)).toBe(true);
+
+			// фронт берёт фото по /static/<имя> — при любом драйвере хранилища
+			const served = await request(app.getHttpServer())
+				.get(`/static/${first.name}`)
+				.buffer(true)
+				.parse((res, cb) => {
+					const chunks: Buffer[] = [];
+					res.on('data', (c: Buffer) => chunks.push(c));
+					res.on('end', () => cb(null, Buffer.concat(chunks)));
+				})
+				.expect(200);
+			expect(served.headers['content-type']).toMatch(/^image\/png/);
+			expect(served.body).toEqual(png);
 
 			await admin
 				.patch(`/api/admin/product-article/images/${second.id}/logo`)
@@ -222,7 +235,7 @@ describe('Админка каталога (e2e)', () => {
 			const rest = await files();
 			expect(rest).toHaveLength(1);
 			expect(rest[0].isLogo).toBe(true);
-			expect(fs.existsSync(getDestPath(second.name))).toBe(false);
+			expect(await storage().exists(second.name)).toBe(false);
 		});
 
 		it('не-картинка и подделанный Content-Type — 422', async () => {

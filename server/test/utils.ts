@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { NestFactory } from '@nestjs/core';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from 'src/app.module';
@@ -14,15 +14,14 @@ import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
 
+// Приложение собирается так же, как в main.ts (NestFactory): у Test.createTestingModule
+// HTTP-адаптера ещё нет при компиляции, и ServeStaticModule не регистрирует /static
 export async function createTestApp(): Promise<INestApplication> {
-	const moduleRef = await Test.createTestingModule({
-		imports: [AppModule]
-	}).compile();
+	const app = await NestFactory.create(AppModule, { logger: ['error', 'warn'] });
 
 	// первый файл накатывает схему на свежую БД (до init — его хуки уже читают таблицы)
-	await moduleRef.get(DataSource).runMigrations();
+	await app.get(DataSource).runMigrations();
 
-	const app = moduleRef.createNestApplication();
 	configureApp(app);
 	await app.init();
 	return app;

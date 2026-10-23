@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import * as xlsx from 'node-xlsx';
 import { DataSource, EntityManager } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
@@ -8,7 +8,8 @@ import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
-import { downloadImageToStatic } from 'src/helpers/imageDownloadHelper';
+import { downloadImage } from 'src/helpers/imageDownloadHelper';
+import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import { getColorsPath, getSizesPath } from 'src/helpers/storageHelper';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
@@ -59,7 +60,17 @@ interface PendingImages {
 export class ProductImportService {
 	private readonly logger = new Logger(ProductImportService.name);
 
-	constructor(private readonly dataSource: DataSource) {}
+	constructor(
+		private readonly dataSource: DataSource,
+		@Inject(FILE_STORAGE) private readonly storage: FileStorage
+	) {}
+
+	// Скачать картинку поставщика и положить в хранилище; возвращает ключ (имя файла)
+	private async downloadToStorage(url: string, prefix: string, name: string) {
+		const image = await downloadImage(url, prefix, name);
+		await this.storage.save(image.key, image.buffer, image.contentType);
+		return image.key;
+	}
 
 	async importFromExcel(
 		filePath: string,
@@ -317,7 +328,7 @@ export class ProductImportService {
 		if (colorUrl && !color.url) {
 			let image: string | undefined;
 			try {
-				image = await downloadImageToStatic(colorUrl, 'color', color.name);
+				image = await this.downloadToStorage(colorUrl, 'color', color.name);
 			} catch (error) {
 				this.logImageError(`цвета "${color.name}"`, colorUrl, error);
 			}
@@ -344,7 +355,11 @@ export class ProductImportService {
 				continue;
 			}
 			try {
-				const name = await downloadImageToStatic(url, 'product', article.article);
+				const name = await this.downloadToStorage(
+					url,
+					'product',
+					article.article
+				);
 				await manager.save(ProductFile, {
 					name,
 					url,

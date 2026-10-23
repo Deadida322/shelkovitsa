@@ -1,5 +1,6 @@
 import {
 	BadRequestException,
+	Inject,
 	Injectable,
 	Logger,
 	NotFoundException
@@ -29,7 +30,8 @@ import {
 	getPaginateWhere,
 	IPaginateResult
 } from 'src/helpers/paginateHelper';
-import { moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
+import { uploadedImageKey } from 'src/helpers/storageHelper';
+import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
@@ -46,7 +48,10 @@ export class ProductArticleService {
 		private readonly productArticleRepository: Repository<ProductArticle>,
 
 		@InjectRepository(ProductFile)
-		private readonly productFileRepository: Repository<ProductFile>
+		private readonly productFileRepository: Repository<ProductFile>,
+
+		@Inject(FILE_STORAGE)
+		private readonly storage: FileStorage
 	) {}
 
 	/**
@@ -195,9 +200,10 @@ export class ProductArticleService {
 			throw new NotFoundException('Не найдено такого продукта');
 		}
 
-		const name = await moveFileToStatic(image);
+		const { key, contentType } = uploadedImageKey(image);
+		await this.storage.save(key, image.buffer, contentType);
 		await this.productFileRepository.save({
-			name,
+			name: key,
 			isLogo: productArticle.productFiles.length === 0,
 			productArticle
 		});
@@ -226,11 +232,13 @@ export class ProductArticleService {
 			}
 		});
 
-		await removeFile(file.name).catch((error) =>
-			this.logger.warn(
-				`Не удалось удалить файл ${file.name}: ${error?.message ?? error}`
-			)
-		);
+		await this.storage
+			.delete(file.name)
+			.catch((error) =>
+				this.logger.warn(
+					`Не удалось удалить файл ${file.name}: ${error?.message ?? error}`
+				)
+			);
 	}
 
 	async changeLogo(fileId: number) {

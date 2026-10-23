@@ -1,6 +1,5 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
-import * as fsPromises from 'fs/promises';
 import { randomBytes } from 'crypto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage, memoryStorage } from 'multer';
@@ -33,14 +32,6 @@ const getUploadMaxSizeBytes = () => {
 
 export function getSrcPath(filePath?: string): string {
 	const basePath = baseSrcPath();
-	if (filePath) {
-		return path.join(basePath, filePath);
-	}
-	return basePath;
-}
-
-export function getDestPath(filePath?: string): string {
-	const basePath = baseDestPath();
 	if (filePath) {
 		return path.join(basePath, filePath);
 	}
@@ -142,16 +133,13 @@ export function parseFileBuilder(fileIsRequired: boolean = true) {
 		});
 }
 
-export async function moveFileToStatic(image: Express.Multer.File) {
-	const ext = IMAGE_SIGNATURES.find((sig) => sig.test(image.buffer))?.ext ?? 'jpg';
-	const fileName = `${randomBytes(8).toString('hex')}.${ext}`;
-	await fsPromises.writeFile(getDestPath(fileName), image.buffer);
-	return fileName;
-}
-
-export async function removeFile(fileName: string) {
-	const destPath = getDestPath(fileName);
-	await fsPromises.unlink(destPath);
+// Имя для загруженного фото в хранилище: случайное, расширение — по содержимому
+export function uploadedImageKey(image: Express.Multer.File) {
+	const signature = IMAGE_SIGNATURES.find((sig) => sig.test(image.buffer));
+	return {
+		key: `${randomBytes(8).toString('hex')}.${signature?.ext ?? 'jpg'}`,
+		contentType: signature?.mime ?? image.mimetype
+	};
 }
 
 export async function existsFile(f: string) {

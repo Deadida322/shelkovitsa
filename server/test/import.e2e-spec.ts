@@ -1,10 +1,9 @@
 import { INestApplication } from '@nestjs/common';
-import * as fs from 'fs';
 import * as http from 'http';
 import { AddressInfo } from 'net';
 import * as xlsx from 'node-xlsx';
 import { ProductFile } from 'src/db/entities/ProductFile';
-import { getDestPath } from 'src/helpers/storageHelper';
+import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import { DataSource } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
@@ -58,6 +57,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 	let admin: Awaited<ReturnType<typeof registerAgent>>;
 
 	const manager = () => app.get(DataSource).manager;
+	const storage = () => app.get<FileStorage>(FILE_STORAGE);
 
 	const upload = (rows: unknown[][], isDeletedOther: string = 'false') =>
 		admin
@@ -283,14 +283,14 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			]);
 			expect(files.map((f) => f.isLogo)).toEqual([true, false]);
 			for (const file of files) {
-				expect(fs.existsSync(getDestPath(file.name))).toBe(true);
+				expect(await storage().exists(file.name)).toBe(true);
 			}
 
 			const color = await manager().findOne(ProductColor, {
 				where: { name: 'Бежевый' }
 			});
 			expect(color.url).toBe(`${base}/color.png`);
-			expect(fs.existsSync(getDestPath(color.image))).toBe(true);
+			expect(await storage().exists(color.image)).toBe(true);
 		});
 
 		it('повторный импорт не скачивает уже загруженные фото', async () => {

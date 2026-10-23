@@ -1,9 +1,8 @@
-import * as fsPromises from 'fs/promises';
 import * as http from 'http';
 import * as https from 'https';
 import * as path from 'path';
 import { randomBytes } from 'crypto';
-import { getDestPath } from './storageHelper';
+import { contentTypeOf } from 'src/storage/static.middleware';
 
 const DOWNLOAD_TIMEOUT_MS = 10_000;
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
@@ -106,17 +105,20 @@ function fetchImage(
 	});
 }
 
-/**
- * Скачивает изображение по URL в каталог статики (DEST_PATH).
- * Возвращает имя сохранённого файла: `<prefix>-<slug>-<random>.<ext>`.
- */
-export async function downloadImageToStatic(
+export interface DownloadedImage {
+	// имя файла в хранилище: <prefix>-<slug>-<random>.<ext>
+	key: string;
+	buffer: Buffer;
+	contentType: string;
+}
+
+// Скачивает изображение по URL; сохранить его — дело вызывающего (FileStorage)
+export async function downloadImage(
 	imageUrl: string,
 	prefix: string,
 	name: string
-): Promise<string> {
+): Promise<DownloadedImage> {
 	const { buffer, ext } = await fetchImage(imageUrl, MAX_REDIRECTS);
-	const fileName = `${prefix}-${slugify(name)}-${randomBytes(4).toString('hex')}.${ext}`;
-	await fsPromises.writeFile(getDestPath(fileName), buffer);
-	return fileName;
+	const key = `${prefix}-${slugify(name)}-${randomBytes(4).toString('hex')}.${ext}`;
+	return { key, buffer, contentType: contentTypeOf(key) };
 }

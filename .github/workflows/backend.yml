@@ -56,6 +56,19 @@ jobs:
           TEST_DB_USER: postgres
           TEST_DB_PASSWORD: postgres
 
+      - name: E2E tests on S3 storage (RustFS)
+        run: |
+          docker run -d --name s3 -p 9000:9000 -e RUSTFS_ACCESS_KEY=rustfsadmin -e RUSTFS_SECRET_KEY=rustfsadmin rustfs/rustfs:1.0.3
+          for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:9000 && break; sleep 1; done
+          npm run test:e2e
+        env:
+          TEST_STORAGE_DRIVER: s3
+          TEST_S3_ENDPOINT: http://localhost:9000
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: postgres
+
       - name: Postman (newman) against seeded app
         env:
           NODE_ENV: test

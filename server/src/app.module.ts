@@ -21,6 +21,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { baseDestPath, baseSrcPath } from './helpers/storageHelper';
 import { createDataSourceOptions } from './db/dataSourceOptions';
 import { HealthModule } from './health/health.module';
+import { StorageModule } from './storage/storage.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
@@ -82,7 +83,8 @@ type AppConfigService = ConfigService<EnvironmentVariables, true>;
 		ProductArticleModule,
 		ProductSizeModule,
 		InitModule,
-		HealthModule
+		HealthModule,
+		StorageModule
 	],
 	providers: [
 		{

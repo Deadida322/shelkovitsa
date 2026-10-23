@@ -116,6 +116,17 @@ TEMP_PATH=temp/src
 DEST_PATH=temp/dist
 ```
 
+Фото товаров хранятся через `FileStorage` (`src/storage/`), драйвер — `STORAGE_DRIVER`:
+
+- `local` (по умолчанию) — файлы в `DEST_PATH`, раздаются по `/static/<имя>`;
+- `s3` — S3-совместимый бакет (Selectel, Yandex Object Storage, RustFS/MinIO). Адреса для фронта
+  те же: `/static/<имя>` редиректит на `S3_PUBLIC_URL` или, если он не задан, бэкенд отдаёт файл
+  из бакета сам. Бакет создаётся `npm run storage:init -- --public`.
+
+Для разработки S3 поднимается из `docker-compose.yml` (сервис `s3`, RustFS). E2E-тесты на S3:
+`TEST_STORAGE_DRIVER=s3 npm run test:e2e`. При `s3` `deploy/backup.sh` картинки не архивирует —
+за сохранность отвечает хранилище (версионирование/репликация у провайдера).
+
 ### Telegram (опционально)
 ```env
 TELEGRAM_TOKEN=your_telegram_bot_token_here

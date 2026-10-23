@@ -6,6 +6,7 @@ import {
 	IsOptional,
 	IsString,
 	Min,
+	ValidateIf,
 	validateSync
 } from 'class-validator';
 
@@ -81,6 +82,44 @@ export class EnvironmentVariables {
 	@IsOptional()
 	@IsString()
 	CHAT_TG_ID?: string;
+
+	// Хранилище фото: local — DEST_PATH на диске, s3 — S3-совместимый бакет
+	@IsOptional()
+	@IsIn(['local', 's3'])
+	STORAGE_DRIVER: string = 'local';
+
+	@ValidateIf((env) => env.STORAGE_DRIVER === 's3')
+	@IsString()
+	@IsNotEmpty()
+	S3_BUCKET?: string;
+
+	@ValidateIf((env) => env.STORAGE_DRIVER === 's3')
+	@IsString()
+	@IsNotEmpty()
+	S3_ACCESS_KEY?: string;
+
+	@ValidateIf((env) => env.STORAGE_DRIVER === 's3')
+	@IsString()
+	@IsNotEmpty()
+	S3_SECRET_KEY?: string;
+
+	// для MinIO / Selectel / Yandex; пусто — AWS
+	@IsOptional()
+	@IsString()
+	S3_ENDPOINT?: string;
+
+	@IsOptional()
+	@IsString()
+	S3_REGION?: string;
+
+	@IsOptional()
+	@IsIn(['true', 'false'])
+	S3_FORCE_PATH_STYLE?: string;
+
+	// публичный адрес бакета или CDN: /static/<имя> редиректит туда; пусто — отдаём сами
+	@IsOptional()
+	@IsString()
+	S3_PUBLIC_URL?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
