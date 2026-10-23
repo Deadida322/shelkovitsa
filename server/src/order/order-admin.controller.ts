@@ -6,12 +6,13 @@ import {
 	ParseIntPipe,
 	Patch,
 	Post,
-	Query
+	Query,
+	SerializeOptions
 } from '@nestjs/common';
+import { PaginatedDto } from 'src/common/dto/PaginatedDto';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetListDto } from 'src/common/dto/GetListDto';
 import { AdminAuth } from 'src/decorators/adminAuth';
-import { IPaginateResult } from 'src/helpers/paginateHelper';
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
 import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
 import { OrderAdminDto } from './dto/OrderAdminDto';
@@ -28,24 +29,27 @@ export class OrderAdminController {
 		private readonly notifications: OrderNotificationService
 	) {}
 
+	@SerializeOptions({ type: PaginatedDto(OrderAdminDto) })
 	@Get()
 	@ApiOperation({ summary: 'Все заказы, новые сначала' })
-	async getList(@Query() query: GetListDto): Promise<IPaginateResult<OrderAdminDto>> {
+	async getList(@Query() query: GetListDto) {
 		return this.orderService.getAdminOrderList(query);
 	}
 
+	@SerializeOptions({ type: OrderAdminDto })
 	@Get('telegram-failed')
 	@ApiOperation({ summary: 'Заказы с неотправленным Telegram-уведомлением' })
 	async getFailedTelegram() {
 		return this.notifications.getOrdersWithFailedTelegramMessages();
 	}
 
+	@SerializeOptions({ type: OrderDto })
 	@Patch(':id')
 	@ApiOperation({ summary: 'Сменить статус заказа' })
 	async changeStatus(
 		@Param('id', ParseIntPipe) id: number,
 		@Body() payload: ChangeOrderStatusDto
-	): Promise<OrderDto> {
+	) {
 		return this.orderService.changeOrderStatus(id, payload);
 	}
 

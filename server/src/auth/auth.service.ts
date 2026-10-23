@@ -4,8 +4,6 @@ import { User, UserRole } from 'src/db/entities/User';
 import { UserInRequest } from 'src/types/express/custom';
 import { UserService } from 'src/user/user.service';
 import { LoginDto } from './dto/LoginDto';
-import { UserDto } from './dto/UserDto';
-import { convertToJson } from 'src/helpers/convertHelper';
 
 @Injectable()
 export class AuthService {
@@ -25,10 +23,7 @@ export class AuthService {
 
 		const { access_token } = await this.generateAccess(user);
 		return {
-			user: convertToJson(UserDto, {
-				...user,
-				isAdmin: this.isUserAdmin(user)
-			}),
+			user,
 			access_token
 		};
 	}

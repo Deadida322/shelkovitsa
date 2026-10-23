@@ -3,9 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
 import { Repository } from 'typeorm';
 import { GetDetailProductDto } from './dto/GetDetailProductDto';
-import { ProductDto } from './dto/ProductDto';
-import { convertToJson } from 'src/helpers/convertHelper';
-import { ProductAdminDto } from './dto/ProductAdminDto';
 
 @Injectable()
 export class ProductService {
@@ -36,9 +33,6 @@ export class ProductService {
 		if (!p) {
 			throw new NotFoundException('Продукт не найден');
 		}
-		if (isAdmin) {
-			return convertToJson(ProductAdminDto, p);
-		}
-		return convertToJson(ProductDto, p);
+		return p;
 	}
 }

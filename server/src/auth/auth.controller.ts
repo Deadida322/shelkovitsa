@@ -5,7 +5,8 @@ import {
 	Get,
 	Post,
 	Req,
-	Res
+	Res,
+	SerializeOptions
 } from '@nestjs/common';
 import {
 	ApiTags,
@@ -19,7 +20,6 @@ import { User } from 'src/db/entities/User';
 import { Repository } from 'typeorm';
 import { RegisterDto } from './dto/RegisterDto';
 import { UserDto } from './dto/UserDto';
-import { convertToJson } from 'src/helpers/convertHelper';
 import { hashPassword } from 'src/helpers/authHelper';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/LoginDto';
@@ -44,6 +44,7 @@ const cookieOptions: ICookieOptions = {
 };
 
 @ApiTags('Auth')
+@SerializeOptions({ type: UserDto })
 @Controller('auth')
 export class AuthController {
 	constructor(
@@ -87,13 +88,11 @@ export class AuthController {
 			password: await hashPassword(registerDto.password)
 		});
 
-		const res = convertToJson(UserDto, newUser);
-
 		const { access_token } = await this.authService.generateAccess(newUser);
 
 		response.cookie('access_token', access_token, cookieOptions);
 
-		return res;
+		return newUser;
 	}
 
 	@Post('login')
@@ -105,7 +104,7 @@ export class AuthController {
 	async login(
 		@Body() loginDto: LoginDto,
 		@Res({ passthrough: true }) response: Response
-	): Promise<UserDto> {
+	) {
 		const { access_token, user } = await this.authService.signIn(loginDto);
 		response.cookie('access_token', access_token, cookieOptions);
 		return user;
@@ -116,8 +115,8 @@ export class AuthController {
 	@ApiOperation({ summary: 'Получить информацию о текущем пользователе' })
 	@ApiCookieAuth('access_token')
 	@ApiResponse({ status: 200, description: 'Информация о пользователе', type: UserDto })
-	async getMe(@Req() request: Request): Promise<UserDto> {
-		return convertToJson(UserDto, request.user);
+	async getMe(@Req() request: Request) {
+		return request.user;
 	}
 
 	@Post('logout')

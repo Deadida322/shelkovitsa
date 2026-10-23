@@ -5,7 +5,8 @@ import {
 	Get,
 	ParseArrayPipe,
 	Put,
-	Req
+	Req,
+	SerializeOptions
 } from '@nestjs/common';
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
@@ -18,6 +19,7 @@ const MAX_BASKET_ITEMS = 100;
 @ApiTags('User')
 @ApiCookieAuth('access_token')
 @Auth()
+@SerializeOptions({ type: BasketItemDto })
 @Controller('user')
 export class UserController {
 	constructor(private readonly userService: UserService) {}

@@ -39,6 +39,10 @@ export class FullProductArticleDto {
 	@Type(() => ProductColorDto)
 	productColors?: ProductColorDto[];
 
+	// размер, по которому отфильтрованы productColors
+	@Expose()
+	currentProductSize?: number;
+
 	@Expose()
 	@Type(() => ProductSubcategoryDto)
 	productSubcategory: ProductSubcategoryDto;

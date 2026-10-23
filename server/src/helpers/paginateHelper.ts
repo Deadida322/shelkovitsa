@@ -1,6 +1,4 @@
 import { GetListDto } from 'src/common/dto/GetListDto';
-import { convertToJsonMany } from './convertHelper';
-import { ClassConstructor } from 'class-transformer';
 
 export interface IPaginateResult<T> extends GetListDto {
 	data: T[];
@@ -14,15 +12,11 @@ export function getPaginateWhere(getListDto: GetListDto) {
 	};
 }
 
+// Сериализацию элементов делает ClassSerializerInterceptor (PaginatedDto в контроллере)
 export function getPaginateResult<T>(
-	cls: ClassConstructor<T>,
-	payload: any[],
+	data: T[],
 	count: number,
-	getListDto: GetListDto
+	{ page, itemsPerPage }: GetListDto
 ): IPaginateResult<T> {
-	return {
-		data: convertToJsonMany(cls, payload),
-		count,
-		...getListDto
-	};
+	return { data, count, page, itemsPerPage };
 }

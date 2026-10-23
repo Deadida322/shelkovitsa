@@ -25,24 +25,13 @@ import { ProductFile } from 'src/db/entities/ProductFile';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import {
-	convertToClass,
-	convertToJson,
-	convertToJsonMany
-} from 'src/helpers/convertHelper';
-import {
 	getPaginateResult,
 	getPaginateWhere,
 	IPaginateResult
 } from 'src/helpers/paginateHelper';
 import { moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
-import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
-import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
-import { FullProductArticleDto } from './dto/FullProductArticleDto';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
-import { ProductArticleAdminDto } from './dto/ProductArticleAdminDto';
-import { ProductArticleDto } from './dto/ProductArticleDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 import { UploadImageDto } from './dto/UploadImageDto';
 import { baseProductWhere } from './product-article.types';
@@ -87,13 +76,13 @@ export class ProductArticleService {
 			? products.filter((p) => p.productSize.id === payload.productSizeId)
 			: products;
 
-		const dtoClass = isAdmin ? FullProductArticleAdminDto : FullProductArticleDto;
-		const res = convertToClass(dtoClass, article);
-		res.productColors = uniqueColors(productsOfSize);
-		res.productSizes = uniqueSizes(products);
-
+		// сериализация — FullProductArticleDto / FullProductArticleAdminDto в контроллере
 		return {
-			...convertToJson(dtoClass, res),
+			...article,
+			productColors: filterDuplicateObjectById(
+				productsOfSize.map((p) => p.productColor)
+			),
+			productSizes: filterDuplicateObjectById(products.map((p) => p.productSize)),
 			currentProductSize: payload.productSizeId
 		};
 	}
@@ -101,7 +90,7 @@ export class ProductArticleService {
 	async getList(
 		payload: GetProductArticleListDto,
 		isAdmin: boolean
-	): Promise<IPaginateResult<ProductArticleDto>> {
+	): Promise<IPaginateResult<ProductArticle>> {
 		const where: FindOptionsWhere<ProductArticle> = isAdmin
 			? {}
 			: { ...baseProductWhere };
@@ -140,7 +129,6 @@ export class ProductArticleService {
 		});
 
 		return getPaginateResult(
-			isAdmin ? ProductArticleAdminDto : ProductArticleDto,
 			result.map((el) => ({
 				...el,
 				productFiles: el.productFiles.filter((file) => file.isLogo)
@@ -195,7 +183,7 @@ export class ProductArticleService {
 		const rank = (id: number) => articleIds.indexOf(id);
 		articles.sort((a, b) => rank(a.id) - rank(b.id));
 
-		return convertToJsonMany(ProductArticleDto, articles);
+		return articles;
 	}
 
 	async uploadImage(articleId: number, payload: UploadImageDto) {
@@ -406,16 +394,4 @@ export class ProductArticleService {
 			order: { id: 'ASC' }
 		});
 	}
-}
-
-function uniqueColors(products: Product[]) {
-	return filterDuplicateObjectById(
-		products.map((p) => convertToClass(ProductColorDto, p.productColor))
-	);
-}
-
-function uniqueSizes(products: Product[]) {
-	return filterDuplicateObjectById(
-		products.map((p) => convertToClass(ProductSizeDto, p.productSize))
-	);
 }

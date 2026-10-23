@@ -12,7 +12,7 @@ import { IS_ADMIN_AUTH } from 'src/decorators/adminAuth';
 import { IS_AUTH } from 'src/decorators/auth';
 import { UserInRequest } from 'src/types/express/custom';
 import { UserService } from '../user/user.service';
-import { convertToClass } from 'src/helpers/convertHelper';
+import { plainToInstance } from 'class-transformer';
 import { AuthService } from './auth.service';
 
 @Injectable()
@@ -72,7 +72,9 @@ export class AuthGuard implements CanActivate {
 			return undefined;
 		}
 
-		const user = convertToClass(UserInRequest, existUser);
+		const user = plainToInstance(UserInRequest, existUser, {
+			excludeExtraneousValues: true
+		});
 		user.isAdmin = this.authService.isUserAdmin(existUser);
 		return user;
 	}

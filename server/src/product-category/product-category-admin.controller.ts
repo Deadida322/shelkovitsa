@@ -6,7 +6,8 @@ import {
 	Param,
 	ParseIntPipe,
 	Patch,
-	Post
+	Post,
+	SerializeOptions
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { AdminAuth } from 'src/decorators/adminAuth';
@@ -24,18 +25,18 @@ import { ProductCategoryService } from './product-category.service';
 export class ProductCategoryAdminController {
 	constructor(private readonly productCategoryService: ProductCategoryService) {}
 
+	@SerializeOptions({ type: ProductCategoryDto })
 	@Post('product-category')
-	async createCategory(
-		@Body() payload: CreateProductCategoryDto
-	): Promise<ProductCategoryDto> {
+	async createCategory(@Body() payload: CreateProductCategoryDto) {
 		return this.productCategoryService.createCategory(payload);
 	}
 
+	@SerializeOptions({ type: ProductCategoryDto })
 	@Patch('product-category/:id')
 	async updateCategory(
 		@Param('id', ParseIntPipe) id: number,
 		@Body() payload: CreateProductCategoryDto
-	): Promise<ProductCategoryDto> {
+	) {
 		return this.productCategoryService.updateCategory(id, payload);
 	}
 
@@ -45,19 +46,21 @@ export class ProductCategoryAdminController {
 		await this.productCategoryService.deleteCategory(id);
 	}
 
+	@SerializeOptions({ type: ProductSubcategoryDto })
 	@Post('product-category/:id/subcategories')
 	async createSubcategory(
 		@Param('id', ParseIntPipe) categoryId: number,
 		@Body() payload: CreateProductSubcategoryDto
-	): Promise<ProductSubcategoryDto> {
+	) {
 		return this.productCategoryService.createSubCategory(categoryId, payload);
 	}
 
+	@SerializeOptions({ type: ProductSubcategoryDto })
 	@Patch('product-subcategory/:id')
 	async updateSubcategory(
 		@Param('id', ParseIntPipe) id: number,
 		@Body() payload: UpdateProductSubcategoryDto
-	): Promise<ProductSubcategoryDto> {
+	) {
 		return this.productCategoryService.updateSubCategory(id, payload);
 	}
 

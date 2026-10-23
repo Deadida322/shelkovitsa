@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
 import { TelegramOrderMessage } from 'src/db/entities/TelegramOrderMessage';
 import { DeliveryTypeService } from 'src/delivery-type/delivery-type.service';
+import { OrderNotificationService } from 'src/telegram/order-notification.service';
 import {
 	CUSTOMER,
 	createTestApp,
@@ -180,6 +181,38 @@ describe('Order (e2e)', () => {
 		const [order] = res.body.data;
 		expect(order.price).toBe(2000);
 		expect(order.orderProducts[0].price).toBe(1000);
+	});
+
+	it('ответы с заказами не раскрывают пароль и служебные поля пользователя', async () => {
+		const admin = await registerAdmin(app);
+		const customer = await registerAgent(app, CUSTOMER);
+		const catalog = await seedCatalog(app);
+		await customer
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
+			.expect(201);
+		await app.get(OrderNotificationService).waitForPendingNotifications();
+
+		const responses = [
+			await admin
+				.get('/api/admin/order')
+				.query({ page: 0, itemsPerPage: 10 })
+				.expect(200),
+			await admin.get('/api/admin/order/telegram-failed').expect(200),
+			await customer
+				.get('/api/order')
+				.query({ page: 0, itemsPerPage: 10 })
+				.expect(200),
+			await customer.get('/api/auth/me').expect(200)
+		];
+		for (const res of responses) {
+			expect(JSON.stringify(res.body)).not.toMatch(
+				/password|\$2[aby]\$|basket|role/
+			);
+		}
+		const [adminList, failed] = responses;
+		expect(adminList.body.data[0].user.mail).toBe(CUSTOMER.mail);
+		expect(failed.body[0].user.mail).toBe(CUSTOMER.mail);
 	});
 
 	it('админ меняет статус заказа', async () => {

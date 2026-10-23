@@ -4,12 +4,8 @@ import { Not, Repository } from 'typeorm';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductCategory } from 'src/db/entities/ProductCategory';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
-import { convertToJson, convertToJsonMany } from 'src/helpers/convertHelper';
 import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
 import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
-import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
-import { ProductCategoryDto } from './dto/ProductCategoryDto';
-import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
 import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
 
 // Категории и подкатегории удаляются физически: удалить можно только пустые,
@@ -27,33 +23,28 @@ export class ProductCategoryService {
 		private readonly productArticleRepository: Repository<ProductArticle>
 	) {}
 
-	async getList(): Promise<ListProductCategoryDto[]> {
+	async getList(): Promise<ProductCategory[]> {
 		const categories = await this.productCategoryRepository.find({
 			relations: { productSubcategories: true },
 			order: { id: 'ASC', productSubcategories: { id: 'ASC' } }
 		});
-		return convertToJsonMany(ListProductCategoryDto, categories);
+		return categories;
 	}
 
-	async createCategory({
-		name
-	}: CreateProductCategoryDto): Promise<ProductCategoryDto> {
+	async createCategory({ name }: CreateProductCategoryDto): Promise<ProductCategory> {
 		await this.assertCategoryNameFree(name);
 		const category = await this.productCategoryRepository.save({ name });
-		return convertToJson(ProductCategoryDto, category);
+		return category;
 	}
 
 	async updateCategory(
 		id: number,
 		{ name }: CreateProductCategoryDto
-	): Promise<ProductCategoryDto> {
+	): Promise<ProductCategory> {
 		const category = await this.findCategory(id);
 		await this.assertCategoryNameFree(name, id);
 		category.name = name;
-		return convertToJson(
-			ProductCategoryDto,
-			await this.productCategoryRepository.save(category)
-		);
+		return await this.productCategoryRepository.save(category);
 	}
 
 	async deleteCategory(id: number): Promise<void> {
@@ -70,20 +61,20 @@ export class ProductCategoryService {
 	async createSubCategory(
 		categoryId: number,
 		{ name }: CreateProductSubcategoryDto
-	): Promise<ProductSubcategoryDto> {
+	): Promise<ProductSubcategory> {
 		const category = await this.findCategory(categoryId);
 		await this.assertSubcategoryNameFree(name, category.id);
 		const subcategory = await this.productSubcategoryRepository.save({
 			name,
 			productCategory: category
 		});
-		return convertToJson(ProductSubcategoryDto, subcategory);
+		return subcategory;
 	}
 
 	async updateSubCategory(
 		subcategoryId: number,
 		{ name, categoryId }: UpdateProductSubcategoryDto
-	): Promise<ProductSubcategoryDto> {
+	): Promise<ProductSubcategory> {
 		const subcategory = await this.findSubcategory(subcategoryId);
 		const category = categoryId
 			? await this.findCategory(categoryId)
@@ -92,10 +83,7 @@ export class ProductCategoryService {
 
 		subcategory.name = name;
 		subcategory.productCategory = category;
-		return convertToJson(
-			ProductSubcategoryDto,
-			await this.productSubcategoryRepository.save(subcategory)
-		);
+		return await this.productSubcategoryRepository.save(subcategory);
 	}
 
 	async deleteSubcategory(id: number): Promise<void> {

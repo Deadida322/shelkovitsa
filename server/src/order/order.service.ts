@@ -12,7 +12,6 @@ import { User } from 'src/db/entities/User';
 import { DeliveryType } from 'src/db/entities/DeliveryType';
 import { baseProductWhere } from 'src/product-article/product-article.types';
 import { GetListDto } from 'src/common/dto/GetListDto';
-import { convertToJson } from 'src/helpers/convertHelper';
 import {
 	getPaginateResult,
 	getPaginateWhere,
@@ -20,8 +19,6 @@ import {
 } from 'src/helpers/paginateHelper';
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
 import { CreateOrderDto } from './dto/CreateOrderDto';
-import { OrderDto } from './dto/OrderDto';
-import { OrderAdminDto } from './dto/OrderAdminDto';
 import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
 import { orderRelations } from './order.relations';
 
@@ -138,13 +135,13 @@ export class OrderService {
 
 		this.notifications.notifyOrderCreated(newOrder);
 
-		return convertToJson(OrderDto, newOrder);
+		return newOrder;
 	}
 
 	async getOrderList(
 		getListDto: GetListDto,
 		userId: number
-	): Promise<IPaginateResult<OrderDto>> {
+	): Promise<IPaginateResult<Order>> {
 		const [result, total] = await this.orderRepository.findAndCount({
 			where: {
 				user: {
@@ -158,12 +155,10 @@ export class OrderService {
 			...getPaginateWhere(getListDto)
 		});
 
-		return getPaginateResult(OrderDto, result, total, getListDto);
+		return getPaginateResult(result, total, getListDto);
 	}
 
-	async getAdminOrderList(
-		getListDto: GetListDto
-	): Promise<IPaginateResult<OrderAdminDto>> {
+	async getAdminOrderList(getListDto: GetListDto): Promise<IPaginateResult<Order>> {
 		const [result, total] = await this.orderRepository.findAndCount({
 			relations: orderRelations,
 			withDeleted: true,
@@ -171,7 +166,7 @@ export class OrderService {
 			...getPaginateWhere(getListDto)
 		});
 
-		return getPaginateResult(OrderAdminDto, result, total, getListDto);
+		return getPaginateResult(result, total, getListDto);
 	}
 
 	async changeOrderStatus(id: number, payload: ChangeOrderStatusDto) {
@@ -182,7 +177,6 @@ export class OrderService {
 			throw new NotFoundException('Заказ не найден');
 		}
 		order.status = payload.status;
-		const updatedOrder = await this.orderRepository.save(order);
-		return convertToJson(OrderDto, updatedOrder);
+		return this.orderRepository.save(order);
 	}
 }

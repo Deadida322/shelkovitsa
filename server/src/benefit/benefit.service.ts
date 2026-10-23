@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Benefit } from 'src/db/entities/Benefit';
 import { Repository } from 'typeorm';
-import { BenefitDto } from './dto/BenefitDto';
-import { convertToJsonMany } from 'src/helpers/convertHelper';
 
 @Injectable()
 export class BenefitService {
@@ -12,9 +10,9 @@ export class BenefitService {
 		private benefitRepository: Repository<Benefit>
 	) {}
 
-	async getList(): Promise<BenefitDto[]> {
+	async getList(): Promise<Benefit[]> {
 		const benefits = await this.benefitRepository.find({ order: { id: 'ASC' } });
 
-		return convertToJsonMany(BenefitDto, benefits);
+		return benefits;
 	}
 }

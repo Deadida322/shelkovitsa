@@ -11,6 +11,7 @@ import {
 	Patch,
 	Post,
 	Query,
+	SerializeOptions,
 	StreamableFile,
 	UploadedFile,
 	UseInterceptors
@@ -25,7 +26,9 @@ import {
 	getSrcPath,
 	parseFileBuilder
 } from 'src/helpers/storageHelper';
+import { PaginatedDto } from 'src/common/dto/PaginatedDto';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
+import { ProductArticleAdminDto } from './dto/ProductArticleAdminDto';
 import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 import { UploadImageDto } from './dto/UploadImageDto';
@@ -44,19 +47,20 @@ export class ProductArticleAdminController {
 		private readonly productImportService: ProductImportService
 	) {}
 
+	@SerializeOptions({ type: PaginatedDto(ProductArticleAdminDto) })
 	@Get()
 	@ApiOperation({ summary: 'Все артикулы, включая скрытые и архивные' })
 	async getList(@Query() query: GetProductArticleListDto) {
 		return this.productArticleService.getList(query, true);
 	}
 
+	@SerializeOptions({ type: FullProductArticleAdminDto })
 	@Get(':id')
-	async getOne(
-		@Param('id', ParseIntPipe) id: number
-	): Promise<FullProductArticleAdminDto> {
+	async getOne(@Param('id', ParseIntPipe) id: number) {
 		return this.productArticleService.getProductArticle(id, true, {} as never);
 	}
 
+	@SerializeOptions({ type: FullProductArticleAdminDto })
 	@Patch(':id')
 	@ApiOperation({
 		summary:
@@ -65,7 +69,7 @@ export class ProductArticleAdminController {
 	async update(
 		@Param('id', ParseIntPipe) id: number,
 		@Body() payload: UpdateProductArticleDto
-	): Promise<FullProductArticleAdminDto> {
+	) {
 		return this.productArticleService.updateProductArticle(id, payload);
 	}
 

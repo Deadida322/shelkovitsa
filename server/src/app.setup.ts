@@ -1,8 +1,10 @@
 import {
+	ClassSerializerInterceptor,
 	INestApplication,
 	UnprocessableEntityException,
 	ValidationPipe
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -48,6 +50,14 @@ export function configureApp(app: INestApplication) {
 	// доверять заголовкам от Nginx
 	(app as NestExpressApplication).set('trust proxy', 1);
 
+	// Ответы — через DTO из @SerializeOptions({ type }): наружу только поля с @Expose.
+	// Сущность без type сериализуется в {} — случайно отданная сущность не утечёт.
+	app.useGlobalInterceptors(
+		new ClassSerializerInterceptor(app.get(Reflector), {
+			excludeExtraneousValues: true,
+			exposeUnsetFields: false
+		})
+	);
 	app.useGlobalFilters(new HttpExceptionFilter());
 	app.use(cookieParser());
 	app.enableShutdownHooks();
