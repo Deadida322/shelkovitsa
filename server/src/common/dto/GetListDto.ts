@@ -1,9 +1,10 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { IsInt, IsPositive, Max, Min } from 'class-validator';
 import 'reflect-metadata';
 
 export class GetListDto {
 	@Expose()
+	@Type(() => Number)
 	@IsInt()
 	@Min(0, {
 		message: 'Должно быть >= 0'
@@ -11,6 +12,7 @@ export class GetListDto {
 	page: number;
 
 	@Expose()
+	@Type(() => Number)
 	@IsInt()
 	@IsPositive({
 		message: 'Должно быть больше 0'

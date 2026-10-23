@@ -1,123 +1,42 @@
-import {
-	Body,
-	Controller,
-	Get,
-	Param,
-	ParseIntPipe,
-	Patch,
-	Post,
-	Req
-} from '@nestjs/common';
-import {
-	ApiTags,
-	ApiOperation,
-	ApiResponse,
-	ApiBearerAuth,
-	ApiCookieAuth,
-	ApiBody
-} from '@nestjs/swagger';
-import { OrderService } from './order.service';
-import { OrderNotificationService } from 'src/telegram/order-notification.service';
-import { CreateOrderDto } from './dto/CreateOrderDto';
-import { GetListDto } from 'src/common/dto/GetListDto';
-import { OrderDto } from './dto/OrderDto';
+import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
+import { GetListDto } from 'src/common/dto/GetListDto';
 import { Auth } from 'src/decorators/auth';
 import { IPaginateResult } from 'src/helpers/paginateHelper';
-import { AdminAuth } from 'src/decorators/adminAuth';
-import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
-import { Throttle } from '@nestjs/throttler';
+import { CreateOrderDto } from './dto/CreateOrderDto';
+import { OrderDto } from './dto/OrderDto';
+import { OrderService } from './order.service';
 
 @ApiTags('Order')
 @Controller('order')
 export class OrderController {
-	constructor(
-		private readonly orderService: OrderService,
-		private readonly notifications: OrderNotificationService
-	) {}
+	constructor(private readonly orderService: OrderService) {}
 
 	@Post()
-	@Auth()
-	@ApiOperation({ summary: 'Получить список заказов пользователя' })
-	@ApiCookieAuth('access_token')
+	@Throttle({ default: { limit: 20, ttl: 60_000 } })
+	@ApiOperation({ summary: 'Оформить заказ (гостем или вошедшим пользователем)' })
+	@ApiResponse({ status: 201, type: OrderDto })
 	@ApiResponse({
-		status: 200,
-		description: 'Список заказов',
-		type: OrderDto,
-		isArray: false
+		status: 400,
+		description: 'Нет товара, не хватает остатка, нет доставки'
 	})
-	@ApiBody({ type: GetListDto })
-	async getList(
-		@Body() getListDto: GetListDto,
+	async create(
+		@Body() payload: CreateOrderDto,
+		@Req() request: Request
+	): Promise<OrderDto> {
+		return this.orderService.create(payload, request.user?.id);
+	}
+
+	@Get()
+	@Auth()
+	@ApiCookieAuth('access_token')
+	@ApiOperation({ summary: 'Мои заказы' })
+	async getMine(
+		@Query() query: GetListDto,
 		@Req() request: Request
 	): Promise<IPaginateResult<OrderDto>> {
-		const userId = request.user.id;
-		return this.orderService.getOrderList(getListDto, userId);
-	}
-	@Patch('admin/changeStatus')
-	@AdminAuth()
-	@ApiOperation({ summary: 'Изменить статус заказа (админ)' })
-	@ApiBearerAuth('JWT-auth')
-	@ApiCookieAuth('access_token')
-	@ApiResponse({ status: 200, description: 'Заказ обновлен', type: OrderDto })
-	@ApiBody({ type: ChangeOrderStatusDto })
-	async ChangeOrderStatus(@Body() payload: ChangeOrderStatusDto) {
-		return this.orderService.changeOrderStatus(payload);
-	}
-
-	@Post('admin')
-	@AdminAuth()
-	@ApiOperation({ summary: 'Получить список всех заказов (админ)' })
-	@ApiBearerAuth('JWT-auth')
-	@ApiCookieAuth('access_token')
-	@ApiResponse({
-		status: 200,
-		description: 'Список всех заказов',
-		type: OrderDto,
-		isArray: false
-	})
-	@ApiBody({ type: GetListDto })
-	async getAdminList(
-		@Body() getListDto: GetListDto
-	): Promise<IPaginateResult<OrderDto>> {
-		return this.orderService.getAdminOrderList(getListDto);
-	}
-
-	@Post('/create')
-	@Throttle({ default: { limit: 20, ttl: 60_000 } })
-	@ApiOperation({ summary: 'Создать новый заказ' })
-	@ApiResponse({ status: 201, description: 'Заказ создан', type: OrderDto })
-	@ApiResponse({ status: 400, description: 'Ошибка валидации' })
-	@ApiBody({ type: CreateOrderDto })
-	async createOrder(@Body() payload: CreateOrderDto, @Req() request: Request) {
-		const userId = request.user?.id;
-		return this.orderService.create(payload, userId);
-	}
-
-	@Post('admin/retry-telegram/:orderId')
-	@AdminAuth()
-	@ApiOperation({ summary: 'Повторно отправить Telegram сообщение для заказа (админ)' })
-	@ApiBearerAuth('JWT-auth')
-	@ApiCookieAuth('access_token')
-	@ApiResponse({ status: 200, description: 'Результат повторной отправки' })
-	async retryTelegramMessage(@Param('orderId', ParseIntPipe) orderId: number) {
-		return this.notifications.retryTelegramMessage(orderId);
-	}
-
-	@Get('admin/failed-telegram')
-	@AdminAuth()
-	@ApiOperation({
-		summary: 'Получить заказы с неудачными Telegram сообщениями (админ)'
-	})
-	@ApiBearerAuth('JWT-auth')
-	@ApiCookieAuth('access_token')
-	@ApiResponse({
-		status: 200,
-		description: 'Список заказов с ошибками',
-		type: OrderDto,
-		isArray: true
-	})
-	async getOrdersWithFailedTelegram() {
-		return this.notifications.getOrdersWithFailedTelegramMessages();
+		return this.orderService.getOrderList(query, request.user.id);
 	}
 }

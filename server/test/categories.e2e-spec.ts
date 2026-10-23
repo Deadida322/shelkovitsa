@@ -9,9 +9,11 @@ describe('Категории (e2e)', () => {
 	let admin: Awaited<ReturnType<typeof registerAdmin>>;
 
 	const createCategory = (name: string) =>
-		admin.post('/api/product-category/create').send({ name });
+		admin.post('/api/admin/product-category').send({ name });
 	const createSubcategory = (categoryId: number, name: string) =>
-		admin.post('/api/product-category/subcategory/create').send({ categoryId, name });
+		admin
+			.post(`/api/admin/product-category/${categoryId}/subcategories`)
+			.send({ name });
 
 	beforeAll(async () => {
 		app = await createTestApp();
@@ -32,12 +34,12 @@ describe('Категории (e2e)', () => {
 		await createCategory('Пижамы').expect(400);
 
 		const renamed = await admin
-			.patch('/api/product-category/update')
-			.send({ id: created.body.id, name: 'Домашняя одежда' })
+			.patch(`/api/admin/product-category/${created.body.id}`)
+			.send({ name: 'Домашняя одежда' })
 			.expect(200);
 		expect(renamed.body).toEqual({ id: created.body.id, name: 'Домашняя одежда' });
 
-		await admin.delete(`/api/product-category/delete/${created.body.id}`).expect(200);
+		await admin.delete(`/api/admin/product-category/${created.body.id}`).expect(204);
 		const list = await request(app.getHttpServer())
 			.get('/api/product-category')
 			.expect(200);
@@ -50,9 +52,7 @@ describe('Категории (e2e)', () => {
 	it('категорию с подкатегориями удалить нельзя', async () => {
 		const category = await createCategory('Бельё').expect(201);
 		await createSubcategory(category.body.id, 'Трусы').expect(201);
-		await admin
-			.delete(`/api/product-category/delete/${category.body.id}`)
-			.expect(400);
+		await admin.delete(`/api/admin/product-category/${category.body.id}`).expect(400);
 	});
 
 	it('имя подкатегории уникально в пределах категории', async () => {
@@ -68,9 +68,7 @@ describe('Категории (e2e)', () => {
 		const subcategoryId = catalog.article.productSubcategory.id;
 		await app.get(DataSource).manager.softDelete(ProductArticle, catalog.article.id);
 
-		await admin
-			.delete(`/api/product-category/subcategory/delete/${subcategoryId}`)
-			.expect(400);
+		await admin.delete(`/api/admin/product-subcategory/${subcategoryId}`).expect(400);
 	});
 
 	it('перенос артикула в другую подкатегорию', async () => {
@@ -79,14 +77,14 @@ describe('Категории (e2e)', () => {
 		const target = await createSubcategory(category.body.id, 'Носки').expect(201);
 
 		const res = await admin
-			.post('/api/product-category/subcategory/bindProduct')
-			.send({ productArticleId: catalog.article.id, subcategoryId: target.body.id })
-			.expect(201);
+			.patch(`/api/admin/product-article/${catalog.article.id}`)
+			.send({ productSubcategoryId: target.body.id })
+			.expect(200);
 		expect(res.body.productSubcategory.id).toBe(target.body.id);
 	});
 
 	it('несуществующая категория — 404', async () => {
 		await createSubcategory(9999, 'Что-то').expect(404);
-		await admin.delete('/api/product-category/delete/9999').expect(404);
+		await admin.delete('/api/admin/product-category/9999').expect(404);
 	});
 });

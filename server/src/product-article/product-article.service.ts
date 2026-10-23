@@ -22,6 +22,7 @@ import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductFile } from 'src/db/entities/ProductFile';
+import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import {
 	convertToClass,
@@ -36,7 +37,6 @@ import {
 import { moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
 import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { CommonImageDto } from './dto/CommonImageDto';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { FullProductArticleDto } from './dto/FullProductArticleDto';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
@@ -198,9 +198,9 @@ export class ProductArticleService {
 		return convertToJsonMany(ProductArticleDto, articles);
 	}
 
-	async uploadImage(payload: UploadImageDto) {
+	async uploadImage(articleId: number, payload: UploadImageDto) {
 		const productArticle = await this.productArticleRepository.findOne({
-			where: { id: Number(payload.productArticleId) },
+			where: { id: articleId },
 			withDeleted: true,
 			relations: { productFiles: true }
 		});
@@ -217,9 +217,9 @@ export class ProductArticleService {
 	}
 
 	// Удаление фото; если удалили логотип — логотипом становится самое старое из оставшихся
-	async deleteImage(payload: CommonImageDto) {
+	async deleteImage(fileId: number) {
 		const file = await this.productFileRepository.findOne({
-			where: { id: payload.productFileId },
+			where: { id: fileId },
 			relations: { productArticle: true }
 		});
 		if (!file) {
@@ -246,9 +246,9 @@ export class ProductArticleService {
 		);
 	}
 
-	async changeLogo(payload: CommonImageDto) {
+	async changeLogo(fileId: number) {
 		const file = await this.productFileRepository.findOne({
-			where: { id: payload.productFileId },
+			where: { id: fileId },
 			relations: { productArticle: true }
 		});
 		if (!file) {
@@ -269,10 +269,10 @@ export class ProductArticleService {
 	 * Правка артикула в админке. Всё в одной транзакции: если артикул нельзя
 	 * опубликовать, ни одно изменение не сохраняется.
 	 */
-	async updateProductArticle(payload: UpdateProductArticleDto) {
+	async updateProductArticle(id: number, payload: UpdateProductArticleDto) {
 		await this.dataSource.transaction(async (manager) => {
 			const article = await manager.findOne(ProductArticle, {
-				where: { id: payload.id },
+				where: { id },
 				withDeleted: true
 			});
 			if (!article) {
@@ -288,6 +288,15 @@ export class ProductArticleService {
 			if (payload.description !== undefined)
 				fields.description = payload.description;
 			if (payload.isVisible !== undefined) fields.isVisible = payload.isVisible;
+			if (payload.productSubcategoryId !== undefined) {
+				const productSubcategory = await manager.findOne(ProductSubcategory, {
+					where: { id: payload.productSubcategoryId }
+				});
+				if (!productSubcategory) {
+					throw new BadRequestException('Такая подкатегория не существует!');
+				}
+				fields.productSubcategory = productSubcategory;
+			}
 			if (payload.is_deleted === true) fields.isVisible = false;
 			if (Object.keys(fields).length) {
 				await manager.update(ProductArticle, article.id, fields);
@@ -302,7 +311,7 @@ export class ProductArticleService {
 			await this.assertPublishable(manager, article.id);
 		});
 
-		return this.getProductArticle(payload.id, true, {} as GetDetailProductArticleDto);
+		return this.getProductArticle(id, true, {} as GetDetailProductArticleDto);
 	}
 
 	/**

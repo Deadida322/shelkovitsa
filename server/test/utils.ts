@@ -7,6 +7,7 @@ import { configureApp } from 'src/app.setup';
 import { DeliveryType } from 'src/db/entities/DeliveryType';
 import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
+import { ProductFile } from 'src/db/entities/ProductFile';
 import { ProductCategory } from 'src/db/entities/ProductCategory';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductSize } from 'src/db/entities/ProductSize';
@@ -73,7 +74,7 @@ export interface SeededCatalog {
 
 export async function seedCatalog(
 	app: INestApplication,
-	options: { amount?: number; price?: number } = {}
+	options: { amount?: number; price?: number; withImage?: boolean } = {}
 ): Promise<SeededCatalog> {
 	const manager = app.get(DataSource).manager;
 
@@ -98,6 +99,14 @@ export async function seedCatalog(
 		productColor: color,
 		productSize: size
 	});
+	// опубликованный артикул по правилам должен иметь фото
+	if (options.withImage ?? true) {
+		await manager.save(ProductFile, {
+			name: 'seed.png',
+			isLogo: true,
+			productArticle: article
+		});
+	}
 
 	return { deliveryType, article, product, color, size };
 }

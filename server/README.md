@@ -136,8 +136,6 @@ http://localhost:8000/api/docs
 - [API.md](./docs/API.md) - Полная документация по API эндпоинтам
 - [DEPLOYMENT.md](./docs/DEPLOYMENT.md) - Руководство по развертыванию
 - [ENV_VARIABLES.md](./docs/ENV_VARIABLES.md) - Описание переменных окружения
-- [ANALYSIS_REPORT.md](./docs/ANALYSIS_REPORT.md) - Анализ кода и рекомендации
-- [DOCUMENTATION_SUMMARY.md](./docs/DOCUMENTATION_SUMMARY.md) - Резюме документации
 
 ## 🗄️ База данных
 
@@ -272,10 +270,9 @@ POST /api/auth/login
 }
 ```
 
-**Создание заказа (требует аутентификации):**
+**Создание заказа (гостем или вошедшим пользователем):**
 ```bash
 POST /api/order
-Cookie: access_token=...
 {
   "fio": "Иван Иванов",
   "mail": "ivan@example.com",

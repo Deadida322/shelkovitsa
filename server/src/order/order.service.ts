@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
-import { Order, OrderStatus } from 'src/db/entities/Order';
+import { Order } from 'src/db/entities/Order';
 import {
 	TelegramMessageStatus,
 	TelegramOrderMessage
@@ -174,14 +174,14 @@ export class OrderService {
 		return getPaginateResult(OrderAdminDto, result, total, getListDto);
 	}
 
-	async changeOrderStatus(payload: ChangeOrderStatusDto) {
+	async changeOrderStatus(id: number, payload: ChangeOrderStatusDto) {
 		const order = await this.orderRepository.findOne({
-			where: { id: payload.orderId }
+			where: { id }
 		});
 		if (!order) {
 			throw new NotFoundException('Заказ не найден');
 		}
-		order.status = payload.status as OrderStatus;
+		order.status = payload.status;
 		const updatedOrder = await this.orderRepository.save(order);
 		return convertToJson(OrderDto, updatedOrder);
 	}

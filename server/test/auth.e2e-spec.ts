@@ -127,10 +127,10 @@ describe('Auth (e2e)', () => {
 
 		await request(app.getHttpServer()).get('/api/auth/me').expect(401);
 		await request(app.getHttpServer())
-			.post('/api/order/admin')
-			.send(listBody)
+			.get('/api/admin/order')
+			.query(listBody)
 			.expect(401);
-		await customer.post('/api/order/admin').send(listBody).expect(403);
+		await customer.get('/api/admin/order').query(listBody).expect(403);
 	});
 
 	it('мусорный токен на публичном маршруте не мешает', async () => {

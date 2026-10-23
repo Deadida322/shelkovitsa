@@ -1,12 +1,13 @@
 import { Expose } from 'class-transformer';
-import { IsInt, IsNotEmpty } from 'class-validator';
+import { IsInt, IsOptional } from 'class-validator';
 import { CreateProductSubcategoryDto } from './CreateProductSubcategoryDto';
 
 export class UpdateProductSubcategoryDto extends CreateProductSubcategoryDto {
-	@IsNotEmpty()
+	// перенос подкатегории в другую категорию
+	@IsOptional()
 	@IsInt({
-		message: 'subcategoryId должен быть числом'
+		message: 'categoryId должен быть числом'
 	})
 	@Expose()
-	subcategoryId!: number;
+	categoryId?: number;
 }

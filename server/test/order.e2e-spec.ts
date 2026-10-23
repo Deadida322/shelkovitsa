@@ -36,7 +36,7 @@ describe('Order (e2e)', () => {
 		const catalog = await seedCatalog(app, { amount: 5, price: 1500 });
 
 		const res = await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
 			.expect(201);
 
@@ -48,7 +48,7 @@ describe('Order (e2e)', () => {
 	it('при заказе создаётся запись о Telegram-уведомлении', async () => {
 		const catalog = await seedCatalog(app);
 		const res = await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
 			.expect(201);
 
@@ -62,7 +62,7 @@ describe('Order (e2e)', () => {
 		const catalog = await seedCatalog(app, { amount: 5 });
 
 		await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
 			.expect(201);
 
@@ -73,7 +73,7 @@ describe('Order (e2e)', () => {
 		const catalog = await seedCatalog(app, { amount: 1 });
 
 		await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
 			.expect(400);
 		expect(await productAmount(catalog.product.id)).toBe(1);
@@ -87,7 +87,7 @@ describe('Order (e2e)', () => {
 
 		const results = await Promise.all(
 			Array.from({ length: 5 }, () =>
-				request(app.getHttpServer()).post('/api/order/create').send(payload)
+				request(app.getHttpServer()).post('/api/order').send(payload)
 			)
 		);
 
@@ -99,7 +99,7 @@ describe('Order (e2e)', () => {
 	it('несуществующий товар — 400', async () => {
 		const catalog = await seedCatalog(app);
 		await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: 9999, amount: 1 }]))
 			.expect(400);
 	});
@@ -107,7 +107,7 @@ describe('Order (e2e)', () => {
 	it('повтор одного товара в заказе — 400, а не 500', async () => {
 		const catalog = await seedCatalog(app);
 		await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(
 				orderPayload(catalog, [
 					{ productId: catalog.product.id, amount: 1 },
@@ -120,7 +120,7 @@ describe('Order (e2e)', () => {
 	it('несуществующий способ доставки — 400, а не 500', async () => {
 		const catalog = await seedCatalog(app);
 		await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send({
 				...orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]),
 				deliveryTypeId: 9999
@@ -138,7 +138,7 @@ describe('Order (e2e)', () => {
 			]);
 
 		await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
 			.expect(400);
 	});
@@ -149,14 +149,14 @@ describe('Order (e2e)', () => {
 		const catalog = await seedCatalog(app);
 
 		await customer
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
 			.expect(201);
 
 		const res = await customer
-			.post('/api/order')
-			.send({ page: 0, itemsPerPage: 10 })
-			.expect(201);
+			.get('/api/order')
+			.query({ page: 0, itemsPerPage: 10 })
+			.expect(200);
 		expect(res.body.count).toBe(1);
 	});
 
@@ -164,7 +164,7 @@ describe('Order (e2e)', () => {
 		const admin = await registerAdmin(app);
 		const catalog = await seedCatalog(app, { price: 1000 });
 		await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
 			.expect(201);
 		await app
@@ -174,9 +174,9 @@ describe('Order (e2e)', () => {
 			]);
 
 		const res = await admin
-			.post('/api/order/admin')
-			.send({ page: 0, itemsPerPage: 10 })
-			.expect(201);
+			.get('/api/admin/order')
+			.query({ page: 0, itemsPerPage: 10 })
+			.expect(200);
 		const [order] = res.body.data;
 		expect(order.price).toBe(2000);
 		expect(order.orderProducts[0].price).toBe(1000);
@@ -186,13 +186,13 @@ describe('Order (e2e)', () => {
 		const admin = await registerAdmin(app);
 		const catalog = await seedCatalog(app);
 		const order = await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
 			.expect(201);
 
 		const res = await admin
-			.patch('/api/order/admin/changeStatus')
-			.send({ orderId: order.body.id, status: 'in_work' })
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'in_work' })
 			.expect(200);
 		expect(res.body.status).toBe('in_work');
 	});
@@ -215,8 +215,8 @@ describe('Order (e2e)', () => {
 	it('смена статуса несуществующего заказа — 404', async () => {
 		const admin = await registerAdmin(app);
 		await admin
-			.patch('/api/order/admin/changeStatus')
-			.send({ orderId: 9999, status: 'in_work' })
+			.patch('/api/admin/order/9999')
+			.send({ status: 'in_work' })
 			.expect(404);
 	});
 });

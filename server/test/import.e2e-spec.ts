@@ -61,7 +61,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 
 	const upload = (rows: unknown[][], isDeletedOther: string = 'false') =>
 		admin
-			.put('/api/product-article/uploadProducts')
+			.post('/api/admin/product-article/import')
 			.field('isDeletedOther', isDeletedOther)
 			.attach('file', buildXlsx(rows), 'import.xlsx')
 			.buffer(true)
@@ -305,7 +305,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 
 	it('не-Excel файл отклоняется', async () => {
 		await admin
-			.put('/api/product-article/uploadProducts')
+			.post('/api/admin/product-article/import')
 			.attach('file', Buffer.from('just text'), 'import.xlsx')
 			.expect((res) => expect([400, 422]).toContain(res.status));
 	});
@@ -313,7 +313,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 	it('загружать каталог может только админ', async () => {
 		const customer = await registerAgent(app, CUSTOMER);
 		await customer
-			.put('/api/product-article/uploadProducts')
+			.post('/api/admin/product-article/import')
 			.attach('file', buildXlsx([row({ article: 'A-1' })]), 'import.xlsx')
 			.expect(403);
 	});

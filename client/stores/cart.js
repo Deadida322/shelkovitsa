@@ -32,7 +32,7 @@ export const useCartStore = defineStore('cart', () => {
             try {
                 const { $api } = useNuxtApp();
                 await $api('/api/user/basket', {
-                    method: 'POST',
+                    method: 'PUT',
                     body: cart.value,
                 });
             }
@@ -86,7 +86,7 @@ export const useCartStore = defineStore('cart', () => {
 
                 cart.value = mergedCart;
                 await $api('/api/user/basket', {
-                    method: 'POST',
+                    method: 'PUT',
                     body: mergedCart,
                 });
 

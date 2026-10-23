@@ -23,7 +23,7 @@ describe('Telegram-уведомления (e2e)', () => {
 	const createOrder = async () => {
 		const catalog = await seedCatalog(app, { price: 1000 });
 		const res = await request(app.getHttpServer())
-			.post('/api/order/create')
+			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
 			.expect(201);
 		await app.get(OrderNotificationService).waitForPendingNotifications();

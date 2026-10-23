@@ -11,9 +11,8 @@
     const editableItem = ref({});
     function getProducts() {
         loading.value = true;
-        return $api('/api/product-article/admin/getList', {
-            method: 'POST',
-            body: {
+        return $api('/api/admin/product-article', {
+            query: {
                 page: page.value - 1,
                 itemsPerPage: 10,
             },
@@ -32,8 +31,8 @@
         formData.append('isDeletedOther', isDeletedOther.value);
         loading.value = true;
         try {
-            const response = await $api('/api/product-article/uploadProducts', {
-                method: 'PUT',
+            const response = await $api('/api/admin/product-article/import', {
+                method: 'POST',
                 body: formData,
                 responseType: 'blob', // Указываем, что ожидаем бинарный ответ
             });

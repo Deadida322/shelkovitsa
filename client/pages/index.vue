@@ -35,7 +35,7 @@
     // Оптимизируем загрузку данных
     const { data, pending } = await useAsyncData(
         'popularProducts',
-        () => $api('/api/product-article/populate'),
+        () => $api('/api/product-article/popular'),
         {
             server: true,
             lazy: false,

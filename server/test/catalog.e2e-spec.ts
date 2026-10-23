@@ -1,7 +1,14 @@
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
-import { createTestApp, resetDb, seedCatalog, registerAdmin } from './utils';
+import {
+	CUSTOMER,
+	createTestApp,
+	registerAdmin,
+	registerAgent,
+	resetDb,
+	seedCatalog
+} from './utils';
 
 describe('Catalog (e2e)', () => {
 	let app: INestApplication;
@@ -23,9 +30,9 @@ describe('Catalog (e2e)', () => {
 		const catalog = await seedCatalog(app);
 
 		let res = await request(app.getHttpServer())
-			.post('/api/product-article/getList')
-			.send(listBody)
-			.expect(201);
+			.get('/api/product-article')
+			.query(listBody)
+			.expect(200);
 		expect(res.body.count).toBe(1);
 
 		await app
@@ -35,9 +42,9 @@ describe('Catalog (e2e)', () => {
 			]);
 
 		res = await request(app.getHttpServer())
-			.post('/api/product-article/getList')
-			.send(listBody)
-			.expect(201);
+			.get('/api/product-article')
+			.query(listBody)
+			.expect(200);
 		expect(res.body.count).toBe(0);
 	});
 
@@ -51,18 +58,18 @@ describe('Catalog (e2e)', () => {
 			]);
 
 		const res = await admin
-			.post('/api/product-article/admin/getList')
-			.send(listBody)
-			.expect(201);
+			.get('/api/admin/product-article')
+			.query(listBody)
+			.expect(200);
 		expect(res.body.count).toBe(1);
 	});
 
 	it('детальная карточка видимого артикула', async () => {
 		const catalog = await seedCatalog(app);
 		const res = await request(app.getHttpServer())
-			.post(`/api/product-article/${catalog.article.id}`)
-			.send({})
-			.expect(201);
+			.get(`/api/product-article/${catalog.article.id}`)
+			.query({})
+			.expect(200);
 		expect(res.body.article).toBe('ART-001');
 	});
 
@@ -82,6 +89,43 @@ describe('Catalog (e2e)', () => {
 			.get('/api/delivery-type')
 			.expect(200);
 		expect(res.body).toHaveLength(1);
+	});
+
+	it('query-параметры валидируются и приводятся к числам', async () => {
+		await seedCatalog(app);
+		const ok = await request(app.getHttpServer())
+			.get('/api/product-article')
+			.query({ page: '0', itemsPerPage: '5', minPrice: '1000' })
+			.expect(200);
+		expect(ok.body.count).toBe(1);
+
+		await request(app.getHttpServer())
+			.get('/api/product-article')
+			.query({ page: 0, itemsPerPage: 500 })
+			.expect(422);
+		await request(app.getHttpServer()).get('/api/product-article/abc').expect(400);
+	});
+
+	it('корзина: сохранение, чтение, валидация', async () => {
+		const customer = await registerAgent(app, CUSTOMER);
+		expect((await customer.get('/api/user/basket').expect(200)).body).toEqual([]);
+
+		const basket = [{ productId: 1, amount: 2, id: '7', name: 'Трусы', price: 990 }];
+		await customer.put('/api/user/basket').send(basket).expect(200);
+		const saved = (await customer.get('/api/user/basket').expect(200)).body;
+		expect(saved).toEqual([
+			{ productId: 1, amount: 2, id: 7, name: 'Трусы', price: 990 }
+		]);
+
+		await customer
+			.put('/api/user/basket')
+			.send([{ productId: 'x', amount: -1 }])
+			.expect(400);
+		await customer
+			.put('/api/user/basket')
+			.send(Array.from({ length: 101 }, () => ({ productId: 1, amount: 1 })))
+			.expect(400);
+		await request(app.getHttpServer()).get('/api/user/basket').expect(401);
 	});
 
 	it('healthcheck', async () => {

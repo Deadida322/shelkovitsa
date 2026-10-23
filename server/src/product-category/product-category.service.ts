@@ -5,8 +5,6 @@ import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductCategory } from 'src/db/entities/ProductCategory';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { convertToJson, convertToJsonMany } from 'src/helpers/convertHelper';
-import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
-import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
 import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
 import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
@@ -45,7 +43,10 @@ export class ProductCategoryService {
 		return convertToJson(ProductCategoryDto, category);
 	}
 
-	async updateCategory({ id, name }: ProductCategoryDto): Promise<ProductCategoryDto> {
+	async updateCategory(
+		id: number,
+		{ name }: CreateProductCategoryDto
+	): Promise<ProductCategoryDto> {
 		const category = await this.findCategory(id);
 		await this.assertCategoryNameFree(name, id);
 		category.name = name;
@@ -66,10 +67,10 @@ export class ProductCategoryService {
 		await this.productCategoryRepository.delete(id);
 	}
 
-	async createSubCategory({
-		categoryId,
-		name
-	}: CreateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
+	async createSubCategory(
+		categoryId: number,
+		{ name }: CreateProductSubcategoryDto
+	): Promise<ProductSubcategoryDto> {
 		const category = await this.findCategory(categoryId);
 		await this.assertSubcategoryNameFree(name, category.id);
 		const subcategory = await this.productSubcategoryRepository.save({
@@ -79,13 +80,14 @@ export class ProductCategoryService {
 		return convertToJson(ProductSubcategoryDto, subcategory);
 	}
 
-	async updateSubCategory({
-		categoryId,
-		name,
-		subcategoryId
-	}: UpdateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
-		const category = await this.findCategory(categoryId);
+	async updateSubCategory(
+		subcategoryId: number,
+		{ name, categoryId }: UpdateProductSubcategoryDto
+	): Promise<ProductSubcategoryDto> {
 		const subcategory = await this.findSubcategory(subcategoryId);
+		const category = categoryId
+			? await this.findCategory(categoryId)
+			: subcategory.productCategory;
 		await this.assertSubcategoryNameFree(name, category.id, subcategoryId);
 
 		subcategory.name = name;
@@ -107,24 +109,6 @@ export class ProductCategoryService {
 			throw new BadRequestException('К подкатегории еще привязаны продукты!');
 		}
 		await this.productSubcategoryRepository.delete(id);
-	}
-
-	async bindProductToSubcategory({
-		productArticleId,
-		subcategoryId
-	}: BindProductArticleToSubcategoryDto): Promise<FullProductArticleDto> {
-		const productArticle = await this.productArticleRepository.findOne({
-			where: { id: productArticleId }
-		});
-		if (!productArticle) {
-			throw new NotFoundException('Такого продукта не существует!');
-		}
-
-		productArticle.productSubcategory = await this.findSubcategory(subcategoryId);
-		return convertToJson(
-			FullProductArticleDto,
-			await this.productArticleRepository.save(productArticle)
-		);
 	}
 
 	private async findCategory(id: number): Promise<ProductCategory> {

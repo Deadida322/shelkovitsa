@@ -30,16 +30,12 @@ describe('Админка каталога (e2e)', () => {
 	const manager = () => app.get(DataSource).manager;
 	const listBody = { page: 0, itemsPerPage: 20 };
 	const publicList = () =>
-		request(app.getHttpServer()).post('/api/product-article/getList').send(listBody);
+		request(app.getHttpServer()).get('/api/product-article').query(listBody);
 	const update = (body: Record<string, unknown>) =>
-		admin.patch('/api/product-article/admin/productArticle').send({
-			id: catalog.article.id,
-			...body
-		});
+		admin.patch(`/api/admin/product-article/${catalog.article.id}`).send(body);
 	const uploadImage = (articleId = catalog.article.id) =>
 		admin
-			.post('/api/product-article/admin/image')
-			.field('productArticleId', String(articleId))
+			.post(`/api/admin/product-article/${articleId}/images`)
 			.attach('image', png, 'photo.png');
 	const files = () =>
 		manager().find(ProductFile, {
@@ -54,7 +50,7 @@ describe('Админка каталога (e2e)', () => {
 	beforeEach(async () => {
 		await resetDb(app);
 		admin = await registerAdmin(app);
-		catalog = await seedCatalog(app);
+		catalog = await seedCatalog(app, { withImage: false });
 		// seedCatalog создаёт опубликованный артикул; для тестов публикации — скрываем
 		await manager().update(ProductArticle, catalog.article.id, { isVisible: false });
 	});
@@ -79,7 +75,7 @@ describe('Админка каталога (e2e)', () => {
 			await uploadImage().expect(201);
 			const res = await update({ isVisible: true }).expect(200);
 			expect(res.body.isVisible).toBe(true);
-			expect((await publicList().expect(201)).body.count).toBe(1);
+			expect((await publicList().expect(200)).body.count).toBe(1);
 		});
 
 		it('без вариантов опубликовать нельзя', async () => {
@@ -142,9 +138,9 @@ describe('Админка каталога (e2e)', () => {
 			await update({ isVisible: true }).expect(200);
 
 			const res = await request(app.getHttpServer())
-				.post(`/api/product-article/${catalog.article.id}`)
-				.send({ productSizeId: size80.id })
-				.expect(201);
+				.get(`/api/product-article/${catalog.article.id}`)
+				.query({ productSizeId: size80.id })
+				.expect(200);
 			expect(res.body.productColors.map((c) => c.name)).toEqual(['Красный']);
 			expect(res.body.productSizes).toHaveLength(2);
 		});
@@ -158,7 +154,7 @@ describe('Админка каталога (e2e)', () => {
 
 		it('архивный артикул пропадает с витрины, но виден в админке и в старых заказах', async () => {
 			await request(app.getHttpServer())
-				.post('/api/order/create')
+				.post('/api/order')
 				.send(
 					orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }])
 				)
@@ -168,31 +164,31 @@ describe('Админка каталога (e2e)', () => {
 			expect(res.body.is_deleted).toBe(true);
 			expect(res.body.isVisible).toBe(false);
 
-			expect((await publicList().expect(201)).body.count).toBe(0);
+			expect((await publicList().expect(200)).body.count).toBe(0);
 			await request(app.getHttpServer())
-				.post(`/api/product-article/${catalog.article.id}`)
-				.send({})
+				.get(`/api/product-article/${catalog.article.id}`)
+				.query({})
 				.expect(404);
 
 			const adminList = await admin
-				.post('/api/product-article/admin/getList')
-				.send(listBody)
-				.expect(201);
+				.get('/api/admin/product-article')
+				.query(listBody)
+				.expect(200);
 			expect(adminList.body.data[0].is_deleted).toBe(true);
 
 			// товар архивирован, но строка заказа на месте
 			await manager().softDelete(Product, catalog.product.id);
 			const orders = await admin
-				.post('/api/order/admin')
-				.send(listBody)
-				.expect(201);
+				.get('/api/admin/order')
+				.query(listBody)
+				.expect(200);
 			expect(orders.body.data[0].orderProducts).toHaveLength(1);
 		});
 
 		it('архивный артикул заказать нельзя', async () => {
 			await update({ is_deleted: true }).expect(200);
 			await request(app.getHttpServer())
-				.post('/api/order/create')
+				.post('/api/order')
 				.send(
 					orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }])
 				)
@@ -215,16 +211,14 @@ describe('Админка каталога (e2e)', () => {
 			expect(fs.existsSync(getDestPath(first.name))).toBe(true);
 
 			await admin
-				.patch('/api/product-article/admin/image')
-				.send({ productFileId: second.id })
-				.expect(200);
+				.patch(`/api/admin/product-article/images/${second.id}/logo`)
+				.expect(204);
 			[first, second] = await files();
 			expect([first.isLogo, second.isLogo]).toEqual([false, true]);
 
 			await admin
-				.delete('/api/product-article/admin/image')
-				.send({ productFileId: second.id })
-				.expect(200);
+				.delete(`/api/admin/product-article/images/${second.id}`)
+				.expect(204);
 			const rest = await files();
 			expect(rest).toHaveLength(1);
 			expect(rest[0].isLogo).toBe(true);
@@ -238,16 +232,16 @@ describe('Админка каталога (e2e)', () => {
 
 	it('админ получает вариант и у неопубликованного артикула', async () => {
 		await admin
-			.post('/api/product/admin/get')
-			.send({
+			.get('/api/admin/product')
+			.query({
 				productArticleId: catalog.article.id,
 				productColorId: catalog.color.id,
 				productSizeId: catalog.size.id
 			})
-			.expect(201);
+			.expect(200);
 		await request(app.getHttpServer())
-			.post('/api/product/get')
-			.send({
+			.get('/api/product')
+			.query({
 				productArticleId: catalog.article.id,
 				productColorId: catalog.color.id,
 				productSizeId: catalog.size.id

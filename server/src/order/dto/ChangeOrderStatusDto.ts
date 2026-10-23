@@ -1,5 +1,5 @@
 import { Expose, Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsNotEmpty, Min } from 'class-validator';
+import { IsEnum, IsNotEmpty } from 'class-validator';
 import 'reflect-metadata';
 import { OrderStatus } from 'src/db/entities/Order';
 
@@ -10,18 +10,5 @@ export class ChangeOrderStatusDto {
 	})
 	@Transform(({ value }) => ('' + value).toLowerCase())
 	@IsEnum(OrderStatus)
-	status: string;
-
-	@Expose()
-	@IsInt({
-		message: 'Поле должно быть числом'
-	})
-	@IsNotEmpty({
-		message: 'Поле не может быть пустым'
-	})
-	@Min(1, {
-		message: 'Поле должно быть > 0'
-	})
-	@Expose()
-	orderId: number;
+	status: OrderStatus;
 }

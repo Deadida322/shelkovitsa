@@ -28,7 +28,7 @@
     function nextStep() {
         if (step.value < 2)
             return step.value++;
-        $api('/api/order/create', { method: 'POST', body: { ...orderStore.order, orderProducts: cartStore.cart } }).then(() => {
+        $api('/api/order', { method: 'POST', body: { ...orderStore.order, orderProducts: cartStore.cart } }).then(() => {
             VsNotification({
                 title: 'Отправлено!',
                 content: 'Заказ отправлен, ожидайте связи',
