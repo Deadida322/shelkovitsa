@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class Init1792766757795 implements MigrationInterface {
-	name = 'Init1792766757795';
+export class Init1792767111911 implements MigrationInterface {
+	name = 'Init1792767111911';
 
 	public async up(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.query(
@@ -14,7 +14,7 @@ export class Init1792766757795 implements MigrationInterface {
 			`CREATE TABLE "product_category" ("created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "id" SERIAL NOT NULL, "name" character varying NOT NULL, CONSTRAINT "UQ_96152d453aaea425b5afde3ae9f" UNIQUE ("name"), CONSTRAINT "PK_0dce9bc93c2d2c399982d04bef1" PRIMARY KEY ("id"))`
 		);
 		await queryRunner.query(
-			`CREATE TABLE "product_subcategory" ("created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "id" SERIAL NOT NULL, "name" character varying NOT NULL, "productCategoryId" integer NOT NULL, CONSTRAINT "UQ_954c2ae56cc16fba050d37b74f9" UNIQUE ("name"), CONSTRAINT "PK_0c9ba3f2d09244e06fc22ff618d" PRIMARY KEY ("id"))`
+			`CREATE TABLE "product_subcategory" ("created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "id" SERIAL NOT NULL, "name" character varying NOT NULL, "productCategoryId" integer NOT NULL, CONSTRAINT "UQ_cdcf3712179c71e04acb9f70b6d" UNIQUE ("productCategoryId", "name"), CONSTRAINT "PK_0c9ba3f2d09244e06fc22ff618d" PRIMARY KEY ("id"))`
 		);
 		await queryRunner.query(
 			`CREATE TABLE "product_file" ("created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "id" SERIAL NOT NULL, "name" character varying NOT NULL, "url" character varying, "isLogo" boolean NOT NULL DEFAULT false, "productArticleId" integer NOT NULL, CONSTRAINT "PK_16c46f3319e6d4117fb4994b91f" PRIMARY KEY ("id"))`

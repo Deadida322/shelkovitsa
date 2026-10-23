@@ -16,6 +16,7 @@ import { CUSTOMER, createTestApp, registerAgent, resetDb, registerAdmin } from '
 // Строка выгрузки поставщика: значимы только колонки, которые читает импорт
 function row(values: {
 	article: string;
+	category?: string;
 	subcategory?: string;
 	color?: string;
 	size?: string | number;
@@ -26,6 +27,7 @@ function row(values: {
 	imageUrls?: string[];
 }) {
 	const cells: unknown[] = new Array(19).fill(null);
+	cells[1] = values.category ?? 'Женское нижнее белье';
 	cells[2] = values.subcategory ?? 'Трусы';
 	cells[3] = 'Janira';
 	cells[4] = values.color ?? 'Avena'; // по data/colors.xlsx → «Бежевый»
@@ -140,18 +142,62 @@ describe('Импорт каталога из Excel (e2e)', () => {
 	it('строки с ошибками попадают в файл ошибок, остальные импортируются', async () => {
 		const res = await upload([
 			row({ article: 'OK-1' }),
-			row({ article: 'BAD-1', subcategory: 'Нет такой' }),
+			row({ article: 'BAD-1', subcategory: '' }),
 			row({ article: 'BAD-2', color: 'Неизвестный цвет' }),
-			row({ article: '', amount: 1 })
+			row({ article: '', amount: 1 }),
+			row({ article: 'BAD-3', size: 'XXXXL-нет-такого' })
 		]).expect(200);
 
 		const errors = errorRows(res.body);
-		expect(errors).toHaveLength(3);
+		expect(errors).toHaveLength(4);
 		const text = errors.map((r) => r.join(' ')).join('\n');
-		expect(text).toMatch(/подкатегория/);
+		expect(text).toMatch(/productSubcategory/);
 		expect(text).toMatch(/цвета/);
 		expect(text).toMatch(/article/);
+		expect(text).toMatch(/размера/);
 
+		expect(await manager().count(ProductArticle)).toBe(1);
+	});
+
+	it('создаёт недостающие категории и подкатегории; одинаковые имена — в своих категориях', async () => {
+		await upload([
+			row({
+				article: 'W-1',
+				category: 'Женское нижнее белье',
+				subcategory: 'Трусы'
+			}),
+			row({ article: 'M-1', category: 'Мужское белье', subcategory: 'Трусы' }),
+			row({ article: 'M-2', category: 'Мужское белье', subcategory: 'Майки' })
+		]).expect(200);
+
+		const categories = await manager().find(ProductCategory, {
+			relations: { productSubcategories: true },
+			order: { id: 'ASC', productSubcategories: { id: 'ASC' } }
+		});
+		expect(
+			categories.map((c) => [c.name, c.productSubcategories.map((s) => s.name)])
+		).toEqual([
+			['Женское нижнее белье', ['Трусы']],
+			['Мужское белье', ['Трусы', 'Майки']]
+		]);
+
+		const m1 = await manager().findOne(ProductArticle, { where: { article: 'M-1' } });
+		expect(m1.productSubcategory.productCategory.name).toBe('Мужское белье');
+	});
+
+	it('строка заголовка выгрузки пропускается', async () => {
+		const header = [
+			'Код',
+			'Категория',
+			'Тип',
+			'Торговая марка',
+			'Цвет',
+			'Фото цвета',
+			'Размер',
+			'Цена'
+		];
+		const res = await upload([header, row({ article: 'A-1' })]).expect(200);
+		expect(errorRows(res.body)).toHaveLength(0);
 		expect(await manager().count(ProductArticle)).toBe(1);
 	});
 

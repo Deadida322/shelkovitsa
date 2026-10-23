@@ -71,7 +71,7 @@ export class ProductCategoryService {
 		name
 	}: CreateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
 		const category = await this.findCategory(categoryId);
-		await this.assertSubcategoryNameFree(name);
+		await this.assertSubcategoryNameFree(name, category.id);
 		const subcategory = await this.productSubcategoryRepository.save({
 			name,
 			productCategory: category
@@ -86,7 +86,7 @@ export class ProductCategoryService {
 	}: UpdateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
 		const category = await this.findCategory(categoryId);
 		const subcategory = await this.findSubcategory(subcategoryId);
-		await this.assertSubcategoryNameFree(name, subcategoryId);
+		await this.assertSubcategoryNameFree(name, category.id, subcategoryId);
 
 		subcategory.name = name;
 		subcategory.productCategory = category;
@@ -154,10 +154,15 @@ export class ProductCategoryService {
 		}
 	}
 
-	// Имя подкатегории уникально глобально: импорт из Excel ищет её по имени
-	private async assertSubcategoryNameFree(name: string, exceptId?: number) {
+	// Имя подкатегории уникально в пределах категории
+	private async assertSubcategoryNameFree(
+		name: string,
+		categoryId: number,
+		exceptId?: number
+	) {
+		const where = { name, productCategory: { id: categoryId } };
 		const exists = await this.productSubcategoryRepository.exists({
-			where: exceptId ? { name, id: Not(exceptId) } : { name }
+			where: exceptId ? { ...where, id: Not(exceptId) } : where
 		});
 		if (exists) {
 			throw new BadRequestException(

@@ -55,11 +55,12 @@ describe('Категории (e2e)', () => {
 			.expect(400);
 	});
 
-	it('имя подкатегории уникально во всех категориях', async () => {
+	it('имя подкатегории уникально в пределах категории', async () => {
 		const a = await createCategory('Женское').expect(201);
 		const b = await createCategory('Мужское').expect(201);
 		await createSubcategory(a.body.id, 'Трусы').expect(201);
-		await createSubcategory(b.body.id, 'Трусы').expect(400);
+		await createSubcategory(a.body.id, 'Трусы').expect(400);
+		await createSubcategory(b.body.id, 'Трусы').expect(201);
 	});
 
 	it('подкатегорию с товарами (в т.ч. архивными) удалить нельзя', async () => {

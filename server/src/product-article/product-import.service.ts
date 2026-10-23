@@ -3,6 +3,7 @@ import * as xlsx from 'node-xlsx';
 import { DataSource, EntityManager } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
+import { ProductCategory } from 'src/db/entities/ProductCategory';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { ProductSize } from 'src/db/entities/ProductSize';
@@ -15,6 +16,7 @@ import { UploadProductArticleFileDto } from './dto/UploadProductArticleFileDto';
 
 // Номера колонок в выгрузке поставщика
 const COLUMNS = {
+	productCategory: 1,
 	productSubcategory: 2,
 	brand: 3,
 	colorName: 4,
@@ -85,6 +87,10 @@ export class ProductImportService {
 			if (isRowEmpty) {
 				continue;
 			}
+			// строка заголовка выгрузки («Код», «Категория», …, «Цена»)
+			if (index === 0 && Number.isNaN(Number(rowValues[COLUMNS.price]))) {
+				continue;
+			}
 
 			try {
 				const product = this.readRow(rowValues);
@@ -136,6 +142,7 @@ export class ProductImportService {
 			description: optional(COLUMNS.description),
 			brand: optional(COLUMNS.brand),
 			composition: optional(COLUMNS.composition),
+			productCategory: cell(COLUMNS.productCategory),
 			productSubcategory: cell(COLUMNS.productSubcategory),
 			name: optional(COLUMNS.name),
 			imageUrls: cell(COLUMNS.imageUrls)
@@ -153,6 +160,7 @@ export class ProductImportService {
 			missing.push('amount');
 		if (!product.color.name) missing.push('color.name');
 		if (!product.size) missing.push('size');
+		if (!product.productCategory) missing.push('productCategory');
 		if (!product.productSubcategory) missing.push('productSubcategory');
 		return missing;
 	}
@@ -172,12 +180,10 @@ export class ProductImportService {
 		}
 
 		return this.dataSource.transaction(async (manager) => {
-			const productSubcategory = await manager.findOne(ProductSubcategory, {
-				where: { name: productDto.productSubcategory }
-			});
-			if (!productSubcategory) {
-				throw new Error(`Не найдена подкатегория`);
-			}
+			const productSubcategory = await this.findOrCreateSubcategory(
+				manager,
+				productDto
+			);
 
 			const article = await this.upsertArticle(
 				manager,
@@ -229,6 +235,31 @@ export class ProductImportService {
 				imageUrls: productDto.imageUrls
 			};
 		});
+	}
+
+	// Категории и подкатегории из выгрузки создаются автоматически
+	private async findOrCreateSubcategory(
+		manager: EntityManager,
+		productDto: ParseProductArticleDto
+	): Promise<ProductSubcategory> {
+		const category =
+			(await manager.findOne(ProductCategory, {
+				where: { name: productDto.productCategory }
+			})) ??
+			(await manager.save(ProductCategory, { name: productDto.productCategory }));
+
+		return (
+			(await manager.findOne(ProductSubcategory, {
+				where: {
+					name: productDto.productSubcategory,
+					productCategory: { id: category.id }
+				}
+			})) ??
+			(await manager.save(ProductSubcategory, {
+				name: productDto.productSubcategory,
+				productCategory: category
+			}))
+		);
 	}
 
 	private async upsertArticle(
