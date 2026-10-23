@@ -20,7 +20,8 @@ describe('validateEnv', () => {
 	});
 
 	it('называет все отсутствующие и некорректные переменные', () => {
-		const { JWT_SECRET: _secret, ...withoutSecret } = validEnv;
+		const withoutSecret: Record<string, string> = { ...validEnv };
+		delete withoutSecret.JWT_SECRET;
 		expect(() =>
 			validateEnv({ ...withoutSecret, NODE_ENV: 'prod', PORT: 'abc' })
 		).toThrow(/JWT_SECRET[\s\S]*NODE_ENV|NODE_ENV[\s\S]*JWT_SECRET/);
