@@ -10,38 +10,21 @@ import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { downloadImage } from 'src/helpers/imageDownloadHelper';
 import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
-import { getColorsPath, getSizesPath } from 'src/helpers/storageHelper';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
+import {
+	loadColorMap,
+	loadSizeMap,
+	normalizeSupplierSize,
+	parseAmount,
+	SUPPLIER_COLUMNS
+} from './supplier-format';
 import { UploadProductArticleFileDto } from './dto/UploadProductArticleFileDto';
 
-// Номера колонок в выгрузке поставщика
-const COLUMNS = {
-	productCategory: 1,
-	productSubcategory: 2,
-	brand: 3,
-	colorName: 4,
-	colorUrl: 5,
-	size: 6,
-	price: 7,
-	country: 9,
-	description: 10,
-	composition: 11,
-	article: 13,
-	imageUrls: 15,
-	name: 16,
-	amount: 18
-} as const;
+// для совместимости импортов (тесты, сид)
+export { parseAmount };
 
-// Остаток у поставщика: число или «>5» (больше пяти) — берём гарантированный минимум
-export function parseAmount(value: unknown): number {
-	if (typeof value === 'number') {
-		return Math.floor(value);
-	}
-	const text = String(value ?? '').trim();
-	const atLeast = /^>\s*(\d+)$/.exec(text);
-	return atLeast ? Number(atLeast[1]) : text === '' ? NaN : Number(text);
-}
+const COLUMNS = SUPPLIER_COLUMNS;
 
 // Что нужно докачать после коммита строки: сеть не должна держать транзакцию
 interface PendingImages {
@@ -97,8 +80,8 @@ export class ProductImportService {
 			await this.clearCatalog();
 		}
 
-		const colorMap = await this.getColorMap();
-		const sizeMap = await this.getSizeMap();
+		const colorMap = await loadColorMap();
+		const sizeMap = await loadSizeMap();
 		const errorRows: unknown[][] = [];
 
 		for (let index = 0; index < data.length; index++) {
@@ -160,7 +143,7 @@ export class ProductImportService {
 					: '',
 				url: cell(COLUMNS.colorUrl)
 			},
-			size: cell(COLUMNS.size),
+			size: normalizeSupplierSize(rowValues[COLUMNS.size]),
 			amount: parseAmount(rowValues[COLUMNS.amount]),
 			price: Number(rowValues[COLUMNS.price]),
 			country: optional(COLUMNS.country),
@@ -419,28 +402,5 @@ export class ProductImportService {
 			if (withoutProducts.length)
 				await manager.delete(ProductArticle, withoutProducts);
 		});
-	}
-
-	// colors.xlsx: «название у поставщика» → «название в каталоге»
-	private async getColorMap(): Promise<Map<string, string>> {
-		return this.readMapping(await getColorsPath(), capitalizeFirstLetter);
-	}
-
-	// sizes.xlsx: «размер у поставщика» → «размер в каталоге»
-	private async getSizeMap(): Promise<Map<string, string>> {
-		return this.readMapping(await getSizesPath(), (value) => value.toUpperCase());
-	}
-
-	private readMapping(filePath: string, normalize: (value: string) => string) {
-		const data = xlsx.parse(filePath)[0].data;
-		const map = new Map<string, string>();
-		for (const [from, to] of data) {
-			const source = String(from ?? '').trim();
-			const target = String(to ?? '').trim();
-			if (source && target) {
-				map.set(normalize(source), normalize(target));
-			}
-		}
-		return map;
 	}
 }

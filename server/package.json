@@ -26,7 +26,8 @@
 		"seed": "node dist/cli/seed.js",
 		"dev:setup": "npm run build && npm run db:reset && npm run seed",
 		"test:postman": "npx -y newman@6 run ../tests/Shelkovitsa_API.postman_collection.json --working-dir ../tests",
-		"storage:init": "node dist/cli/storage-init.js"
+		"storage:init": "node dist/cli/storage-init.js",
+		"audit:marketplace": "node dist/cli/marketplace-readiness.js"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "^3.1156.0",

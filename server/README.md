@@ -145,6 +145,7 @@ http://localhost:8000/api/docs
 ### Дополнительная документация
 Подробная документация находится в папке [`docs/`](./docs/):
 - [API.md](./docs/API.md) - Полная документация по API эндпоинтам
+- [INTEGRATION_YANDEX.md](./docs/INTEGRATION_YANDEX.md) - Анализ интеграции с Яндекс Доставкой и Маркетом (`npm run audit:marketplace`)
 - [DEPLOYMENT.md](./docs/DEPLOYMENT.md) - Руководство по развертыванию
 - [ENV_VARIABLES.md](./docs/ENV_VARIABLES.md) - Описание переменных окружения
 
