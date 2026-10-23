@@ -11,7 +11,7 @@ import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductCategory } from 'src/db/entities/ProductCategory';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
-import { ADMIN, CUSTOMER, createTestApp, registerAgent, resetDb } from './utils';
+import { CUSTOMER, createTestApp, registerAgent, resetDb, registerAdmin } from './utils';
 
 // Строка выгрузки поставщика: значимы только колонки, которые читает импорт
 function row(values: {
@@ -73,7 +73,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 
 	beforeEach(async () => {
 		await resetDb(app);
-		admin = await registerAgent(app, ADMIN);
+		admin = await registerAdmin(app);
 		const category = await manager().save(ProductCategory, {
 			name: 'Женское нижнее белье'
 		});

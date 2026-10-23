@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
+import {
+	Entity,
+	Column,
+	PrimaryGeneratedColumn,
+	OneToMany,
+	ManyToOne,
+	Unique
+} from 'typeorm';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { ProductSize } from './ProductSize';
@@ -7,6 +14,8 @@ import { OrderProduct } from './OrderProduct';
 import { ProductArticle } from './ProductArticle';
 
 @Entity()
+// один вариант на сочетание артикул + цвет + размер
+@Unique(['productArticle', 'productColor', 'productSize'])
 export class Product extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
@@ -15,18 +24,22 @@ export class Product extends BaseEntity {
 	amount!: number;
 
 	@Type(() => ProductArticle)
-	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.products)
+	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.products, {
+		nullable: false
+	})
 	productArticle?: ProductArticle;
 
 	@Type(() => ProductSize)
 	@ManyToOne(() => ProductSize, (productSize) => productSize.products, {
-		eager: true
+		eager: true,
+		nullable: false
 	})
 	productSize?: ProductSize;
 
 	@Type(() => ProductColor)
 	@ManyToOne(() => ProductColor, (productColor) => productColor.products, {
-		eager: true
+		eager: true,
+		nullable: false
 	})
 	productColor?: ProductColor;
 

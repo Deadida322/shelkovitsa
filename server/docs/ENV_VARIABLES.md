@@ -16,15 +16,12 @@
 ### JWT
 | Переменная | Описание | Пример |
 |-----------|----------|--------|
-| `JWT_PUBLIC_KEY` | Секретный ключ для публичных токенов | `your_public_jwt_secret_key_here` |
-| `JWT_PUBLIC_EXP` | Время жизни публичного токена | `7d` |
-| `JWT_PRIVATE_KEY` | Секретный ключ для приватных токенов | `your_private_jwt_secret_key_here` |
-| `JWT_PRIVATE_EXP` | Время жизни приватного токена | `1d` |
+| `JWT_SECRET` | Секретный ключ для публичных токенов | `your_public_jwt_secret_key_here` |
+| `JWT_EXPIRES_IN` | Время жизни публичного токена | `7d` |
 
 ### Безопасность
 | Переменная | Описание | Пример |
 |-----------|----------|--------|
-| `PSD_KEY` | Ключ для шифрования паролей | `your_password_encryption_key_here` |
 
 ### Файлы
 | Переменная | Описание | Пример |
@@ -57,7 +54,6 @@
 ### Дополнительные
 | Переменная | Описание | Пример |
 |-----------|----------|--------|
-| `OWNER_ID` | ID владельца системы | `1` |
 
 ## 📝 Пример .env файла
 
@@ -76,14 +72,10 @@ DB_PASSWORD=your_password
 DB_NAME=shelkovitsa
 
 # JWT
-JWT_PUBLIC_KEY=your_public_jwt_secret_key_here
-JWT_PUBLIC_EXP=7d
-JWT_PRIVATE_KEY=your_private_jwt_secret_key_here
-JWT_PRIVATE_EXP=1d
+JWT_SECRET=your_public_jwt_secret_key_here
+JWT_EXPIRES_IN=7d
 
 # Безопасность
-PSD_KEY=your_password_encryption_key_here
-OWNER_ID=1
 
 # CORS
 CORS=http://localhost:3000
@@ -102,7 +94,6 @@ CHAT_TG_ID=your_telegram_chat_id
 
 ⚠️ **ВАЖНО:**
 - Никогда не коммитьте файл `.env` в репозиторий
-- Используйте сильные случайные ключи для `JWT_PUBLIC_KEY`, `JWT_PRIVATE_KEY` и `PSD_KEY`
 - В продакшене используйте `NODE_ENV=production`
 - Ограничьте `CORS` только необходимыми доменами
 

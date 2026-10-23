@@ -83,13 +83,10 @@ DB_PASSWORD=your_secure_password
 DB_NAME=shelkovitsa
 
 # JWT (используйте сильные ключи!)
-JWT_PUBLIC_KEY=<generate_strong_key>
-JWT_PUBLIC_EXP=7d
-JWT_PRIVATE_KEY=<generate_strong_key>
-JWT_PRIVATE_EXP=1d
+JWT_SECRET=<generate_strong_key>
+JWT_EXPIRES_IN=7d
 
 # Безопасность
-PSD_KEY=<generate_strong_key>
 
 # CORS (укажите ваш домен)
 CORS=https://shelkovitsa.ru,https://www.shelkovitsa.ru

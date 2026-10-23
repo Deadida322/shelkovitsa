@@ -297,7 +297,7 @@ export class ProductArticleService {
 		await this.productFileRepository.save({
 			name,
 			isLogo,
-			product: productArticle
+			productArticle
 		});
 	}
 
@@ -337,7 +337,7 @@ export class ProductArticleService {
 
 		const productFiles = await this.productFileRepository.find({
 			where: {
-				product: {
+				productArticle: {
 					id: productArticle.id
 				}
 			}

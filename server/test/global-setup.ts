@@ -1,6 +1,6 @@
 import { Client } from 'pg';
 
-// Один раз перед всеми тестами: создать тестовую БД (если нет) и накатить миграции
+// Один раз перед всеми тестами: пересоздать тестовую БД и накатить миграции с нуля
 export default async function globalSetup() {
 	require('./setup-env');
 
@@ -12,13 +12,8 @@ export default async function globalSetup() {
 		database: 'postgres'
 	});
 	await admin.connect();
-	const { rowCount } = await admin.query(
-		'SELECT 1 FROM pg_database WHERE datname = $1',
-		[process.env.DB_NAME]
-	);
-	if (!rowCount) {
-		await admin.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
-	}
+	await admin.query(`DROP DATABASE IF EXISTS "${process.env.DB_NAME}" WITH (FORCE)`);
+	await admin.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
 	await admin.end();
 
 	const { default: dataSource } = await import('../src/db/datasource');

@@ -1,8 +1,11 @@
 import { INestApplication } from '@nestjs/common';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import * as request from 'supertest';
-import { HmacSHA256 } from 'crypto-js';
 import { DataSource } from 'typeorm';
-import { ADMIN, CUSTOMER, createTestApp, registerAgent, resetDb } from './utils';
+import { CUSTOMER, createTestApp, registerAgent, resetDb, registerAdmin } from './utils';
+
+const execFileAsync = promisify(execFile);
 
 describe('Auth (e2e)', () => {
 	let app: INestApplication;
@@ -56,7 +59,7 @@ describe('Auth (e2e)', () => {
 	});
 
 	it('логин с верным и неверным паролем', async () => {
-		await registerAgent(app, ADMIN);
+		await registerAdmin(app);
 		await registerAgent(app, CUSTOMER);
 
 		await request(app.getHttpServer())
@@ -79,47 +82,46 @@ describe('Auth (e2e)', () => {
 		expect(password).toMatch(/^\$2[aby]\$/);
 	});
 
-	it('пользователь со старым HMAC-хешем входит, и хеш обновляется до bcrypt', async () => {
-		const legacyHash = HmacSHA256(CUSTOMER.password, process.env.PSD_KEY).toString();
-		await app
-			.get(DataSource)
-			.query(`INSERT INTO "user" (fio, mail, password) VALUES ($1, $2, $3)`, [
-				CUSTOMER.fio,
-				CUSTOMER.mail,
-				legacyHash
-			]);
+	it('права админа даёт роль, а не порядок регистрации', async () => {
+		const customer = await registerAgent(app, CUSTOMER);
+		const admin = await registerAdmin(app);
 
-		await request(app.getHttpServer())
-			.post('/api/auth/login')
-			.send({ mail: CUSTOMER.mail, password: 'wrong' })
-			.expect(401);
-		await request(app.getHttpServer())
-			.post('/api/auth/login')
-			.send({ mail: CUSTOMER.mail, password: CUSTOMER.password })
-			.expect(201);
-
-		const [{ password }] = await app
-			.get(DataSource)
-			.query(`SELECT password FROM "user" WHERE mail = $1`, [CUSTOMER.mail]);
-		expect(password).toMatch(/^\$2[aby]\$/);
-
-		// повторный вход уже по bcrypt
-		await request(app.getHttpServer())
-			.post('/api/auth/login')
-			.send({ mail: CUSTOMER.mail, password: CUSTOMER.password })
-			.expect(201);
+		expect((await customer.get('/api/auth/me').expect(200)).body.isAdmin).toBe(false);
+		expect((await admin.get('/api/auth/me').expect(200)).body.isAdmin).toBe(true);
 	});
 
-	it('первый пользователь (OWNER_ID) — админ, остальные нет', async () => {
-		const admin = await registerAgent(app, ADMIN);
-		const customer = await registerAgent(app, CUSTOMER);
+	it('CLI admin:create создаёт админа и повышает существующего пользователя', async () => {
+		const runCli = (...args: string[]) =>
+			execFileAsync(
+				process.execPath,
+				[
+					'-r',
+					'ts-node/register',
+					'-r',
+					'tsconfig-paths/register',
+					'src/cli/create-admin.ts',
+					...args
+				],
+				{ env: { ...process.env, TS_NODE_TRANSPILE_ONLY: 'true' } }
+			);
 
-		expect((await admin.get('/api/auth/me').expect(200)).body.isAdmin).toBe(true);
+		await runCli('boss@test.ru', 'boss-password');
+		const boss = await request(app.getHttpServer())
+			.post('/api/auth/login')
+			.send({ mail: 'boss@test.ru', password: 'boss-password' })
+			.expect(201);
+		expect(boss.body.isAdmin).toBe(true);
+
+		const customer = await registerAgent(app, CUSTOMER);
 		expect((await customer.get('/api/auth/me').expect(200)).body.isAdmin).toBe(false);
+		await runCli(CUSTOMER.mail, 'new-password-123');
+		expect((await customer.get('/api/auth/me').expect(200)).body.isAdmin).toBe(true);
+
+		await expect(runCli('short@test.ru', '123')).rejects.toThrow();
 	});
 
 	it('защищённые маршруты: 401 без куки, 403 для не-админа', async () => {
-		await registerAgent(app, ADMIN);
+		await registerAdmin(app);
 		const customer = await registerAgent(app, CUSTOMER);
 		const listBody = { page: 0, itemsPerPage: 10 };
 
@@ -139,7 +141,7 @@ describe('Auth (e2e)', () => {
 	});
 
 	it('удалённый пользователь теряет доступ по старому токену', async () => {
-		await registerAgent(app, ADMIN);
+		await registerAdmin(app);
 		const customer = await registerAgent(app, CUSTOMER);
 		const dataSource = app.get(DataSource);
 		await dataSource.query(`UPDATE "user" SET is_deleted = true WHERE mail = $1`, [

@@ -9,7 +9,8 @@ export class ProductSubcategory extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
-	@Column()
+	// уникально глобально: импорт ищет подкатегорию по имени
+	@Column({ unique: true })
 	name!: string;
 
 	@Type(() => ProductArticle)
@@ -24,7 +25,8 @@ export class ProductSubcategory extends BaseEntity {
 		() => ProductCategory,
 		(productCategory) => productCategory.productSubcategories,
 		{
-			eager: true
+			eager: true,
+			nullable: false
 		}
 	)
 	productCategory: ProductCategory;

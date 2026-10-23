@@ -41,8 +41,7 @@ export const CUSTOMER = {
 	password: 'user-pass'
 };
 
-// Регистрирует пользователя и возвращает agent с сохранённой кукой авторизации.
-// Первый зарегистрированный пользователь получает id = OWNER_ID = 1, т.е. становится админом.
+// Регистрирует пользователя и возвращает agent с сохранённой кукой авторизации
 export async function registerAgent(
 	app: INestApplication,
 	user: { mail: string; fio: string; password: string }
@@ -52,6 +51,15 @@ export async function registerAgent(
 		.post('/api/auth/register')
 		.send({ ...user, rePassword: user.password })
 		.expect(201);
+	return agent;
+}
+
+// Админ: обычная регистрация + роль admin (как делает npm run admin:create)
+export async function registerAdmin(app: INestApplication) {
+	const agent = await registerAgent(app, ADMIN);
+	await app
+		.get(DataSource)
+		.query(`UPDATE "user" SET role = 'admin' WHERE mail = $1`, [ADMIN.mail]);
 	return agent;
 }
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/db/entities/User';
-import { hashPassword, verifyPassword } from 'src/helpers/authHelper';
+import { verifyPassword } from 'src/helpers/authHelper';
 import { baseWhere } from 'src/common/utils';
 import { Repository } from 'typeorm';
 
@@ -11,22 +11,14 @@ export class UserService {
 		@InjectRepository(User)
 		private readonly usersRepository: Repository<User>
 	) {}
+
 	async findOneByMailAndPass(
 		mail: string,
 		password: string
 	): Promise<User | undefined> {
 		const user = await this.usersRepository.findOne({ where: { mail } });
-		if (!user) {
+		if (!user || !(await verifyPassword(password, user.password))) {
 			return undefined;
-		}
-
-		const { valid, needsRehash } = await verifyPassword(password, user.password);
-		if (!valid) {
-			return undefined;
-		}
-		if (needsRehash) {
-			user.password = await hashPassword(password);
-			await this.usersRepository.update(user.id, { password: user.password });
 		}
 		return user;
 	}
@@ -41,20 +33,13 @@ export class UserService {
 		});
 	}
 
-	async updateBasket(basket: string, userId: number) {
-		const result = await this.usersRepository.save({
-			id: userId,
-			basket
-		});
-		return JSON.parse(result.basket);
+	async updateBasket(basket: unknown, userId: number) {
+		await this.usersRepository.update(userId, { basket });
+		return basket;
 	}
 
 	async getBasket(userId: number) {
-		const result = await this.usersRepository.findOne({
-			where: {
-				id: userId
-			}
-		});
-		return JSON.parse(result.basket);
+		const user = await this.usersRepository.findOne({ where: { id: userId } });
+		return user?.basket ?? null;
 	}
 }

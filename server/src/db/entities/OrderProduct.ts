@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Index } from 'typeorm';
+import { moneyColumn } from './transformers';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { Product } from './Product';
@@ -9,9 +10,7 @@ export class OrderProduct extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
-	@Column({
-		type: 'decimal'
-	})
+	@Column(moneyColumn)
 	price!: number;
 
 	@Column()
@@ -24,6 +23,7 @@ export class OrderProduct extends BaseEntity {
 	})
 	product!: Product;
 
+	@Index()
 	@Type(() => Order)
 	@ManyToOne(() => Order, (order) => order.orderProducts, {
 		nullable: false

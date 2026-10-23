@@ -84,19 +84,16 @@ DB_NAME=shelkovitsa
 ### JWT Аутентификация
 ```env
 # Публичный ключ (для пользователей)
-JWT_PUBLIC_KEY=your_public_jwt_secret_key_here
-JWT_PUBLIC_EXP=7d
-
-# Приватный ключ (для администраторов)
-JWT_PRIVATE_KEY=your_private_jwt_secret_key_here
-JWT_PRIVATE_EXP=1d
+JWT_SECRET=your_public_jwt_secret_key_here
+JWT_EXPIRES_IN=7d
 ```
 
-### Безопасность
-```env
-# Ключ для шифрования паролей
-PSD_KEY=your_password_encryption_key_here
-OWNER_ID=1
+### Администратор
+Права администратора задаются ролью пользователя (`user.role = admin`). Создать
+администратора или выдать права существующему пользователю:
+```bash
+npm run build
+npm run admin:create -- admin@example.com 'надёжный-пароль' 'Иван Иванов'
 ```
 
 ### CORS
@@ -238,15 +235,13 @@ Telegram в тестах не вызывается (бот подменяетс�
 
 ## 🔐 Аутентификация
 
-API использует два типа токенов:
+Токен (JWT, подписан `JWT_SECRET`) выдаётся при входе и регистрации и хранится в
+httpOnly-куке `access_token`; выход — `POST /api/auth/logout`.
 
-1. **Публичные токены** (`JWT_PUBLIC_KEY`) - для обычных пользователей
-   - Хранятся в cookies как `access_token`
-   - Используются через декоратор `@Auth()`
+- `@Auth()` — маршрут только для вошедших пользователей
+- `@AdminAuth()` — только для пользователей с ролью `admin`
 
-2. **Приватные токены** (`JWT_PRIVATE_KEY`) - для администраторов
-   - Передаются через Bearer token в заголовке
-   - Используются через декоратор `@AdminAuth()`
+Пароли хранятся как bcrypt-хеши. Вход и регистрация ограничены 10 запросами в минуту с IP.
 
 ### Примеры использования
 

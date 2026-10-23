@@ -21,10 +21,7 @@ export class UserController {
 	@ApiResponse({ status: 200, description: 'Корзина обновлена' })
 	@ApiBody({ schema: { type: 'object' } })
 	async updateBasket(@Body() payload: any, @Req() request: Request) {
-		const basket = await this.userService.updateBasket(
-			JSON.stringify(payload),
-			request.user.id
-		);
+		const basket = await this.userService.updateBasket(payload, request.user.id);
 
 		return basket;
 	}

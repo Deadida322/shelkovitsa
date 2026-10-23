@@ -4,8 +4,10 @@ import {
 	PrimaryGeneratedColumn,
 	OneToMany,
 	ManyToOne,
-	OneToOne
+	OneToOne,
+	Index
 } from 'typeorm';
+import { moneyColumn } from './transformers';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { OrderProduct } from './OrderProduct';
@@ -46,14 +48,13 @@ export class Order extends BaseEntity {
 	@Column()
 	address!: string;
 
-	@Column({
-		type: 'decimal'
-	})
+	@Column(moneyColumn)
 	price!: number;
 
 	@Type(() => DeliveryType)
 	@ManyToOne(() => DeliveryType, (deliveryType) => deliveryType.orders, {
-		eager: true
+		eager: true,
+		nullable: false
 	})
 	deliveryType!: DeliveryType;
 
@@ -63,6 +64,7 @@ export class Order extends BaseEntity {
 	})
 	orderProducts?: OrderProduct[];
 
+	@Index()
 	@Type(() => User)
 	@ManyToOne(() => User, (user) => user.orders, {
 		eager: true,

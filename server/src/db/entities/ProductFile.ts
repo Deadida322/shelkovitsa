@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Index } from 'typeorm';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { ProductArticle } from './ProductArticle';
@@ -22,6 +22,10 @@ export class ProductFile extends BaseEntity {
 	isLogo!: boolean;
 
 	@Type(() => ProductArticle)
-	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.productFiles)
-	product: ProductArticle;
+	@Index()
+	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.productFiles, {
+		onDelete: 'CASCADE',
+		nullable: false
+	})
+	productArticle: ProductArticle;
 }

@@ -45,20 +45,11 @@ export class EnvironmentVariables {
 
 	@IsString()
 	@IsNotEmpty()
-	JWT_PUBLIC_KEY: string;
+	JWT_SECRET: string;
 
 	@IsString()
 	@IsNotEmpty()
-	JWT_PUBLIC_EXP: string;
-
-	@IsString()
-	@IsNotEmpty()
-	PSD_KEY: string;
-
-	@Transform(toInt)
-	@IsInt()
-	@Min(1)
-	OWNER_ID: number;
+	JWT_EXPIRES_IN: string;
 
 	@IsString()
 	@IsNotEmpty()

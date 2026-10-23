@@ -1,14 +1,10 @@
 import { Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 export abstract class BaseEntity {
-	@CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP(6)' })
+	@CreateDateColumn({ type: 'timestamptz' })
 	created_at!: Date;
 
-	@UpdateDateColumn({
-		type: 'timestamp',
-		default: () => 'CURRENT_TIMESTAMP(6)',
-		onUpdate: 'CURRENT_TIMESTAMP(6)'
-	})
+	@UpdateDateColumn({ type: 'timestamptz' })
 	updated_at!: Date;
 
 	@Column({

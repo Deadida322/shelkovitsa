@@ -289,7 +289,7 @@ export class ProductImportService {
 		}
 
 		const existingFiles = await manager.find(ProductFile, {
-			where: { product: { id: article.id }, is_deleted: false }
+			where: { productArticle: { id: article.id }, is_deleted: false }
 		});
 		const knownUrls = new Set(existingFiles.map((file) => file.url));
 		// Первая успешно загруженная картинка становится логотипом, если его ещё нет
@@ -305,7 +305,7 @@ export class ProductImportService {
 					name,
 					url,
 					isLogo: needsLogo,
-					product: article
+					productArticle: article
 				});
 				knownUrls.add(url);
 				needsLogo = false;
@@ -366,7 +366,7 @@ export class ProductImportService {
 					.createQueryBuilder()
 					.delete()
 					.from(ProductFile)
-					.where('productId IN (:...ids)', { ids: withoutProducts })
+					.where('"productArticleId" IN (:...ids)', { ids: withoutProducts })
 					.execute();
 				await manager.delete(ProductArticle, withoutProducts);
 			}

@@ -5,13 +5,13 @@ import { Product } from 'src/db/entities/Product';
 import { TelegramOrderMessage } from 'src/db/entities/TelegramOrderMessage';
 import { DeliveryTypeService } from 'src/delivery-type/delivery-type.service';
 import {
-	ADMIN,
 	CUSTOMER,
 	createTestApp,
 	orderPayload,
 	registerAgent,
 	resetDb,
-	seedCatalog
+	seedCatalog,
+	registerAdmin
 } from './utils';
 
 describe('Order (e2e)', () => {
@@ -144,7 +144,7 @@ describe('Order (e2e)', () => {
 	});
 
 	it('заказ залогиненного пользователя виден в его списке', async () => {
-		await registerAgent(app, ADMIN);
+		await registerAdmin(app);
 		const customer = await registerAgent(app, CUSTOMER);
 		const catalog = await seedCatalog(app);
 
@@ -161,7 +161,7 @@ describe('Order (e2e)', () => {
 	});
 
 	it('в админском списке позиции хранят цену на момент заказа', async () => {
-		const admin = await registerAgent(app, ADMIN);
+		const admin = await registerAdmin(app);
 		const catalog = await seedCatalog(app, { price: 1000 });
 		await request(app.getHttpServer())
 			.post('/api/order/create')
@@ -183,7 +183,7 @@ describe('Order (e2e)', () => {
 	});
 
 	it('админ меняет статус заказа', async () => {
-		const admin = await registerAgent(app, ADMIN);
+		const admin = await registerAdmin(app);
 		const catalog = await seedCatalog(app);
 		const order = await request(app.getHttpServer())
 			.post('/api/order/create')
@@ -213,7 +213,7 @@ describe('Order (e2e)', () => {
 	});
 
 	it('смена статуса несуществующего заказа — 404', async () => {
-		const admin = await registerAgent(app, ADMIN);
+		const admin = await registerAdmin(app);
 		await admin
 			.patch('/api/order/admin/changeStatus')
 			.send({ orderId: 9999, status: 'in_work' })

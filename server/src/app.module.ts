@@ -47,8 +47,8 @@ type AppConfigService = ConfigService<EnvironmentVariables, true>;
 			global: true,
 			inject: [ConfigService],
 			useFactory: (config: AppConfigService) => ({
-				secret: config.get('JWT_PUBLIC_KEY'),
-				signOptions: { expiresIn: config.get('JWT_PUBLIC_EXP') }
+				secret: config.get('JWT_SECRET'),
+				signOptions: { expiresIn: config.get('JWT_EXPIRES_IN') }
 			})
 		}),
 		ThrottlerModule.forRootAsync({

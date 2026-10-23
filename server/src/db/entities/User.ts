@@ -3,6 +3,11 @@ import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { Order } from './Order';
 
+export enum UserRole {
+	CUSTOMER = 'customer',
+	ADMIN = 'admin'
+}
+
 @Entity()
 export class User extends BaseEntity {
 	@PrimaryGeneratedColumn()
@@ -18,10 +23,17 @@ export class User extends BaseEntity {
 	password!: string;
 
 	@Column({
-		type: 'json',
+		type: 'enum',
+		enum: UserRole,
+		default: UserRole.CUSTOMER
+	})
+	role!: UserRole;
+
+	@Column({
+		type: 'jsonb',
 		nullable: true
 	})
-	basket!: string;
+	basket?: unknown;
 
 	@Type(() => Order)
 	@OneToMany(() => Order, (order) => order.user)

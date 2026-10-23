@@ -73,7 +73,7 @@ export class AuthGuard implements CanActivate {
 		}
 
 		const user = convertToClass(UserInRequest, existUser);
-		user.isAdmin = this.authService.isUserAdmin(user);
+		user.isAdmin = this.authService.isUserAdmin(existUser);
 		return user;
 	}
 

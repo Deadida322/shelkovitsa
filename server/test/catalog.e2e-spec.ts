@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { DataSource } from 'typeorm';
-import { ADMIN, createTestApp, registerAgent, resetDb, seedCatalog } from './utils';
+import { createTestApp, resetDb, seedCatalog, registerAdmin } from './utils';
 
 describe('Catalog (e2e)', () => {
 	let app: INestApplication;
@@ -42,7 +42,7 @@ describe('Catalog (e2e)', () => {
 	});
 
 	it('админский список видит и скрытые артикулы', async () => {
-		const admin = await registerAgent(app, ADMIN);
+		const admin = await registerAdmin(app);
 		const catalog = await seedCatalog(app);
 		await app
 			.get(DataSource)

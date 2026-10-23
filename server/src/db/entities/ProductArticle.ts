@@ -1,4 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
+import {
+	Entity,
+	Column,
+	PrimaryGeneratedColumn,
+	OneToMany,
+	ManyToOne,
+	Index
+} from 'typeorm';
+import { moneyColumn } from './transformers';
 import { BaseEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { ProductSubcategory } from './ProductSubcategory';
@@ -28,9 +36,7 @@ export class ProductArticle extends BaseEntity {
 	@Column({ unique: true })
 	article!: string;
 
-	@Column({
-		type: 'decimal'
-	})
+	@Column(moneyColumn)
 	price!: number;
 
 	@Column({
@@ -42,18 +48,20 @@ export class ProductArticle extends BaseEntity {
 	@OneToMany(() => Product, (product) => product.productArticle)
 	products?: Product[];
 
+	@Index()
 	@Type(() => ProductSubcategory)
 	@ManyToOne(
 		() => ProductSubcategory,
 		(productSubcategory) => productSubcategory.productArticles,
 		{
-			eager: true
+			eager: true,
+			nullable: false
 		}
 	)
 	productSubcategory?: ProductSubcategory;
 
 	@Type(() => ProductFile)
-	@OneToMany(() => ProductFile, (productFile) => productFile.product, {
+	@OneToMany(() => ProductFile, (productFile) => productFile.productArticle, {
 		eager: true
 	})
 	productFiles?: ProductFile[];

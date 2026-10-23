@@ -1,7 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { User } from 'src/db/entities/User';
+import { User, UserRole } from 'src/db/entities/User';
 import { UserInRequest } from 'src/types/express/custom';
 import { UserService } from 'src/user/user.service';
 import { LoginDto } from './dto/LoginDto';
@@ -12,8 +11,7 @@ import { convertToJson } from 'src/helpers/convertHelper';
 export class AuthService {
 	constructor(
 		private readonly userService: UserService,
-		private readonly jwtService: JwtService,
-		private readonly configService: ConfigService
+		private readonly jwtService: JwtService
 	) {}
 
 	async signIn(loginDto: LoginDto) {
@@ -49,7 +47,7 @@ export class AuthService {
 		};
 	}
 
-	isUserAdmin(user?: Pick<UserInRequest, 'id'>): boolean {
-		return !!user && user.id === this.configService.get<number>('OWNER_ID');
+	isUserAdmin(user?: Pick<User, 'role'>): boolean {
+		return user?.role === UserRole.ADMIN;
 	}
 }
