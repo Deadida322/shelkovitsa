@@ -140,13 +140,13 @@ const headers = [
                             <tbody>
                                 <tr
                                     v-for="product in item.orderProducts"
-                                    :key="product.product.name"
+                                    :key="product.id"
                                 >
                                     <td>{{ product.product.productArticle.name }}</td>
                                     <td>{{ product.amount }}</td>
                                     <td>{{ product.product.productSize.name }}</td>
                                     <td>{{ product.product.productColor.name }}</td>
-                                    <td>{{ product.product.productArticle.price * product.amount }}</td>
+                                    <td>{{ (product.price ?? product.product.productArticle.price) * product.amount }}</td>
                                 </tr>
                             </tbody>
                         </v-table>

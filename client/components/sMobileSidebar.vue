@@ -3,9 +3,15 @@
 
     const emit = defineEmits(['update:open']);
     const bp = useBreakpoints();
+    const authStore = useAuthStore();
     const attrs = useAttrs();
     function onItemClick() {
         emit('update:open', false);
+    }
+
+    async function onLogout() {
+        emit('update:open', false);
+        await authStore.logout();
     }
 </script>
 
@@ -53,18 +59,25 @@
         </vs-sidebar-item>
         <template #footer>
             <div class="footer d-flex flex-column">
-                <div v-if="bp.isSmallMobile" class="d-flex">
-                    <vs-button type="flat" @click="emit('update:open', false)">
-                        <nuxt-link to="/signin">
-                            Войти
-                        </nuxt-link>
-                    </vs-button>
-                    <vs-button>
-                        <nuxt-link to="/signup" @click="emit('update:open', false)">
-                            Регистрация
-                        </nuxt-link>
-                    </vs-button>
-                </div>
+                <client-only>
+                    <div v-if="authStore.user" class="d-flex">
+                        <vs-button type="flat" @click="onLogout">
+                            Выйти
+                        </vs-button>
+                    </div>
+                    <div v-else-if="bp.isSmallMobile" class="d-flex">
+                        <vs-button type="flat" @click="emit('update:open', false)">
+                            <nuxt-link to="/signin">
+                                Войти
+                            </nuxt-link>
+                        </vs-button>
+                        <vs-button>
+                            <nuxt-link to="/signup" @click="emit('update:open', false)">
+                                Регистрация
+                            </nuxt-link>
+                        </vs-button>
+                    </div>
+                </client-only>
                 <div class="phone mt-2 text-center">
                     <v-icon size="x-small">
                         mdi-phone

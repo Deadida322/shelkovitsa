@@ -48,6 +48,18 @@
         <template #right>
             <client-only>
                 <template v-if="authStore.user">
+                    <NuxtLink
+                        v-if="authStore.user.isAdmin"
+                        to="/admin"
+                        class="mr-2"
+                    >
+                        <v-btn
+                            variant="tonal"
+                            size="small"
+                            icon="mdi-cog-outline"
+                            title="Админка"
+                        />
+                    </NuxtLink>
                     <NuxtLink to="/deliver">
                         <v-btn
                             variant="tonal"
@@ -55,6 +67,14 @@
                             icon="mdi-cart-outline"
                         />
                     </NuxtLink>
+                    <v-btn
+                        class="ml-2 d-none d-sm-flex"
+                        variant="tonal"
+                        size="small"
+                        icon="mdi-logout"
+                        title="Выйти"
+                        @click="authStore.logout()"
+                    />
                 </template>
                 <template v-else-if="!authStore.loading">
                     <NuxtLink to="/signin">

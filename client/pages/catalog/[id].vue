@@ -45,7 +45,7 @@
             price: shopItem.value.price,
             amount: cartInfo.value.amount,
             maxAmount: shopItem.value.available,
-            logo: shopItem.value.productFiles.find(item => item.isLogo).name,
+            logo: (shopItem.value.productFiles?.find(item => item.isLogo) ?? shopItem.value.productFiles?.[0])?.name,
         };
         cartStore.updateCart(item);
         VsNotification({

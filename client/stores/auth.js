@@ -24,9 +24,10 @@ export const useAuthStore = defineStore('auth', () => {
         });
     };
 
+    // Кука user — только подсказка для UI; актуальные данные и права берём с сервера
     const getMe = async () => {
         if (user.value && user.value.fio) {
-            api('/api/auth/me').then((res) => {
+            await api('/api/auth/me').then((res) => {
                 user.value = { ...res };
             }).catch(() => {
                 user.value = null;
@@ -37,10 +38,19 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = null;
     };
 
+    // access_token — httpOnly-кука, удалить её может только сервер
+    const logout = async () => {
+        await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+        user.value = null;
+        cart.initializeCart();
+        await navigateTo('/');
+    };
+
     return {
         user: readonly(user),
         login,
         getMe,
         clearUser,
+        logout,
     };
 });

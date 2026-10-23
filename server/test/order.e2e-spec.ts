@@ -40,8 +40,9 @@ describe('Order (e2e)', () => {
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
 			.expect(201);
 
-		expect(Number(res.body.price)).toBe(3000);
+		expect(res.body.price).toBe(3000);
 		expect(res.body.status).toBe('create');
+		expect(res.body.orderProducts[0]).toMatchObject({ amount: 2, price: 1500 });
 	});
 
 	it('при заказе создаётся запись о Telegram-уведомлении', async () => {
@@ -157,6 +158,28 @@ describe('Order (e2e)', () => {
 			.send({ page: 0, itemsPerPage: 10 })
 			.expect(201);
 		expect(res.body.count).toBe(1);
+	});
+
+	it('в админском списке позиции хранят цену на момент заказа', async () => {
+		const admin = await registerAgent(app, ADMIN);
+		const catalog = await seedCatalog(app, { price: 1000 });
+		await request(app.getHttpServer())
+			.post('/api/order/create')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
+			.expect(201);
+		await app
+			.get(DataSource)
+			.query(`UPDATE product_article SET price = 5000 WHERE id = $1`, [
+				catalog.article.id
+			]);
+
+		const res = await admin
+			.post('/api/order/admin')
+			.send({ page: 0, itemsPerPage: 10 })
+			.expect(201);
+		const [order] = res.body.data;
+		expect(order.price).toBe(2000);
+		expect(order.orderProducts[0].price).toBe(1000);
 	});
 
 	it('админ меняет статус заказа', async () => {
