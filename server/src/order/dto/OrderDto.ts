@@ -40,14 +40,9 @@ export class OrderDto {
 	orderProducts?: OrderProductDto[];
 
 	@Expose()
-	@Transform((status) => convertConferenceUserStatus(status.value))
-	status: string;
+	status: OrderStatus;
 
 	@Expose()
 	@Type(() => TelegramOrderMessageDto)
 	telegramMessage?: TelegramOrderMessageDto;
-}
-
-function convertConferenceUserStatus(type: any): string {
-	return OrderStatus[+type] ?? type + '';
 }

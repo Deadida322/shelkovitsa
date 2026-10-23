@@ -64,5 +64,5 @@ export class ProductArticle extends SoftDeleteEntity {
 	@OneToMany(() => ProductFile, (productFile) => productFile.productArticle, {
 		eager: true
 	})
-	productFiles?: ProductFile[];
+	productFiles!: ProductFile[];
 }

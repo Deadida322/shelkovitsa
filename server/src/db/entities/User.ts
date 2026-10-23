@@ -33,7 +33,7 @@ export class User extends SoftDeleteEntity {
 		type: 'jsonb',
 		nullable: true
 	})
-	basket?: unknown;
+	basket?: object[] | null;
 
 	@Type(() => Order)
 	@OneToMany(() => Order, (order) => order.user)

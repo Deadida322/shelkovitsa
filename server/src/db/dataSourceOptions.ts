@@ -1,12 +1,14 @@
 import * as path from 'path';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
+// В CLI значения берутся прямо из process.env и могут отсутствовать —
+// тогда TypeORM сам сообщит об ошибке подключения
 interface DbEnv {
-	DB_HOST: string;
-	DB_PORT: number | string;
-	DB_USER: string;
-	DB_PASSWORD: string;
-	DB_NAME: string;
+	DB_HOST?: string;
+	DB_PORT?: number | string;
+	DB_USER?: string;
+	DB_PASSWORD?: string;
+	DB_NAME?: string;
 }
 
 // Общие настройки подключения: для приложения (через ConfigService) и для CLI миграций

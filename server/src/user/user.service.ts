@@ -11,18 +11,15 @@ export class UserService {
 		private readonly usersRepository: Repository<User>
 	) {}
 
-	async findOneByMailAndPass(
-		mail: string,
-		password: string
-	): Promise<User | undefined> {
+	async findOneByMailAndPass(mail: string, password: string): Promise<User | null> {
 		const user = await this.usersRepository.findOne({ where: { mail } });
 		if (!user || !(await verifyPassword(password, user.password))) {
-			return undefined;
+			return null;
 		}
 		return user;
 	}
 
-	async findActiveByMailAndId(mail: string, id: number): Promise<User | undefined> {
+	async findActiveByMailAndId(mail: string, id: number): Promise<User | null> {
 		return this.usersRepository.findOne({
 			where: {
 				mail,
@@ -31,7 +28,7 @@ export class UserService {
 		});
 	}
 
-	async updateBasket(basket: unknown, userId: number) {
+	async updateBasket(basket: object[], userId: number) {
 		await this.usersRepository.update(userId, { basket });
 		return basket;
 	}

@@ -27,21 +27,21 @@ export class Product extends SoftDeleteEntity {
 	@ManyToOne(() => ProductArticle, (productArticle) => productArticle.products, {
 		nullable: false
 	})
-	productArticle?: ProductArticle;
+	productArticle!: ProductArticle;
 
 	@Type(() => ProductSize)
 	@ManyToOne(() => ProductSize, (productSize) => productSize.products, {
 		eager: true,
 		nullable: false
 	})
-	productSize?: ProductSize;
+	productSize!: ProductSize;
 
 	@Type(() => ProductColor)
 	@ManyToOne(() => ProductColor, (productColor) => productColor.products, {
 		eager: true,
 		nullable: false
 	})
-	productColor?: ProductColor;
+	productColor!: ProductColor;
 
 	@Type(() => OrderProduct)
 	@OneToMany(() => OrderProduct, (orderProduct) => orderProduct.product)

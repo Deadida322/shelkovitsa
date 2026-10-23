@@ -130,7 +130,7 @@ export class OrderService {
 			return order.id;
 		});
 
-		const newOrder = await this.orderRepository.findOne({
+		const newOrder = await this.orderRepository.findOneOrFail({
 			where: { id: orderId },
 			relations: orderRelations,
 			withDeleted: true

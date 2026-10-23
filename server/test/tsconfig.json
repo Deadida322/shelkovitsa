@@ -1,7 +1,10 @@
 {
 	"extends": "../tsconfig.json",
 	"compilerOptions": {
-		"types": ["node", "jest"]
+		"types": ["node", "jest"],
+		// в тестах результат выборки проверяется expect-ом, null-проверки — лишний шум
+		"strictNullChecks": false,
+		"noImplicitAny": false
 	},
 	"include": ["./**/*.ts", "../src/**/*.ts"]
 }

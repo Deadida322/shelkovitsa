@@ -37,7 +37,7 @@ export class ParseProductArticleDto {
 	productSubcategory?: string;
 
 	@Expose()
-	name: string;
+	name?: string;
 
 	@Expose()
 	imageUrls: string[] = [];

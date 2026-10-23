@@ -10,7 +10,7 @@ import {
 	validateSync
 } from 'class-validator';
 
-const toInt = ({ value }) =>
+const toInt = ({ value }: { value: unknown }) =>
 	value === undefined || value === '' ? undefined : Number(value);
 
 // Переменные окружения, без которых приложение не должно стартовать

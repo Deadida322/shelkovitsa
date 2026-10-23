@@ -102,5 +102,5 @@ export class CreateOrderDto {
 		each: true
 	})
 	@Type(() => CreateOrderProductDto)
-	orderProducts?: CreateOrderProductDto[];
+	orderProducts!: CreateOrderProductDto[];
 }

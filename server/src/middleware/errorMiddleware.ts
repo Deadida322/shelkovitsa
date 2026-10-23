@@ -27,7 +27,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
 		if (isHttp) {
 			const body = exception.getResponse();
 			message =
-				(typeof body === 'object' && body?.['message']) ?? exception.message;
+				(typeof body === 'object' &&
+					(body as Record<string, unknown>)?.message) ||
+				exception.message;
 		}
 
 		if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
