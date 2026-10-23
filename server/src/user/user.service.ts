@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/db/entities/User';
 import { verifyPassword } from 'src/helpers/authHelper';
-import { baseWhere } from 'src/common/utils';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -27,8 +26,7 @@ export class UserService {
 		return this.usersRepository.findOne({
 			where: {
 				mail,
-				id,
-				...baseWhere
+				id
 			}
 		});
 	}

@@ -144,7 +144,7 @@ describe('Auth (e2e)', () => {
 		await registerAdmin(app);
 		const customer = await registerAgent(app, CUSTOMER);
 		const dataSource = app.get(DataSource);
-		await dataSource.query(`UPDATE "user" SET is_deleted = true WHERE mail = $1`, [
+		await dataSource.query(`UPDATE "user" SET deleted_at = now() WHERE mail = $1`, [
 			CUSTOMER.mail
 		]);
 

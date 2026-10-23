@@ -5,38 +5,47 @@ import {
 	NotFoundException
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as moment from 'moment';
+import {
+	DataSource,
+	EntityManager,
+	FindOptionsWhere,
+	ILike,
+	In,
+	LessThanOrEqual,
+	MoreThanOrEqual,
+	Between,
+	Repository
+} from 'typeorm';
 import { filterDuplicateObjectById } from 'src/common/utils';
+import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductColor } from 'src/db/entities/ProductColor';
+import { ProductFile } from 'src/db/entities/ProductFile';
 import { ProductSize } from 'src/db/entities/ProductSize';
-import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import {
 	convertToClass,
 	convertToJson,
 	convertToJsonMany
 } from 'src/helpers/convertHelper';
-import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
-import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
-import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
-import { Between, DataSource, ILike, In, Repository } from 'typeorm';
-import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
-import { baseProductWhere } from './product-article.types';
-import { Product } from 'src/db/entities/Product';
-import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
-import { ProductArticleDto } from './dto/ProductArticleDto';
 import {
 	getPaginateResult,
 	getPaginateWhere,
 	IPaginateResult
 } from 'src/helpers/paginateHelper';
-import { ProductArticleAdminDto } from './dto/ProductArticleAdminDto';
-import * as moment from 'moment';
-import { UploadImageDto } from './dto/UploadImageDto';
 import { moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
-import { ProductFile } from 'src/db/entities/ProductFile';
-import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
+import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
+import { ProductSizeDto } from 'src/product-size/dto/ProductSizeDto';
 import { CommonImageDto } from './dto/CommonImageDto';
+import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
+import { FullProductArticleDto } from './dto/FullProductArticleDto';
+import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
+import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
+import { ProductArticleAdminDto } from './dto/ProductArticleAdminDto';
+import { ProductArticleDto } from './dto/ProductArticleDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
+import { UploadImageDto } from './dto/UploadImageDto';
+import { baseProductWhere } from './product-article.types';
 
 @Injectable()
 export class ProductArticleService {
@@ -45,79 +54,47 @@ export class ProductArticleService {
 	constructor(
 		private readonly dataSource: DataSource,
 
-		@InjectRepository(Product)
-		private readonly productRepository: Repository<Product>,
-
 		@InjectRepository(ProductArticle)
 		private readonly productArticleRepository: Repository<ProductArticle>,
-
-		@InjectRepository(ProductColor)
-		private readonly productColorRepository: Repository<ProductColor>,
-
-		@InjectRepository(ProductSize)
-		private readonly productSizeRepository: Repository<ProductSize>,
-
-		@InjectRepository(ProductSubcategory)
-		private readonly productSubcategoryRepository: Repository<ProductSubcategory>,
 
 		@InjectRepository(ProductFile)
 		private readonly productFileRepository: Repository<ProductFile>
 	) {}
 
+	/**
+	 * Карточка артикула. Цвета — только те, что есть в выбранном размере (если он передан),
+	 * размеры — все активные варианты, чтобы размер можно было сменить.
+	 * Админ видит и неопубликованные, и архивные артикулы.
+	 */
 	async getProductArticle(
 		productArticleId: number,
 		isAdmin: boolean,
 		payload: GetDetailProductArticleDto
 	) {
-		let wherePayload = {
-			id: productArticleId
-		};
-		if (!isAdmin) {
-			wherePayload = { ...wherePayload, ...baseProductWhere };
-		}
-		const p = await this.productArticleRepository.findOne({
-			where: wherePayload,
-			relations: {
-				products: true,
-				productFiles: true
-			}
+		const article = await this.productArticleRepository.findOne({
+			where: isAdmin
+				? { id: productArticleId }
+				: { id: productArticleId, ...baseProductWhere },
+			withDeleted: isAdmin,
+			relations: { productFiles: true }
 		});
-
-		if (!p) {
+		if (!article) {
 			throw new NotFoundException('Артикул продукта не найден');
 		}
-		let filterProducts = p.products.filter((el) => !el.is_deleted);
 
-		let currentProductSize = undefined;
-		if (payload.productSizeId) {
-			filterProducts = p.products.filter(
-				(el) => el.productSize.id == payload.productSizeId
-			);
-			currentProductSize = payload.productSizeId;
-		}
+		const products = await this.activeProducts(this.dataSource.manager, article.id);
+		const productsOfSize = payload.productSizeId
+			? products.filter((p) => p.productSize.id === payload.productSizeId)
+			: products;
 
-		const res = convertToClass(
-			isAdmin ? FullProductArticleAdminDto : FullProductArticleDto,
-			p
-		);
-
-		const mappedColors = filterProducts.map((el) =>
-			convertToClass(ProductColorDto, el.productColor)
-		);
-		res.productColors = filterDuplicateObjectById<ProductColorDto>(mappedColors);
-
-		const mappedSizes = filterProducts.map((el) =>
-			convertToClass(ProductSizeDto, el.productSize)
-		);
-
-		res.productSizes = filterDuplicateObjectById<ProductSizeDto>(mappedSizes);
+		const dtoClass = isAdmin ? FullProductArticleAdminDto : FullProductArticleDto;
+		const res = convertToClass(dtoClass, article);
+		res.productColors = uniqueColors(productsOfSize);
+		res.productSizes = uniqueSizes(products);
 
 		return {
-			...convertToJson(
-				isAdmin ? FullProductArticleAdminDto : FullProductArticleDto,
-				res
-			),
-			currentProductSize
+			...convertToJson(dtoClass, res),
+			currentProductSize: payload.productSizeId
 		};
 	}
 
@@ -125,76 +102,49 @@ export class ProductArticleService {
 		payload: GetProductArticleListDto,
 		isAdmin: boolean
 	): Promise<IPaginateResult<ProductArticleDto>> {
-		let wherePayload = {};
+		const where: FindOptionsWhere<ProductArticle> = isAdmin
+			? {}
+			: { ...baseProductWhere };
 
-		if (payload.subcategoryId) {
-			wherePayload = {
-				...wherePayload,
-				productSubcategory: {
-					id: payload.subcategoryId
-				}
+		if (payload.subcategoryId || payload.categoryId) {
+			where.productSubcategory = {
+				...(payload.subcategoryId ? { id: payload.subcategoryId } : {}),
+				...(payload.categoryId
+					? { productCategory: { id: payload.categoryId } }
+					: {})
 			};
 		}
 
-		if (payload.categoryId) {
-			wherePayload = {
-				...wherePayload,
-				productSubcategory: {
-					productCategory: {
-						id: payload.categoryId
-					}
-				}
-			};
-		}
-		if (payload.minPrice || payload.maxPrice) {
-			wherePayload = {
-				...wherePayload,
-				price: Between(
-					payload.minPrice ?? 0,
-					payload.maxPrice ?? Number.MAX_VALUE
-				)
-			};
+		if (payload.minPrice && payload.maxPrice) {
+			where.price = Between(payload.minPrice, payload.maxPrice);
+		} else if (payload.minPrice) {
+			where.price = MoreThanOrEqual(payload.minPrice);
+		} else if (payload.maxPrice) {
+			where.price = LessThanOrEqual(payload.maxPrice);
 		}
 
-		if (!isAdmin) {
-			wherePayload = { ...wherePayload, ...baseProductWhere };
-		}
-
-		if (payload.query) {
-			wherePayload = [
-				{
-					...wherePayload,
-					article: ILike(`%${payload.query}%`)
-				},
-				{
-					...wherePayload,
-					name: ILike(`%${payload.query}%`)
-				},
-				{
-					...wherePayload,
-					description: ILike(`%${payload.query}%`)
-				}
-			];
-		}
+		const whereWithSearch = payload.query
+			? (['article', 'name', 'description'] as const).map((field) => ({
+					...where,
+					[field]: ILike(`%${payload.query}%`)
+				}))
+			: where;
 
 		const [result, total] = await this.productArticleRepository.findAndCount({
 			...getPaginateWhere(payload),
-			where: wherePayload,
-			relations: {
-				productFiles: true
-			}
+			where: whereWithSearch,
+			// в админке нужны и архивные артикулы
+			withDeleted: isAdmin,
+			relations: { productFiles: true },
+			order: { id: 'ASC' }
 		});
 
 		return getPaginateResult(
 			isAdmin ? ProductArticleAdminDto : ProductArticleDto,
-			result.map((el) => {
-				return {
-					...el,
-					productFiles: el.productFiles.filter(
-						(file) => file.isLogo && !file.is_deleted
-					)
-				};
-			}),
+			result.map((el) => ({
+				...el,
+				productFiles: el.productFiles.filter((file) => file.isLogo)
+			})),
 			total,
 			{
 				itemsPerPage: payload.itemsPerPage,
@@ -203,339 +153,260 @@ export class ProductArticleService {
 		);
 	}
 
-	// TODO допилить и обсудить
+	// Популярные за месяц опубликованные артикулы; если заказов не было — любые опубликованные
 	async getPopulateList() {
 		const takeCount = 3;
-		const prevDate = moment().subtract(1, 'months').toDate();
+		const since = moment().subtract(1, 'months').toDate();
 
-		// Сначала получаем ID популярных артикулов с заказами за последний месяц
-		const popularArticleIds = await this.productArticleRepository
-			.createQueryBuilder('product_article')
-			.leftJoin('product_article.products', 'product')
-			.leftJoin('product.orderProducts', 'orderProduct')
-			.leftJoin('orderProduct.order', 'order')
-			.where('order.created_at > :createdAt', {
-				createdAt: prevDate
-			})
-			.andWhere(
-				'product_article.isVisible = :isVisible AND product_article.is_deleted = :isDeleted',
-				{
-					isVisible: true,
-					isDeleted: false
-				}
-			)
-			.groupBy('product_article.id')
-			.select('product_article.id', 'id')
-			.addSelect('count(order.id)', 'orderCount')
-			.orderBy('count(order.id)', 'DESC')
-			.limit(takeCount)
-			.execute();
+		const popular: { id: number; orderCount: string }[] =
+			await this.productArticleRepository
+				.createQueryBuilder('product_article')
+				.innerJoin('product_article.products', 'product')
+				.innerJoin('product.orderProducts', 'orderProduct')
+				.innerJoin('orderProduct.order', 'order')
+				.where('order.created_at > :since', { since })
+				.andWhere('product_article.isVisible = true')
+				.groupBy('product_article.id')
+				.select('product_article.id', 'id')
+				.addSelect('count(order.id)', 'orderCount')
+				.orderBy('count(order.id)', 'DESC')
+				.limit(takeCount)
+				.getRawMany();
 
-		let articleIds: number[];
+		const articleIds = popular.length
+			? popular.map((item) => item.id)
+			: (
+					await this.productArticleRepository.find({
+						where: baseProductWhere,
+						select: ['id'],
+						order: { id: 'ASC' },
+						take: takeCount
+					})
+				).map((item) => item.id);
 
-		if (popularArticleIds.length > 0) {
-			// Если есть популярные продукты с заказами
-			articleIds = popularArticleIds.map((item) => item.id);
-		} else {
-			// Если нет популярных продуктов, берем любые доступные
-			const fallbackArticles = await this.productArticleRepository.find({
-				where: {
-					isVisible: true,
-					is_deleted: false
-				},
-				select: ['id'],
-				take: takeCount
-			});
-			articleIds = fallbackArticles.map((item) => item.id);
-		}
-
-		if (articleIds.length === 0) {
+		if (!articleIds.length) {
 			return [];
 		}
 
-		// Получаем полные данные с файлами для выбранных артикулов
 		const articles = await this.productArticleRepository.find({
-			where: {
-				id: In(articleIds),
-				isVisible: true,
-				is_deleted: false
-			},
-			relations: {
-				productFiles: true,
-				products: true
-			}
+			where: { id: In(articleIds), ...baseProductWhere },
+			relations: { productFiles: true }
 		});
+		const rank = (id: number) => articleIds.indexOf(id);
+		articles.sort((a, b) => rank(a.id) - rank(b.id));
 
-		// Сортируем по количеству заказов (если есть данные о заказах)
-		const sortedArticles = articles.sort((a, b) => {
-			if (popularArticleIds.length > 0) {
-				const aCount =
-					popularArticleIds.find((item) => item.id === a.id)?.orderCount || 0;
-				const bCount =
-					popularArticleIds.find((item) => item.id === b.id)?.orderCount || 0;
-				return bCount - aCount;
-			}
-			// Если нет данных о заказах, сортируем по ID
-			return a.id - b.id;
-		});
-
-		return convertToJsonMany(ProductArticleDto, sortedArticles);
+		return convertToJsonMany(ProductArticleDto, articles);
 	}
 
 	async uploadImage(payload: UploadImageDto) {
 		const productArticle = await this.productArticleRepository.findOne({
-			where: {
-				id: payload.productArticleId
-			}
+			where: { id: Number(payload.productArticleId) },
+			withDeleted: true,
+			relations: { productFiles: true }
 		});
 		if (!productArticle) {
-			throw new BadRequestException('Не найдено такого продукта');
+			throw new NotFoundException('Не найдено такого продукта');
 		}
-		const isLogo = productArticle.productFiles.length == 0;
-		const name = await moveFileToStatic(payload.image);
 
+		const name = await moveFileToStatic(payload.image);
 		await this.productFileRepository.save({
 			name,
-			isLogo,
+			isLogo: productArticle.productFiles.length === 0,
 			productArticle
 		});
 	}
 
+	// Удаление фото; если удалили логотип — логотипом становится самое старое из оставшихся
 	async deleteImage(payload: CommonImageDto) {
 		const file = await this.productFileRepository.findOne({
-			where: {
-				id: payload.productFileId
-			}
+			where: { id: payload.productFileId },
+			relations: { productArticle: true }
 		});
-
 		if (!file) {
 			throw new NotFoundException('Не найдено такого файла');
 		}
 
-		await removeFile(file.name);
-
-		await this.productFileRepository.delete({
-			id: file.id
+		await this.dataSource.transaction(async (manager) => {
+			await manager.delete(ProductFile, file.id);
+			if (file.isLogo) {
+				const next = await manager.findOne(ProductFile, {
+					where: { productArticle: { id: file.productArticle.id } },
+					order: { id: 'ASC' }
+				});
+				if (next) {
+					await manager.update(ProductFile, next.id, { isLogo: true });
+				}
+			}
 		});
+
+		await removeFile(file.name).catch((error) =>
+			this.logger.warn(
+				`Не удалось удалить файл ${file.name}: ${error?.message ?? error}`
+			)
+		);
 	}
 
 	async changeLogo(payload: CommonImageDto) {
-		const productArticle = await this.productArticleRepository.findOne({
-			where: {
-				productFiles: {
-					id: payload.productFileId
-				}
-			},
-			relations: {
-				productFiles: true
-			}
+		const file = await this.productFileRepository.findOne({
+			where: { id: payload.productFileId },
+			relations: { productArticle: true }
 		});
-
-		if (!productArticle?.productFiles?.length) {
-			throw new BadRequestException('Не найдено такого файла');
+		if (!file) {
+			throw new NotFoundException('Не найдено такого файла');
 		}
 
-		const productFiles = await this.productFileRepository.find({
-			where: {
-				productArticle: {
-					id: productArticle.id
-				}
-			}
-		});
-		await this.productFileRepository.update(
-			productFiles.map((el) => el.id).filter((el) => el != payload.productFileId),
-			{
-				isLogo: false
-			}
-		);
-		await this.productFileRepository.update(payload.productFileId, {
-			isLogo: true
+		await this.dataSource.transaction(async (manager) => {
+			await manager.update(
+				ProductFile,
+				{ productArticle: { id: file.productArticle.id } },
+				{ isLogo: false }
+			);
+			await manager.update(ProductFile, file.id, { isLogo: true });
 		});
 	}
 
+	/**
+	 * Правка артикула в админке. Всё в одной транзакции: если артикул нельзя
+	 * опубликовать, ни одно изменение не сохраняется.
+	 */
 	async updateProductArticle(payload: UpdateProductArticleDto) {
-		//удаляем все нулевые свойста у payload
-		Object.keys(payload).forEach(
-			(key) => payload[key] === undefined && delete payload[key]
-		);
-
-		const productArticle = await this.productArticleRepository.findOne({
-			where: {
-				id: payload.id
-			},
-			relations: {
-				products: true
+		await this.dataSource.transaction(async (manager) => {
+			const article = await manager.findOne(ProductArticle, {
+				where: { id: payload.id },
+				withDeleted: true
+			});
+			if (!article) {
+				throw new NotFoundException('Не найден такой артикул!');
 			}
+
+			if (payload.productColorIds || payload.productSizeIds) {
+				await this.syncVariants(manager, article, payload);
+			}
+
+			const fields: Partial<ProductArticle> = {};
+			if (payload.name !== undefined) fields.name = payload.name;
+			if (payload.description !== undefined)
+				fields.description = payload.description;
+			if (payload.isVisible !== undefined) fields.isVisible = payload.isVisible;
+			if (payload.is_deleted === true) fields.isVisible = false;
+			if (Object.keys(fields).length) {
+				await manager.update(ProductArticle, article.id, fields);
+			}
+
+			if (payload.is_deleted === true) {
+				await manager.softDelete(ProductArticle, article.id);
+			} else if (payload.is_deleted === false) {
+				await manager.restore(ProductArticle, article.id);
+			}
+
+			await this.assertPublishable(manager, article.id);
 		});
-		if (!productArticle) {
-			throw new BadRequestException('Не найден такой артикул!');
-		}
 
-		if (payload.productColorIds || payload.productSizeIds) {
-			const actualColors = Array.from(
-				new Set(
-					payload.productColorIds ??
-						productArticle.products.map((product) => product.productColor.id)
-				)
-			);
-			const actualSizes = Array.from(
-				new Set(
-					payload.productSizeIds ??
-						productArticle.products.map((product) => product.productSize.id)
-				)
-			);
-
-			await this.productRepository.update(
-				{
-					productArticle: {
-						id: productArticle.id
-					}
-				},
-				{ is_deleted: true }
-			);
-
-			const newProducts = [];
-			const productsToRestore = [];
-			const currentProducts = productArticle.products;
-
-			for (const colorId of actualColors) {
-				for (const sizeId of actualSizes) {
-					// Проверяем, существует ли уже такая комбинация цвета и размера (активная)
-					const existingProduct = currentProducts.find(
-						(product) =>
-							product.productColor?.id === colorId &&
-							product.productSize?.id === sizeId
-					);
-
-					if (existingProduct) {
-						productsToRestore.push(existingProduct);
-						continue;
-					}
-
-					// Если комбинации нет вообще, создаем новый продукт
-					// Проверяем существование цвета
-					const existingColor = await this.productColorRepository.findOne({
-						where: { id: colorId }
-					});
-
-					// Проверяем существование размера
-					const existingSize = await this.productSizeRepository.findOne({
-						where: { id: sizeId }
-					});
-
-					// Выбрасываем ошибки если не найдены цвет или размер
-					if (!existingColor) {
-						throw new BadRequestException(`Цвет с ID ${colorId} не найден`);
-					}
-
-					if (!existingSize) {
-						throw new BadRequestException(`Размер с ID ${sizeId} не найден`);
-					}
-
-					const newProduct = this.productRepository.create({
-						productArticle: productArticle,
-						productColor: existingColor,
-						productSize: existingSize,
-						amount: 0 // По умолчанию количество 0
-					});
-					newProducts.push(newProduct);
-				}
-			}
-
-			// Восстанавливаем удаленные продукты
-			if (productsToRestore.length > 0) {
-				await this.productRepository.update(
-					{
-						id: In(productsToRestore.map((p) => p.id))
-					},
-					{ is_deleted: false }
-				);
-			}
-
-			// Создаем новые продукты
-			if (newProducts.length > 0) {
-				await this.productRepository.save(newProducts);
-			}
-		}
-
-		// Обновляем основные поля продукта
-		const updateData: Partial<ProductArticle> = {};
-		if (payload.name !== undefined) updateData.name = payload.name;
-		if (payload.description !== undefined)
-			updateData.description = payload.description;
-		if (payload.isVisible !== undefined) updateData.isVisible = payload.isVisible;
-		if (payload.is_deleted !== undefined) updateData.is_deleted = payload.is_deleted;
-
-		if (Object.keys(updateData).length > 0) {
-			await this.productArticleRepository.update(payload.id, updateData);
-		}
-
-		// Получаем обновленный продукт с новыми связями
-		// и без удаленных продуктов
-		const updatedProductArticle = await this.productArticleRepository.findOne({
-			where: {
-				id: payload.id
-			},
-			relations: {
-				products: {
-					productColor: true,
-					productSize: true
-				}
-			}
-		});
-		updatedProductArticle.products = updatedProductArticle.products.filter(
-			(el) => !el.is_deleted
-		);
-
-		if (
-			payload.isVisible &&
-			typeof payload.isVisible == 'boolean' &&
-			payload.isVisible
-		) {
-			if (!updatedProductArticle.name && !payload.name) {
-				throw new BadRequestException('Нельзя выводить продукт, отсутствует имя');
-			}
-
-			const validFiles =
-				updatedProductArticle.productFiles?.filter((el) => !el.is_deleted) || [];
-			if (!validFiles?.length) {
-				throw new BadRequestException(
-					'Нельзя выводить продукт, отсутствуют файлы'
-				);
-			}
-
-			if (
-				!updatedProductArticle.productSubcategory?.id ||
-				updatedProductArticle.productSubcategory.is_deleted
-			) {
-				throw new BadRequestException(
-					'Нельзя выводить продукт, отсутствует привязка к подкатегории'
-				);
-			}
-
-			const validProducts =
-				updatedProductArticle.products?.filter((el) => !el.is_deleted) || [];
-			if (!validProducts?.length) {
-				throw new BadRequestException(
-					'Нельзя выводить продукт, отсутствуют цвета или размеры продукта'
-				);
-			}
-		}
-
-		const res = convertToClass(FullProductArticleAdminDto, updatedProductArticle);
-
-		const mappedColors = (updatedProductArticle?.products || []).map((el) =>
-			convertToClass(ProductColorDto, el.productColor)
-		);
-
-		res.productColors = filterDuplicateObjectById<ProductColorDto>(mappedColors);
-
-		const mappedSizes = (updatedProductArticle?.products || []).map((el) =>
-			convertToClass(ProductSizeDto, el.productSize)
-		);
-
-		res.productSizes = filterDuplicateObjectById<ProductSizeDto>(mappedSizes);
-
-		return convertToJson(FullProductArticleAdminDto, res);
+		return this.getProductArticle(payload.id, true, {} as GetDetailProductArticleDto);
 	}
+
+	/**
+	 * Варианты = все сочетания выбранных цветов и размеров. Лишние уходят в архив
+	 * (на них могут ссылаться заказы), вернувшиеся восстанавливаются с прежним остатком,
+	 * новые создаются с остатком 0.
+	 */
+	private async syncVariants(
+		manager: EntityManager,
+		article: ProductArticle,
+		payload: UpdateProductArticleDto
+	) {
+		const all = await manager.find(Product, {
+			where: { productArticle: { id: article.id } },
+			withDeleted: true
+		});
+		const active = all.filter((p) => !p.deleted_at);
+
+		const colorIds = [
+			...new Set(payload.productColorIds ?? active.map((p) => p.productColor.id))
+		];
+		const sizeIds = [
+			...new Set(payload.productSizeIds ?? active.map((p) => p.productSize.id))
+		];
+
+		const colors = await manager.find(ProductColor, { where: { id: In(colorIds) } });
+		const sizes = await manager.find(ProductSize, { where: { id: In(sizeIds) } });
+		const missingColor = colorIds.find((id) => !colors.some((c) => c.id === id));
+		if (missingColor) {
+			throw new BadRequestException(`Цвет с ID ${missingColor} не найден`);
+		}
+		const missingSize = sizeIds.find((id) => !sizes.some((s) => s.id === id));
+		if (missingSize) {
+			throw new BadRequestException(`Размер с ID ${missingSize} не найден`);
+		}
+
+		const wanted = (p: Product) =>
+			colorIds.includes(p.productColor.id) && sizeIds.includes(p.productSize.id);
+
+		const toArchive = active.filter((p) => !wanted(p)).map((p) => p.id);
+		const toRestore = all.filter((p) => p.deleted_at && wanted(p)).map((p) => p.id);
+		if (toArchive.length) await manager.softDelete(Product, toArchive);
+		if (toRestore.length) await manager.restore(Product, toRestore);
+
+		const toCreate = colors.flatMap((productColor) =>
+			sizes
+				.filter(
+					(productSize) =>
+						!all.some(
+							(p) =>
+								p.productColor.id === productColor.id &&
+								p.productSize.id === productSize.id
+						)
+				)
+				.map((productSize) => ({
+					productArticle: article,
+					productColor,
+					productSize,
+					amount: 0
+				}))
+		);
+		if (toCreate.length) await manager.save(Product, toCreate);
+	}
+
+	private async assertPublishable(manager: EntityManager, articleId: number) {
+		const article = await manager.findOne(ProductArticle, {
+			where: { id: articleId },
+			relations: { productFiles: true }
+		});
+		// архивный артикул (findOne его не вернул) или скрытый — проверять нечего
+		if (!article?.isVisible) {
+			return;
+		}
+
+		const reasons = [
+			!article.name && 'отсутствует имя',
+			!article.productFiles?.length && 'отсутствуют файлы',
+			!article.productSubcategory?.id && 'отсутствует привязка к подкатегории',
+			!(await this.activeProducts(manager, articleId)).length &&
+				'отсутствуют цвета или размеры продукта'
+		].filter(Boolean);
+		if (reasons.length) {
+			throw new BadRequestException(
+				`Нельзя выводить продукт: ${reasons.join(', ')}`
+			);
+		}
+	}
+
+	private activeProducts(manager: EntityManager, articleId: number) {
+		return manager.find(Product, {
+			where: { productArticle: { id: articleId } },
+			order: { id: 'ASC' }
+		});
+	}
+}
+
+function uniqueColors(products: Product[]) {
+	return filterDuplicateObjectById(
+		products.map((p) => convertToClass(ProductColorDto, p.productColor))
+	);
+}
+
+function uniqueSizes(products: Product[]) {
+	return filterDuplicateObjectById(
+		products.map((p) => convertToClass(ProductSizeDto, p.productSize))
+	);
 }

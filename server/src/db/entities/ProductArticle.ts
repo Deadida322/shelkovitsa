@@ -7,14 +7,14 @@ import {
 	Index
 } from 'typeorm';
 import { moneyColumn } from './transformers';
-import { BaseEntity } from './BaseEntity';
+import { SoftDeleteEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { ProductSubcategory } from './ProductSubcategory';
 import { Product } from './Product';
 import { ProductFile } from './ProductFile';
 
 @Entity()
-export class ProductArticle extends BaseEntity {
+export class ProductArticle extends SoftDeleteEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 

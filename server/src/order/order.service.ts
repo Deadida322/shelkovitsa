@@ -10,7 +10,6 @@ import { OrderProduct } from 'src/db/entities/OrderProduct';
 import { Product } from 'src/db/entities/Product';
 import { User } from 'src/db/entities/User';
 import { DeliveryType } from 'src/db/entities/DeliveryType';
-import { baseWhere } from 'src/common/utils';
 import { baseProductWhere } from 'src/product-article/product-article.types';
 import { GetListDto } from 'src/common/dto/GetListDto';
 import { convertToJson } from 'src/helpers/convertHelper';
@@ -46,7 +45,7 @@ export class OrderService {
 
 		const orderId = await this.dataSource.transaction(async (manager) => {
 			const deliveryType = await manager.findOne(DeliveryType, {
-				where: { id: createOrderDto.deliveryTypeId, ...baseWhere }
+				where: { id: createOrderDto.deliveryTypeId }
 			});
 			if (!deliveryType) {
 				throw new BadRequestException('Не найден тип доставки');
@@ -63,7 +62,6 @@ export class OrderService {
 			const products = await manager.find(Product, {
 				where: {
 					id: In(productIds),
-					...baseWhere,
 					productArticle: baseProductWhere
 				},
 				relations: { productArticle: true }
@@ -92,7 +90,7 @@ export class OrderService {
 			);
 
 			const user = userId
-				? await manager.findOne(User, { where: { id: userId, ...baseWhere } })
+				? await manager.findOne(User, { where: { id: userId } })
 				: null;
 
 			const order = await manager.save(Order, {
@@ -134,7 +132,8 @@ export class OrderService {
 
 		const newOrder = await this.orderRepository.findOne({
 			where: { id: orderId },
-			relations: orderRelations
+			relations: orderRelations,
+			withDeleted: true
 		});
 
 		this.notifications.notifyOrderCreated(newOrder);
@@ -150,10 +149,12 @@ export class OrderService {
 			where: {
 				user: {
 					id: userId
-				},
-				...baseWhere
+				}
 			},
 			relations: orderRelations,
+			// позиции с товарами из архива остаются в заказе
+			withDeleted: true,
+			order: { created_at: 'DESC' },
 			...getPaginateWhere(getListDto)
 		});
 
@@ -164,10 +165,9 @@ export class OrderService {
 		getListDto: GetListDto
 	): Promise<IPaginateResult<OrderAdminDto>> {
 		const [result, total] = await this.orderRepository.findAndCount({
-			where: {
-				...baseWhere
-			},
 			relations: orderRelations,
+			withDeleted: true,
+			order: { created_at: 'DESC' },
 			...getPaginateWhere(getListDto)
 		});
 
@@ -176,7 +176,7 @@ export class OrderService {
 
 	async changeOrderStatus(payload: ChangeOrderStatusDto) {
 		const order = await this.orderRepository.findOne({
-			where: { id: payload.orderId, ...baseWhere }
+			where: { id: payload.orderId }
 		});
 		if (!order) {
 			throw new NotFoundException('Заказ не найден');

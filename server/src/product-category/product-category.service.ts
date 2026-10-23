@@ -1,20 +1,21 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ProductCategory } from 'src/db/entities/ProductCategory';
-import { Repository } from 'typeorm';
-import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
-import { convertToJson, convertToJsonMany } from 'src/helpers/convertHelper';
-import { ProductCategoryDto } from './dto/ProductCategoryDto';
-import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
-import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
-import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
-import { baseWhere } from 'src/common/utils';
-import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
-import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
-import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
+import { Not, Repository } from 'typeorm';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
+import { ProductCategory } from 'src/db/entities/ProductCategory';
+import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
+import { convertToJson, convertToJsonMany } from 'src/helpers/convertHelper';
 import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
+import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
+import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
+import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
+import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
+import { ProductCategoryDto } from './dto/ProductCategoryDto';
+import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
+import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
 
+// Категории и подкатегории удаляются физически: удалить можно только пустые,
+// поэтому ссылок из заказов на них не бывает.
 @Injectable()
 export class ProductCategoryService {
 	constructor(
@@ -29,138 +30,52 @@ export class ProductCategoryService {
 	) {}
 
 	async getList(): Promise<ListProductCategoryDto[]> {
-		const cats = await this.productCategoryRepository.find({
-			where: {
-				...baseWhere
-			},
-			relations: {
-				productSubcategories: true
-			}
+		const categories = await this.productCategoryRepository.find({
+			relations: { productSubcategories: true },
+			order: { id: 'ASC', productSubcategories: { id: 'ASC' } }
 		});
-		const catsRes = cats.map((el) => {
-			const productSubcategories = el.productSubcategories.filter(
-				(ps) => !ps.is_deleted
-			);
-			return {
-				...el,
-				productSubcategories
-			};
-		});
-
-		return convertToJsonMany(ListProductCategoryDto, catsRes);
+		return convertToJsonMany(ListProductCategoryDto, categories);
 	}
 
 	async createCategory({
 		name
 	}: CreateProductCategoryDto): Promise<ProductCategoryDto> {
-		let category = await this.productCategoryRepository.findOne({
-			where: {
-				name
-			}
-		});
-		if (category && !category.is_deleted) {
-			throw new BadRequestException('Категория с таким названием уже существует!');
-		} else if (category && category.is_deleted) {
-			category = (
-				await this.productCategoryRepository.update(category.id, {
-					is_deleted: true
-				})
-			)[0];
-		} else {
-			category = await this.productCategoryRepository.save({
-				name
-			});
-		}
-
+		await this.assertCategoryNameFree(name);
+		const category = await this.productCategoryRepository.save({ name });
 		return convertToJson(ProductCategoryDto, category);
 	}
 
 	async updateCategory({ id, name }: ProductCategoryDto): Promise<ProductCategoryDto> {
-		const category = await this.productCategoryRepository.findOne({
-			where: {
-				id,
-				...baseWhere
-			}
-		});
-		if (!category) {
-			throw new BadRequestException('Нет такой категории!');
-		}
-
-		const updateCategory = await this.productCategoryRepository.update(
-			{
-				id
-			},
-			{
-				name
-			}
+		const category = await this.findCategory(id);
+		await this.assertCategoryNameFree(name, id);
+		category.name = name;
+		return convertToJson(
+			ProductCategoryDto,
+			await this.productCategoryRepository.save(category)
 		);
-
-		return convertToJson(ProductCategoryDto, updateCategory);
 	}
 
 	async deleteCategory(id: number): Promise<void> {
-		const category = await this.productCategoryRepository.findOne({
-			where: {
-				id,
-				...baseWhere
-			},
-			relations: {
-				productSubcategories: true
-			}
+		await this.findCategory(id);
+		const subcategories = await this.productSubcategoryRepository.count({
+			where: { productCategory: { id } }
 		});
-		if (!category) {
-			throw new BadRequestException('Нет такой категории!');
-		}
-		if (category.productSubcategories.some((el) => !el.is_deleted)) {
+		if (subcategories) {
 			throw new BadRequestException('К категории еще привязаны подкатегории!');
 		}
-
-		await this.productCategoryRepository.update(
-			{
-				id
-			},
-			{
-				is_deleted: true
-			}
-		);
+		await this.productCategoryRepository.delete(id);
 	}
 
 	async createSubCategory({
 		categoryId,
 		name
 	}: CreateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
-		const category = await this.productCategoryRepository.findOne({
-			where: {
-				id: categoryId
-			}
+		const category = await this.findCategory(categoryId);
+		await this.assertSubcategoryNameFree(name);
+		const subcategory = await this.productSubcategoryRepository.save({
+			name,
+			productCategory: category
 		});
-		if (!category) {
-			throw new BadRequestException('Такая категория не существует!');
-		}
-
-		let subcategory = await this.productSubcategoryRepository.findOne({
-			where: {
-				productCategory: category,
-				name
-			}
-		});
-		if (subcategory) {
-			if (subcategory.is_deleted) {
-				subcategory = (
-					await this.productSubcategoryRepository.update(subcategory.id, {
-						is_deleted: false
-					})
-				)[0];
-			} else {
-				throw new BadRequestException('Такая подкатегория уже существует!');
-			}
-		} else {
-			subcategory = await this.productSubcategoryRepository.save({
-				name,
-				productCategory: category
-			});
-		}
-
 		return convertToJson(ProductSubcategoryDto, subcategory);
 	}
 
@@ -169,62 +84,29 @@ export class ProductCategoryService {
 		name,
 		subcategoryId
 	}: UpdateProductSubcategoryDto): Promise<ProductSubcategoryDto> {
-		const category = await this.productCategoryRepository.findOne({
-			where: {
-				id: categoryId,
-				...baseWhere
-			}
-		});
-		if (!category) {
-			throw new BadRequestException('Такая категория не существует!');
-		}
+		const category = await this.findCategory(categoryId);
+		const subcategory = await this.findSubcategory(subcategoryId);
+		await this.assertSubcategoryNameFree(name, subcategoryId);
 
-		const subcategory = await this.productSubcategoryRepository.findOne({
-			where: {
-				id: subcategoryId,
-				...baseWhere
-			}
-		});
-		if (!subcategory) {
-			throw new BadRequestException('Такая подкатегория не существует!');
-		}
-
-		const res = await this.productSubcategoryRepository.save({
-			id: subcategoryId,
-			is_deleted: false,
-			name,
-			productCategory: category
-		});
-
-		return convertToJson(ProductSubcategoryDto, res);
+		subcategory.name = name;
+		subcategory.productCategory = category;
+		return convertToJson(
+			ProductSubcategoryDto,
+			await this.productSubcategoryRepository.save(subcategory)
+		);
 	}
 
 	async deleteSubcategory(id: number): Promise<void> {
-		const subcategory = await this.productSubcategoryRepository.findOne({
-			where: {
-				id,
-				...baseWhere
-			},
-			relations: {
-				productArticles: true
-			}
+		await this.findSubcategory(id);
+		// товары в архиве тоже держат ссылку на подкатегорию
+		const articles = await this.productArticleRepository.count({
+			where: { productSubcategory: { id } },
+			withDeleted: true
 		});
-
-		if (!subcategory) {
-			throw new BadRequestException('Нет такой подкатегории!');
-		}
-		if (subcategory.productArticles.some((el) => !el.is_deleted)) {
+		if (articles) {
 			throw new BadRequestException('К подкатегории еще привязаны продукты!');
 		}
-
-		await this.productSubcategoryRepository.update(
-			{
-				id
-			},
-			{
-				is_deleted: true
-			}
-		);
+		await this.productSubcategoryRepository.delete(id);
 	}
 
 	async bindProductToSubcategory({
@@ -232,31 +114,55 @@ export class ProductCategoryService {
 		subcategoryId
 	}: BindProductArticleToSubcategoryDto): Promise<FullProductArticleDto> {
 		const productArticle = await this.productArticleRepository.findOne({
-			where: {
-				...baseWhere,
-				id: productArticleId
-			}
+			where: { id: productArticleId }
 		});
-
 		if (!productArticle) {
-			throw new BadRequestException('Такого продукта не существует!');
+			throw new NotFoundException('Такого продукта не существует!');
 		}
 
+		productArticle.productSubcategory = await this.findSubcategory(subcategoryId);
+		return convertToJson(
+			FullProductArticleDto,
+			await this.productArticleRepository.save(productArticle)
+		);
+	}
+
+	private async findCategory(id: number): Promise<ProductCategory> {
+		const category = await this.productCategoryRepository.findOne({ where: { id } });
+		if (!category) {
+			throw new NotFoundException('Нет такой категории!');
+		}
+		return category;
+	}
+
+	private async findSubcategory(id: number): Promise<ProductSubcategory> {
 		const subcategory = await this.productSubcategoryRepository.findOne({
-			where: {
-				id: subcategoryId,
-				...baseWhere
-			}
+			where: { id }
 		});
 		if (!subcategory) {
-			throw new BadRequestException('Такая подкатегория не существует!');
+			throw new NotFoundException('Нет такой подкатегории!');
 		}
+		return subcategory;
+	}
 
-		const res = await this.productArticleRepository.save({
-			...productArticle,
-			productSubcategory: subcategory
+	private async assertCategoryNameFree(name: string, exceptId?: number) {
+		const exists = await this.productCategoryRepository.exists({
+			where: exceptId ? { name, id: Not(exceptId) } : { name }
 		});
+		if (exists) {
+			throw new BadRequestException('Категория с таким названием уже существует!');
+		}
+	}
 
-		return convertToJson(FullProductArticleDto, res);
+	// Имя подкатегории уникально глобально: импорт из Excel ищет её по имени
+	private async assertSubcategoryNameFree(name: string, exceptId?: number) {
+		const exists = await this.productSubcategoryRepository.exists({
+			where: exceptId ? { name, id: Not(exceptId) } : { name }
+		});
+		if (exists) {
+			throw new BadRequestException(
+				'Подкатегория с таким названием уже существует!'
+			);
+		}
 	}
 }

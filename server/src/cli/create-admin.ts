@@ -19,14 +19,14 @@ async function main() {
 	await AppDataSource.initialize();
 	try {
 		const repository = AppDataSource.getRepository(User);
-		const existing = await repository.findOne({ where: { mail } });
+		const existing = await repository.findOne({ where: { mail }, withDeleted: true });
 		const passwordHash = await hashPassword(password);
 
 		if (existing) {
 			await repository.update(existing.id, {
 				role: UserRole.ADMIN,
 				password: passwordHash,
-				is_deleted: false
+				deleted_at: null
 			});
 			console.log(
 				`Пользователь ${mail} (id=${existing.id}) теперь администратор, пароль обновлён`

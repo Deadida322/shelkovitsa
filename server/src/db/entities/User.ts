@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { BaseEntity } from './BaseEntity';
+import { SoftDeleteEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { Order } from './Order';
 
@@ -9,7 +9,7 @@ export enum UserRole {
 }
 
 @Entity()
-export class User extends BaseEntity {
+export class User extends SoftDeleteEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 

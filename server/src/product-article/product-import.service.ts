@@ -173,7 +173,7 @@ export class ProductImportService {
 
 		return this.dataSource.transaction(async (manager) => {
 			const productSubcategory = await manager.findOne(ProductSubcategory, {
-				where: { name: productDto.productSubcategory, is_deleted: false }
+				where: { name: productDto.productSubcategory }
 			});
 			if (!productSubcategory) {
 				throw new Error(`Не найдена подкатегория`);
@@ -191,15 +191,12 @@ export class ProductImportService {
 			if (!color) {
 				throw new Error(`В БД не найден такой цвет`);
 			}
-			await manager.update(ProductColor, { id: color.id }, { is_deleted: false });
 
 			let size = await manager.findOne(ProductSize, {
 				where: { name: mappedSize }
 			});
 			if (!size) {
 				size = await manager.save(ProductSize, { name: mappedSize });
-			} else {
-				await manager.update(ProductSize, { id: size.id }, { is_deleted: false });
 			}
 
 			const existProduct = await manager.findOne(Product, {
@@ -207,14 +204,15 @@ export class ProductImportService {
 					productArticle: { id: article.id },
 					productColor: { id: color.id },
 					productSize: { id: size.id }
-				}
+				},
+				// вариант мог уйти в архив при прошлой замене каталога
+				withDeleted: true
 			});
 			if (existProduct) {
-				await manager.update(
-					Product,
-					{ id: existProduct.id },
-					{ is_deleted: false, amount: productDto.amount }
-				);
+				await manager.update(Product, existProduct.id, {
+					amount: productDto.amount,
+					deleted_at: null
+				});
 			} else {
 				await manager.save(Product, {
 					amount: productDto.amount,
@@ -249,7 +247,8 @@ export class ProductImportService {
 		};
 
 		const existing = await manager.findOne(ProductArticle, {
-			where: { article: productDto.article }
+			where: { article: productDto.article },
+			withDeleted: true
 		});
 		if (!existing) {
 			return manager.save(ProductArticle, {
@@ -258,11 +257,11 @@ export class ProductImportService {
 			});
 		}
 
-		await manager.update(
-			ProductArticle,
-			{ id: existing.id },
-			{ ...fields, is_deleted: false }
-		);
+		// артикул из архива возвращается в каталог (скрытым — публикует админ)
+		await manager.update(ProductArticle, existing.id, {
+			...fields,
+			deleted_at: null
+		});
 		return existing;
 	}
 
@@ -289,7 +288,7 @@ export class ProductImportService {
 		}
 
 		const existingFiles = await manager.find(ProductFile, {
-			where: { productArticle: { id: article.id }, is_deleted: false }
+			where: { productArticle: { id: article.id } }
 		});
 		const knownUrls = new Set(existingFiles.map((file) => file.url));
 		// Первая успешно загруженная картинка становится логотипом, если его ещё нет
@@ -329,7 +328,8 @@ export class ProductImportService {
 	private async clearCatalog() {
 		await this.dataSource.transaction(async (manager) => {
 			const products = await manager.find(Product, {
-				relations: { orderProducts: true }
+				relations: { orderProducts: true },
+				withDeleted: true
 			});
 			const ordered = products
 				.filter((p) => p.orderProducts?.length)
@@ -337,16 +337,13 @@ export class ProductImportService {
 			const unordered = products
 				.filter((p) => !p.orderProducts?.length)
 				.map((p) => p.id);
+			if (ordered.length) await manager.softDelete(Product, ordered);
+			if (unordered.length) await manager.delete(Product, unordered);
 
-			if (ordered.length) {
-				await manager.update(Product, ordered, { is_deleted: true });
-			}
-			if (unordered.length) {
-				await manager.delete(Product, unordered);
-			}
-
+			// у артикула остались варианты — значит, на них есть заказы: в архив
 			const articles = await manager.find(ProductArticle, {
-				relations: { products: true }
+				relations: { products: true },
+				withDeleted: true
 			});
 			const withOrders = articles
 				.filter((a) => a.products?.length)
@@ -354,22 +351,13 @@ export class ProductImportService {
 			const withoutProducts = articles
 				.filter((a) => !a.products?.length)
 				.map((a) => a.id);
-
 			if (withOrders.length) {
-				await manager.update(ProductArticle, withOrders, {
-					is_deleted: true,
-					isVisible: false
-				});
+				await manager.update(ProductArticle, withOrders, { isVisible: false });
+				await manager.softDelete(ProductArticle, withOrders);
 			}
-			if (withoutProducts.length) {
-				await manager
-					.createQueryBuilder()
-					.delete()
-					.from(ProductFile)
-					.where('"productArticleId" IN (:...ids)', { ids: withoutProducts })
-					.execute();
+			// фото удаляются каскадом (product_file.productArticleId ON DELETE CASCADE)
+			if (withoutProducts.length)
 				await manager.delete(ProductArticle, withoutProducts);
-			}
 		});
 	}
 

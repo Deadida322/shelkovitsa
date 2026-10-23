@@ -5,7 +5,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 import { In, LessThan, Repository } from 'typeorm';
-import { baseWhere } from 'src/common/utils';
 import { Order } from 'src/db/entities/Order';
 import {
 	TelegramMessageStatus,
@@ -245,7 +244,8 @@ export class OrderNotificationService implements OnApplicationShutdown {
 	): Promise<{ success: boolean; message?: string }> {
 		const order = await this.orderRepository.findOne({
 			where: { id: orderId },
-			relations: orderRelations
+			relations: orderRelations,
+			withDeleted: true
 		});
 
 		if (!order) {
@@ -331,10 +331,10 @@ export class OrderNotificationService implements OnApplicationShutdown {
 
 		return await this.orderRepository.find({
 			where: {
-				id: In(orderIds),
-				...baseWhere
+				id: In(orderIds)
 			},
 			relations: orderRelations,
+			withDeleted: true,
 			order: {
 				created_at: 'DESC'
 			}

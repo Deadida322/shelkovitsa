@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from 'src/db/entities/Product';
 import { Repository } from 'typeorm';
-import { baseWhere } from 'src/common/utils';
 import { GetDetailProductDto } from './dto/GetDetailProductDto';
 import { ProductDto } from './dto/ProductDto';
 import { convertToJson } from 'src/helpers/convertHelper';
@@ -19,23 +18,15 @@ export class ProductService {
 		{ productArticleId, productColorId, productSizeId }: GetDetailProductDto,
 		isAdmin: boolean = false
 	) {
-		const productArticlePayload = {
-			id: productArticleId,
-			...baseWhere,
-			isVisible: !isAdmin && true
-		};
+		// админ видит и неопубликованные артикулы
+		const productArticlePayload = isAdmin
+			? { id: productArticleId }
+			: { id: productArticleId, isVisible: true };
 		const p = await this.productRepository.findOne({
 			where: {
-				...baseWhere,
 				productArticle: productArticlePayload,
-				productColor: {
-					id: productColorId,
-					...baseWhere
-				},
-				productSize: {
-					id: productSizeId,
-					...baseWhere
-				}
+				productColor: { id: productColorId },
+				productSize: { id: productSizeId }
 			},
 			relations: {
 				productArticle: true

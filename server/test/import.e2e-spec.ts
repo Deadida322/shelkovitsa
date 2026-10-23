@@ -114,7 +114,8 @@ describe('Импорт каталога из Excel (e2e)', () => {
 		await upload([row({ article: 'A-1', amount: 7 })]).expect(200);
 
 		const products = await manager().find(Product, {
-			where: { productArticle: { article: 'A-1' }, is_deleted: false }
+			where: { productArticle: { article: 'A-1' } },
+			withDeleted: true
 		});
 		expect(products).toHaveLength(1);
 		expect(products[0].amount).toBe(7);
@@ -124,9 +125,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 		await upload([row({ article: 'A-1' })]).expect(200);
 		await upload([row({ article: 'B-2' })], 'false').expect(200);
 
-		const articles = await manager().find(ProductArticle, {
-			where: { is_deleted: false }
-		});
+		const articles = await manager().find(ProductArticle);
 		expect(articles.map((a) => a.article).sort()).toEqual(['A-1', 'B-2']);
 	});
 
@@ -134,9 +133,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 		await upload([row({ article: 'A-1' }), row({ article: 'B-2' })]).expect(200);
 		await upload([row({ article: 'B-2' })], 'true').expect(200);
 
-		const articles = await manager().find(ProductArticle, {
-			where: { is_deleted: false }
-		});
+		const articles = await manager().find(ProductArticle);
 		expect(articles.map((a) => a.article)).toEqual(['B-2']);
 	});
 

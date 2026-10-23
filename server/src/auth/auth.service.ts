@@ -23,9 +23,6 @@ export class AuthService {
 			throw new UnauthorizedException('Неправильный логин или пароль');
 		}
 
-		if (user.is_deleted) {
-			throw new UnauthorizedException('Аккаунт удален!');
-		}
 		const { access_token } = await this.generateAccess(user);
 		return {
 			user: convertToJson(UserDto, {

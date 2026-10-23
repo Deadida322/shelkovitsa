@@ -6,7 +6,7 @@ import {
 	ManyToOne,
 	Unique
 } from 'typeorm';
-import { BaseEntity } from './BaseEntity';
+import { SoftDeleteEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { ProductSize } from './ProductSize';
 import { ProductColor } from './ProductColor';
@@ -16,7 +16,7 @@ import { ProductArticle } from './ProductArticle';
 @Entity()
 // один вариант на сочетание артикул + цвет + размер
 @Unique(['productArticle', 'productColor', 'productSize'])
-export class Product extends BaseEntity {
+export class Product extends SoftDeleteEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 

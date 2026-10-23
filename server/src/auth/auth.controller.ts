@@ -73,9 +73,9 @@ export class AuthController {
 			throw new BadRequestException('Пароли не совпадают');
 		}
 		const existUser = await this.usersRepository.findOne({
-			where: {
-				mail: registerDto.mail
-			}
+			where: { mail: registerDto.mail },
+			// почта занята и удалённым аккаунтом (уникальный индекс)
+			withDeleted: true
 		});
 		if (existUser) {
 			throw new BadRequestException('Пользователь с такой почтой уже существует');
