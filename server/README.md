@@ -15,7 +15,7 @@ RESTful API сервер, предоставляющий функционал д
 
 ### Предварительные требования
 
-- Node.js 18+ 
+- Node.js 20 (версия в [`.nvmrc`](../.nvmrc))
 - PostgreSQL 12+
 - npm или yarn
 
@@ -33,7 +33,12 @@ npm install
 
 3. Настройте переменные окружения (см. раздел [Конфигурация](#конфигурация))
 
-4. Создайте базу данных PostgreSQL:
+4. Создайте базу данных PostgreSQL — либо поднимите её в Docker из корня репозитория
+   ([`docker-compose.yml`](../docker-compose.yml), параметры совпадают с `.env.example`):
+```bash
+docker compose up -d
+```
+   либо создайте вручную в установленном PostgreSQL:
 ```sql
 CREATE DATABASE shelkovitsa;
 ```

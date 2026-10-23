@@ -8,6 +8,7 @@
 | [`setup-nginx-ssl.sh`](./setup-nginx-ssl.sh) | **Один раз:** временный nginx (ACME) → **certbot** → полный [`nginx.conf`](./nginx.conf) в **`/etc/nginx/nginx.conf`** |
 | [`deploy.sh`](./deploy.sh) | Git, **`/temp`**, сборка, миграции, systemd; **конфиг nginx не трогает** (уже настроен шагом выше) |
 | [`issue-ssl.sh`](./issue-ssl.sh) | Только **certbot** (вызывается из `setup-nginx-ssl.sh`; отдельно — для перевыпуска / доп. имён) |
+| [`backup.sh`](./backup.sh) | Бэкап БД (`pg_dump`) и загруженных картинок с ротацией; установка в cron — в шапке скрипта |
 
 Дополнительно: [`SSL-SETUP.md`](./SSL-SETUP.md), [`FRONTEND-MODES.md`](./FRONTEND-MODES.md), [`clear-cache.sh`](./clear-cache.sh), шаблоны [`nginx-acme-only.conf`](./nginx-acme-only.conf), [`nginx-bootstrap-site.conf`](./nginx-bootstrap-site.conf).
 
