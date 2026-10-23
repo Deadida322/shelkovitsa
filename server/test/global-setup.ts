@@ -2,7 +2,7 @@ import { Client } from 'pg';
 
 // Один раз перед всеми тестами: пересоздать тестовую БД и накатить миграции с нуля
 export default async function globalSetup() {
-	require('./setup-env');
+	await import('./setup-env');
 
 	const admin = new Client({
 		host: process.env.DB_HOST,
