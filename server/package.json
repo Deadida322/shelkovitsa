@@ -19,6 +19,7 @@
 		"lint:check": "eslint \"{src,test}/**/*.ts\"",
 		"migrate:add": "nest build && typeorm migration:generate -d dist/db/datasource.js",
 		"migrate:apply": "nest build && typeorm migration:run -d dist/db/datasource.js",
+		"test": "jest --config ./test/jest-unit.json",
 		"test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
 		"admin:create": "node dist/cli/create-admin.js",
 		"db:reset": "node dist/cli/db-reset.js",
