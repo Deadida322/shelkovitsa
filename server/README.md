@@ -15,7 +15,7 @@ RESTful API сервер, предоставляющий функционал д
 
 ### Предварительные требования
 
-- Node.js 20 (версия в [`.nvmrc`](../.nvmrc))
+- Node.js 24 (версия в [`.nvmrc`](../.nvmrc))
 - PostgreSQL 12+
 - npm или yarn
 

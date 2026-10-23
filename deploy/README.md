@@ -29,7 +29,7 @@ sed -i 's/\r$//' /root/deploy/*.sh
 
 ```bash
 sudo -i
-VER=20.19.5
+VER=24.22.1
 rm -rf "/opt/node-${VER}"
 cp -a "/root/.nvm/versions/node/v${VER}" "/opt/node-${VER}"
 chown -R root:root "/opt/node-${VER}"
@@ -189,7 +189,7 @@ sudo ./deploy.sh
 | `DB_PASSWORD` | *(пусто)* | Пароль роли PostgreSQL; без неё блок создания БД пропускается |
 | `DB_NAME` | `shelkovitsa` | Имя базы |
 | `DB_USER` | `shelkovitsa` | Имя роли в PostgreSQL |
-| `NODE_VERSION` | `20.19.5` | Версия Node для `nvm install` |
+| `NODE_VERSION` | `24.22.1` (как в `.nvmrc`) | Версия Node для `nvm install` |
 | `NVM_INSTALL_VERSION` | `v0.40.3` | Тег установщика nvm (скрипт с GitHub) |
 | `NVM_DIR` | `/root/.nvm` | Каталог nvm |
 
@@ -206,14 +206,14 @@ sudo -E ./install-server.sh
 export DB_PASSWORD='секретный_пароль'
 export DB_NAME=myshop
 export DB_USER=myshop
-export NODE_VERSION=20.19.0
+export NODE_VERSION=24.22.1
 sudo -E ./install-server.sh
 ```
 
 **Пример — через `env` без `export`:**
 
 ```bash
-sudo env DB_PASSWORD='секрет' DB_USER=shelkovitsa DB_NAME=shelkovitsa NODE_VERSION=20.19.5 ./install-server.sh
+sudo env DB_PASSWORD='секрет' DB_USER=shelkovitsa DB_NAME=shelkovitsa NODE_VERSION=24.22.1 ./install-server.sh
 ```
 
 ### `deploy.sh`
@@ -271,6 +271,6 @@ sudo env GIT_REPO='https://github.com/ваш-орг/shelkovitsa.git' GIT_BRANCH=
 
 ## Node.js
 
-`install-server.sh` ставит **[nvm](https://github.com/nvm-sh/nvm)** в `/root/.nvm`, затем **`nvm install`** по версии **`NODE_VERSION`** (по умолчанию **20.19.5**). В `/usr/local/bin` создаются ссылки на `node` / `npm` / `npx`, их использует **`deploy.sh`** и systemd.
+`install-server.sh` ставит **[nvm](https://github.com/nvm-sh/nvm)** в `/root/.nvm`, затем **`nvm install`** по версии **`NODE_VERSION`** (по умолчанию **24.22.1**, как в `.nvmrc`). В `/usr/local/bin` создаются ссылки на `node` / `npm` / `npx`, их использует **`deploy.sh`** и systemd.
 
 Переопределение версий — через переменные в таблице выше и примеры для `install-server.sh`.

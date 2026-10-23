@@ -5,7 +5,7 @@
 	"author": "",
 	"private": true,
 	"engines": {
-		"node": ">=20.19.0 <21"
+		"node": ">=24.11.0 <25"
 	},
 	"license": "UNLICENSED",
 	"scripts": {
@@ -84,5 +84,9 @@
 	},
 	"overrides": {
 		"qs": "^6.15.4"
+	},
+	"allowScripts": {
+		"bcrypt@6.0.0": true,
+		"@nestjs/core": false
 	}
 }
