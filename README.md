@@ -1,79 +1,42 @@
-# Nuxt 3 Minimal Starter
+# Шелковица
 
-Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Интернет-магазин нижнего белья.
 
-## Setup
+| Каталог | Что внутри |
+|---------|------------|
+| [`server/`](server/) | API на NestJS + PostgreSQL (TypeORM): каталог, заказы, корзина, импорт из Excel, уведомления в Telegram — [README](server/README.md), [API](server/docs/API.md) |
+| [`client/`](client/) | Витрина и админка на Nuxt 3 |
+| [`deploy/`](deploy/) | Установка и деплой на Ubuntu: nginx, SSL, systemd, бэкапы — [README](deploy/README.md) |
+| [`temp-dev/`](temp-dev/) | Выгрузки поставщика для разработки (их использует `npm run seed`) |
 
-Make sure to install the dependencies:
+## Быстрый старт (разработка)
 
-```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+Нужны Node.js из [`.nvmrc`](.nvmrc) и PostgreSQL (локальный или из Docker).
 
 ```bash
-# npm
-npm run dev
+# PostgreSQL в Docker (если не установлен локально; занят порт — POSTGRES_PORT=5433)
+docker compose up -d
 
-# pnpm
-pnpm run dev
+# бэкенд: зависимости, схема БД с нуля и тестовые данные
+cd server
+cp .env.example .env        # для разработки: NODE_ENV=development, TEMP_PATH/DEST_PATH=temp/src, temp/dist
+npm ci
+npm run dev:setup           # build + db:reset + seed (админ admin@shelkovitsa.local / admin12345)
+npm run start:dev           # http://localhost:8000/api, Swagger — /api/docs
 
-# yarn
-yarn dev
-
-# bun
-bun run dev
+# фронт (в другом терминале)
+cd client
+cp .env.example .env.dev    # BASE_URL=http://localhost:8000
+npm ci
+npm run dev                 # http://localhost:3000
 ```
 
-## Production
-
-Build the application for production:
+## Проверки
 
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm run build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+cd server
+npm run lint:check
+npm run test:e2e            # e2e-тесты на отдельной БД shelkovitsa_test
 ```
 
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm run preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
-
-## Сервер (Ubuntu)
-
-Скрипты установки и деплоя: [deploy/README.md](deploy/README.md).
+Те же проверки и сборка запускаются в GitHub Actions на каждый PR, затрагивающий `server/`.
