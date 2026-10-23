@@ -1,33 +1,116 @@
 import { ConfigModule } from '@nestjs/config';
+import { plainToInstance, Transform } from 'class-transformer';
+import {
+	IsIn,
+	IsInt,
+	IsNotEmpty,
+	IsOptional,
+	IsString,
+	Min,
+	validateSync
+} from 'class-validator';
+
+const toInt = ({ value }) =>
+	value === undefined || value === '' ? undefined : Number(value);
+
+// Переменные окружения, без которых приложение не должно стартовать
+export class EnvironmentVariables {
+	@IsOptional()
+	@IsIn(['development', 'production', 'test'])
+	NODE_ENV: string = 'development';
+
+	@Transform(toInt)
+	@IsInt()
+	@Min(0)
+	PORT: number = 8000;
+
+	@IsString()
+	@IsNotEmpty()
+	DB_HOST: string;
+
+	@Transform(toInt)
+	@IsInt()
+	DB_PORT: number = 5432;
+
+	@IsString()
+	@IsNotEmpty()
+	DB_USER: string;
+
+	@IsString()
+	DB_PASSWORD: string;
+
+	@IsString()
+	@IsNotEmpty()
+	DB_NAME: string;
+
+	@IsString()
+	@IsNotEmpty()
+	JWT_PUBLIC_KEY: string;
+
+	@IsString()
+	@IsNotEmpty()
+	JWT_PUBLIC_EXP: string;
+
+	@IsString()
+	@IsNotEmpty()
+	PSD_KEY: string;
+
+	@Transform(toInt)
+	@IsInt()
+	@Min(1)
+	OWNER_ID: number;
+
+	@IsString()
+	@IsNotEmpty()
+	TEMP_PATH: string;
+
+	@IsString()
+	@IsNotEmpty()
+	DEST_PATH: string;
+
+	@IsOptional()
+	@IsString()
+	CORS?: string;
+
+	@IsOptional()
+	@IsIn(['true', 'false'])
+	THROTTLE_ENABLED?: string;
+
+	@IsOptional()
+	@IsIn(['true', 'false'])
+	TELEGRAM_ENABLED?: string;
+
+	@IsOptional()
+	@IsString()
+	TELEGRAM_TOKEN?: string;
+
+	@IsOptional()
+	@IsString()
+	ADMIN_TG_ID?: string;
+
+	@IsOptional()
+	@IsString()
+	CHAT_TG_ID?: string;
+}
+
+export function validateEnv(config: Record<string, unknown>) {
+	const validated = plainToInstance(EnvironmentVariables, config, {
+		exposeDefaultValues: true
+	});
+	const errors = validateSync(validated, { skipMissingProperties: false });
+	if (errors.length) {
+		const details = errors
+			.map(
+				(err) =>
+					`  ${err.property}: ${Object.values(err.constraints ?? {}).join(', ')}`
+			)
+			.join('\n');
+		throw new Error(`Некорректная конфигурация окружения:\n${details}`);
+	}
+	return validated;
+}
 
 export default ConfigModule.forRoot({
-	load: [
-		() => ({
-			PORT: parseInt(process.env.PORT, 10) || 8000,
-			DB_HOST: process.env.DB_HOST,
-			DB_PORT: parseInt(process.env.DB_PORT, 10) || 5432,
-			DB_USER: process.env.DB_USER,
-			DB_PASSWORD: process.env.DB_PASSWORD,
-			DB_NAME: process.env.DB_NAME,
-			NODE_ENV: process.env.NODE_ENV || 'development',
-			LOG_LEVEL: process.env.LOG_LEVEL,
-			IS_LOGGING_ROUTE: process.env.IS_LOGGING_ROUTE,
-
-			JWT_PRIVATE_KEY: process.env.JWT_PRIVATE_KEY,
-			JWT_PRIVATE_EXP: process.env.JWT_PRIVATE_EXP,
-			JWT_PUBLIC_KEY: process.env.JWT_PUBLIC_KEY,
-			JWT_PUBLIC_EXP: process.env.JWT_PUBLIC_EXP,
-			PSD_KEY: process.env.PSD_KEY,
-
-			OWNER_ID: process.env.OWNER_ID,
-
-			TEMP_PATH: process.env.TEMP_PATH,
-			DEST_PATH: process.env.DEST_PATH,
-			CORS: process.env.CORS,
-			TELEGRAM_TOKEN: process.env.TELEGRAM_TOKEN,
-			ADMIN_TG_ID: process.env.ADMIN_TG_ID,
-			CHAT_TG_ID: process.env.CHAT_TG_ID
-		})
-	],
+	validate: validateEnv,
 	isGlobal: true
 });

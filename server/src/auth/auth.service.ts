@@ -1,16 +1,12 @@
-import {
-	Injectable,
-	InternalServerErrorException,
-	UnauthorizedException
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { User } from 'src/db/entities/User';
 import { UserInRequest } from 'src/types/express/custom';
 import { UserService } from 'src/user/user.service';
 import { LoginDto } from './dto/LoginDto';
 import { UserDto } from './dto/UserDto';
 import { convertToJson } from 'src/helpers/convertHelper';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -32,39 +28,28 @@ export class AuthService {
 		if (user.is_deleted) {
 			throw new UnauthorizedException('Аккаунт удален!');
 		}
-		const payload: UserInRequest = {
-			id: user.id,
-			mail: user.mail,
-			fio: user.fio
-		};
-		const isAdmin = await this.isUserAdmin(payload);
+		const { access_token } = await this.generateAccess(user);
 		return {
 			user: convertToJson(UserDto, {
 				...user,
-				isAdmin
+				isAdmin: this.isUserAdmin(user)
 			}),
-			access_token: await this.jwtService.signAsync(payload)
+			access_token
 		};
 	}
+
 	async generateAccess(user: User): Promise<{ access_token: string }> {
 		const payload: UserInRequest = {
 			id: user.id,
 			mail: user.mail,
 			fio: user.fio
 		};
-		payload.isAdmin = await this.isUserAdmin(payload);
 		return {
 			access_token: await this.jwtService.signAsync(payload)
 		};
 	}
-	async isUserAdmin(user?: UserInRequest) {
-		const ownerId = this.configService.getOrThrow<number>('OWNER_ID');
 
-		if (!ownerId || Number.isInteger(ownerId)) {
-			throw new InternalServerErrorException(
-				'Неправильно настроена конфигурация администраторской части'
-			);
-		}
-		return user?.id == ownerId;
+	isUserAdmin(user?: Pick<UserInRequest, 'id'>): boolean {
+		return !!user && user.id === this.configService.get<number>('OWNER_ID');
 	}
 }

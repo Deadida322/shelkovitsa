@@ -213,7 +213,23 @@ npm run format
 # Миграции
 npm run migrate:add      # Создать миграцию
 npm run migrate:apply   # Применить миграции
+
+# E2E-тесты (нужен запущенный PostgreSQL)
+npm run test:e2e
 ```
+
+### Тесты
+
+E2E-тесты в [`test/`](test/) поднимают приложение целиком и работают с отдельной базой
+`shelkovitsa_test`: она создаётся автоматически, миграции накатываются перед прогоном, а
+таблицы очищаются перед каждым тестом. Переменные окружения для тестов заданы в
+[`test/setup-env.ts`](test/setup-env.ts) и не зависят от `.env`; подключение к PostgreSQL
+можно переопределить через `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`,
+`TEST_DB_PASSWORD`, `TEST_DB_NAME`.
+
+Telegram в тестах не вызывается (бот подменяется), ограничение частоты запросов
+выключено (`THROTTLE_ENABLED=false`), кроме отдельного теста лимитов. В CI тесты
+запускаются на каждый PR, затрагивающий `server/` (`.github/workflows/backend.yml`).
 
 ## 🔐 Аутентификация
 

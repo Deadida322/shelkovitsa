@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ProductArticleController } from './product-article.controller';
 import { ProductArticleService } from './product-article.service';
+import { ProductImportService } from './product-import.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductColor } from 'src/db/entities/ProductColor';
@@ -23,6 +24,6 @@ import { ProductFile } from 'src/db/entities/ProductFile';
 		NestjsFormDataModule
 	],
 	controllers: [ProductArticleController],
-	providers: [ProductArticleService]
+	providers: [ProductArticleService, ProductImportService]
 })
 export class ProductArticleModule {}

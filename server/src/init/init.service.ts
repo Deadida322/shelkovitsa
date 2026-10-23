@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { Repository } from 'typeorm';
@@ -8,13 +8,33 @@ import { getColorsPath, getSizesPath } from 'src/helpers/storageHelper';
 import { ProductSize } from 'src/db/entities/ProductSize';
 
 @Injectable()
-export class InitService {
+export class InitService implements OnApplicationBootstrap {
+	private readonly logger = new Logger(InitService.name);
+
 	constructor(
 		@InjectRepository(ProductColor)
 		private readonly productColorRepository: Repository<ProductColor>,
 		@InjectRepository(ProductSize)
 		private readonly productSizeRepository: Repository<ProductSize>
 	) {}
+
+	// Синхронизация справочников цветов и размеров из data/*.xlsx при старте.
+	// Ошибка не должна ронять приложение: справочники можно поправить позже.
+	async onApplicationBootstrap() {
+		for (const [name, init] of [
+			['цветов', () => this.initColors()],
+			['размеров', () => this.initSizes()]
+		] as const) {
+			try {
+				await init();
+			} catch (err) {
+				this.logger.error(
+					`Не удалось загрузить справочник ${name}`,
+					err instanceof Error ? err.stack : String(err)
+				);
+			}
+		}
+	}
 
 	public async initColors() {
 		try {

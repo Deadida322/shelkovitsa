@@ -1,15 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ProductModule } from './product/product.module';
 import { AuthModule } from './auth/auth.module';
-import configuration from './config/index';
-// import { TypeOrmModule } from '@nestjs/typeorm';
-import { TypeOrmModule } from './db/typeOrmModule';
+import configuration, { EnvironmentVariables } from './config/index';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { BenefitModule } from './benefit/benefit.module';
 import { ProductCategoryModule } from './product-category/product-category.module';
 import { MulterModule } from '@nestjs/platform-express';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { FileModule } from './file/file.module';
 import { ProductColorModule } from './product-color/product-color.module';
 import { OrderModule } from './order/order.module';
@@ -18,46 +17,73 @@ import { ProductArticleModule } from './product-article/product-article.module';
 import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 import { ProductSizeModule } from './product-size/product-size.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { InitModule } from './init/init.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { baseDestPath, baseSrcPath } from './helpers/storageHelper';
+import { createDataSourceOptions } from './db/dataSourceOptions';
+import { HealthModule } from './health/health.module';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+
+type AppConfigService = ConfigService<EnvironmentVariables, true>;
+
 @Module({
 	imports: [
 		ScheduleModule.forRoot(),
 		configuration,
-		TypeOrmModule,
-		JwtModule.register({
-			global: true,
-			secret: process.env.JWT_PUBLIC_KEY,
-			signOptions: { expiresIn: process.env.JWT_PUBLIC_EXP }
+		TypeOrmModule.forRootAsync({
+			inject: [ConfigService],
+			useFactory: (config: AppConfigService) =>
+				createDataSourceOptions({
+					DB_HOST: config.get('DB_HOST'),
+					DB_PORT: config.get('DB_PORT'),
+					DB_USER: config.get('DB_USER'),
+					DB_PASSWORD: config.get('DB_PASSWORD'),
+					DB_NAME: config.get('DB_NAME')
+				})
 		}),
-		MulterModule.registerAsync({
-			imports: [ConfigModule],
-			useFactory: async (configService: ConfigService) => ({
-				dest: baseSrcPath()
-			}),
-			inject: [ConfigService]
+		JwtModule.registerAsync({
+			global: true,
+			inject: [ConfigService],
+			useFactory: (config: AppConfigService) => ({
+				secret: config.get('JWT_PUBLIC_KEY'),
+				signOptions: { expiresIn: config.get('JWT_PUBLIC_EXP') }
+			})
+		}),
+		ThrottlerModule.forRootAsync({
+			inject: [ConfigService],
+			useFactory: (config: AppConfigService) => ({
+				// Базовый лимит на IP — только от явного злоупотребления: SSR Nuxt ходит в API
+				// с одного адреса за всех посетителей. Строгие лимиты — через @Throttle
+				// на auth и создании заказа (эти запросы идут из браузера напрямую).
+				throttlers: [{ name: 'default', ttl: 60_000, limit: 1000 }],
+				skipIf: () => config.get('THROTTLE_ENABLED', { infer: true }) === 'false'
+			})
+		}),
+		MulterModule.register({
+			dest: baseSrcPath()
 		}),
 		NestjsFormDataModule.config({
 			storage: MemoryStoredFile,
 			isGlobal: true
 		}),
-		ServeStaticModule.forRoot({
-			rootPath: baseDestPath(),
-			serveRoot: '/static'
+		ServeStaticModule.forRootAsync({
+			useFactory: () => [
+				{
+					rootPath: baseDestPath(),
+					serveRoot: '/static'
+				}
+			]
 		}),
-		// TelegrafModule.forRoot({
-		// 	token: process.env.TELEGRAM_TOKEN
-		// }),
 		...(process.env.TELEGRAM_ENABLED !== 'false' && process.env.TELEGRAM_TOKEN
 			? [
 					TelegrafModule.forRootAsync({
-						useFactory: () => ({
-							token: process.env.TELEGRAM_TOKEN,
-							// We only send messages from services; do not launch polling/webhook on boot.
-							// This prevents app crash if Telegram API is temporarily unreachable.
+						inject: [ConfigService],
+						useFactory: (config: AppConfigService) => ({
+							token: config.get('TELEGRAM_TOKEN'),
+							// Бот только отправляет сообщения из сервисов: polling/webhook не запускаем,
+							// чтобы приложение не падало при недоступности Telegram API
 							launchOptions: false
 						})
 					})
@@ -65,7 +91,6 @@ import { baseDestPath, baseSrcPath } from './helpers/storageHelper';
 			: []),
 		ProductModule,
 		AuthModule,
-		AppModule,
 		UserModule,
 		BenefitModule,
 		ProductCategoryModule,
@@ -75,9 +100,14 @@ import { baseDestPath, baseSrcPath } from './helpers/storageHelper';
 		DeliveryTypeModule,
 		ProductArticleModule,
 		ProductSizeModule,
-		InitModule
+		InitModule,
+		HealthModule
+	],
+	providers: [
+		{
+			provide: APP_GUARD,
+			useClass: ThrottlerGuard
+		}
 	]
 })
-export class AppModule {
-	// constructor(private dataSource: DataSource) {}
-}
+export class AppModule {}

@@ -20,11 +20,15 @@ import { Repository } from 'typeorm';
 import { RegisterDto } from './dto/RegisterDto';
 import { UserDto } from './dto/UserDto';
 import { convertToJson } from 'src/helpers/convertHelper';
-import { encodePsd } from 'src/helpers/authHelper';
+import { hashPassword } from 'src/helpers/authHelper';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/LoginDto';
 import { Response, Request } from 'express';
 import { Auth } from 'src/decorators/auth';
+import { Throttle } from '@nestjs/throttler';
+
+// Защита от перебора паролей и массовой регистрации
+const AUTH_THROTTLE = { default: { limit: 10, ttl: 60_000 } };
 
 interface ICookieOptions {
 	secure: boolean;
@@ -49,9 +53,17 @@ export class AuthController {
 	) {}
 
 	@Post('register')
+	@Throttle(AUTH_THROTTLE)
 	@ApiOperation({ summary: 'Регистрация нового пользователя' })
-	@ApiResponse({ status: 201, description: 'Пользователь зарегистрирован', type: UserDto })
-	@ApiResponse({ status: 400, description: 'Ошибка валидации или пользователь уже существует' })
+	@ApiResponse({
+		status: 201,
+		description: 'Пользователь зарегистрирован',
+		type: UserDto
+	})
+	@ApiResponse({
+		status: 400,
+		description: 'Ошибка валидации или пользователь уже существует'
+	})
 	@ApiBody({ type: RegisterDto })
 	async register(
 		@Body() registerDto: RegisterDto,
@@ -70,8 +82,9 @@ export class AuthController {
 		}
 
 		const newUser = await this.usersRepository.save({
-			...registerDto,
-			password: encodePsd(registerDto.password)
+			mail: registerDto.mail,
+			fio: registerDto.fio,
+			password: await hashPassword(registerDto.password)
 		});
 
 		const res = convertToJson(UserDto, newUser);
@@ -84,6 +97,7 @@ export class AuthController {
 	}
 
 	@Post('login')
+	@Throttle(AUTH_THROTTLE)
 	@ApiOperation({ summary: 'Вход в систему' })
 	@ApiResponse({ status: 200, description: 'Успешный вход', type: UserDto })
 	@ApiResponse({ status: 401, description: 'Неверные учетные данные' })
@@ -103,13 +117,14 @@ export class AuthController {
 	@ApiCookieAuth('access_token')
 	@ApiResponse({ status: 200, description: 'Информация о пользователе', type: UserDto })
 	async getMe(@Req() request: Request): Promise<UserDto> {
-		if (request.user) {
-			const isAdmin = await this.authService.isUserAdmin(request.user);
-			return convertToJson(UserDto, {
-				...request.user,
-				isAdmin
-			});
-		}
-		return null;
+		return convertToJson(UserDto, request.user);
+	}
+
+	@Post('logout')
+	@ApiOperation({ summary: 'Выход из системы' })
+	@ApiResponse({ status: 201, description: 'Кука авторизации сброшена' })
+	logout(@Res({ passthrough: true }) response: Response) {
+		response.clearCookie('access_token', cookieOptions);
+		return '';
 	}
 }

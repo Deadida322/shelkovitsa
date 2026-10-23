@@ -3,13 +3,10 @@ import { OrderController } from './order.controller';
 import { OrderService } from './order.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Order } from 'src/db/entities/Order';
-import { OrderProduct } from 'src/db/entities/OrderProduct';
-import { Product } from 'src/db/entities/Product';
-import { TelegramOrderMessage } from 'src/db/entities/TelegramOrderMessage';
-import { ConfigModule } from '@nestjs/config';
+import { TelegramModule } from 'src/telegram/telegram.module';
 
 @Module({
-	imports: [TypeOrmModule.forFeature([Order, OrderProduct, Product, TelegramOrderMessage]), ConfigModule],
+	imports: [TypeOrmModule.forFeature([Order]), TelegramModule],
 	controllers: [OrderController],
 	providers: [OrderService]
 })

@@ -28,6 +28,10 @@ export class OrderDto {
 	address!: string;
 
 	@Expose()
+	@Transform(({ value }) => (value == null ? value : Number(value)))
+	price!: number;
+
+	@Expose()
 	@Type(() => DeliveryTypeDto)
 	deliveryType!: DeliveryTypeDto;
 

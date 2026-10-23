@@ -1,18 +1,16 @@
 import { DataSource } from 'typeorm';
 import 'dotenv/config';
-import * as path from 'path';
+import { createDataSourceOptions } from './dataSourceOptions';
 
-const AppDataSource = new DataSource({
-	type: 'postgres',
-	host: process.env.DB_HOST,
-	port: +process.env.DB_PORT,
-	username: process.env.DB_USER,
-	password: process.env.DB_PASSWORD,
-	database: process.env.DB_NAME,
-	entities: [path.join(__dirname, 'entities/**{.ts,.js}')],
-	migrations: [path.join(__dirname, 'migrations/**{.ts,.js}')],
-	logging: false,
-	synchronize: false
-});
+// Используется TypeORM CLI (migration:generate / migration:run)
+const AppDataSource = new DataSource(
+	createDataSourceOptions({
+		DB_HOST: process.env.DB_HOST,
+		DB_PORT: process.env.DB_PORT,
+		DB_USER: process.env.DB_USER,
+		DB_PASSWORD: process.env.DB_PASSWORD,
+		DB_NAME: process.env.DB_NAME
+	})
+);
 
 export default AppDataSource;
