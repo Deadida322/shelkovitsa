@@ -7,10 +7,7 @@ import {
 	IsOptional,
 	IsString
 } from 'class-validator';
-import {
-	IsFiles,
-	MemoryStoredFile
-} from 'nestjs-form-data';
+import { IsFiles, MemoryStoredFile } from 'nestjs-form-data';
 import 'reflect-metadata';
 
 export class CreateProductArticleDto {

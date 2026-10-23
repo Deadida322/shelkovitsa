@@ -1,5 +1,5 @@
-import { Expose, Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { Expose } from 'class-transformer';
+import { IsInt, IsNotEmpty } from 'class-validator';
 import { CreateProductSubcategoryDto } from './CreateProductSubcategoryDto';
 
 export class UpdateProductSubcategoryDto extends CreateProductSubcategoryDto {

@@ -5,7 +5,6 @@ import { ProductSize } from './ProductSize';
 import { ProductColor } from './ProductColor';
 import { OrderProduct } from './OrderProduct';
 import { ProductArticle } from './ProductArticle';
-import { ProductFile } from './ProductFile';
 
 @Entity()
 export class Product extends BaseEntity {

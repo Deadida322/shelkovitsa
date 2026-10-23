@@ -1,4 +1,4 @@
-import { Expose,  } from 'class-transformer';
+import { Expose } from 'class-transformer';
 import { IsNotEmpty, IsNumberString } from 'class-validator';
 import { HasMimeType, IsFile, MaxFileSize, MemoryStoredFile } from 'nestjs-form-data';
 import 'reflect-metadata';

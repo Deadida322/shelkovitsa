@@ -1,4 +1,4 @@
-import { Expose, Transform, Type } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 import { IsEnum, IsInt, IsNotEmpty, Min } from 'class-validator';
 import 'reflect-metadata';
 import { OrderStatus } from 'src/db/entities/Order';

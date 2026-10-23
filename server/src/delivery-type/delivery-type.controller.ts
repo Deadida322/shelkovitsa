@@ -9,7 +9,11 @@ export class DeliveryTypeController {
 	constructor(private readonly deliveryTypeService: DeliveryTypeService) {}
 	@Get()
 	@ApiOperation({ summary: 'Получить список типов доставки' })
-	@ApiResponse({ status: 200, description: 'Список типов доставки', type: [DeliveryTypeDto] })
+	@ApiResponse({
+		status: 200,
+		description: 'Список типов доставки',
+		type: [DeliveryTypeDto]
+	})
 	async getList(): Promise<DeliveryTypeDto[]> {
 		return this.deliveryTypeService.getList();
 	}

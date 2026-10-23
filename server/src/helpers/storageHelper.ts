@@ -107,7 +107,7 @@ export function parseFileBuilder(
 }
 
 export async function moveFileToStatic(image: MemoryStoredFile) {
-	let hash = (Math.random() + 1).toString(36).substring(5);
+	const hash = (Math.random() + 1).toString(36).substring(5);
 	const fileName = `${hash}.${image.extension}`;
 	const destPath = getDestPath(fileName);
 	await fsPromises.writeFile(destPath, image.buffer);

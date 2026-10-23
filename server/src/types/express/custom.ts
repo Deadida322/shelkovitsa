@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer';
+import { Expose } from 'class-transformer';
 import 'reflect-metadata';
 
 export class UserInRequest {

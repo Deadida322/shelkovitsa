@@ -53,4 +53,3 @@ export class TelegramOrderMessage extends BaseEntity {
 	})
 	retryCount!: number; // Количество попыток отправки
 }
-

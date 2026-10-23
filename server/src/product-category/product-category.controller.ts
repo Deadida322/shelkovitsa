@@ -14,8 +14,7 @@ import {
 	ApiResponse,
 	ApiBearerAuth,
 	ApiCookieAuth,
-	ApiBody,
-	ApiParam
+	ApiBody
 } from '@nestjs/swagger';
 import { ProductCategoryService } from './product-category.service';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
@@ -34,7 +33,11 @@ export class ProductCategoryController {
 	constructor(private readonly productCategoryService: ProductCategoryService) {}
 	@Get()
 	@ApiOperation({ summary: 'Получить список категорий продуктов' })
-	@ApiResponse({ status: 200, description: 'Список категорий', type: [ListProductCategoryDto] })
+	@ApiResponse({
+		status: 200,
+		description: 'Список категорий',
+		type: [ListProductCategoryDto]
+	})
 	async getList(): Promise<ListProductCategoryDto[]> {
 		return this.productCategoryService.getList();
 	}
@@ -44,7 +47,11 @@ export class ProductCategoryController {
 	@ApiOperation({ summary: 'Создать категорию продукта (админ)' })
 	@ApiBearerAuth('JWT-auth')
 	@ApiCookieAuth('access_token')
-	@ApiResponse({ status: 201, description: 'Категория создана', type: ProductCategoryDto })
+	@ApiResponse({
+		status: 201,
+		description: 'Категория создана',
+		type: ProductCategoryDto
+	})
 	@ApiBody({ type: CreateProductCategoryDto })
 	async create(@Body() payload: CreateProductCategoryDto): Promise<ProductCategoryDto> {
 		return this.productCategoryService.createCategory(payload);

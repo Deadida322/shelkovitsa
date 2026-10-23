@@ -1,12 +1,13 @@
-import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
+import { Injectable, PipeTransform } from '@nestjs/common';
 import * as path from 'path';
 import * as sharp from 'sharp';
 import { getDestPath } from './storageHelper';
 
 @Injectable()
-export class SharpPipe
-	implements PipeTransform<Express.Multer.File, Promise<string | undefined>>
-{
+export class SharpPipe implements PipeTransform<
+	Express.Multer.File,
+	Promise<string | undefined>
+> {
 	async transform(image: Express.Multer.File): Promise<string> {
 		if (!image) return undefined;
 		const originalName = path.parse(image.originalname).name;

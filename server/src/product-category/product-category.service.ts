@@ -179,7 +179,7 @@ export class ProductCategoryService {
 			throw new BadRequestException('Такая категория не существует!');
 		}
 
-		let subcategory = await this.productSubcategoryRepository.findOne({
+		const subcategory = await this.productSubcategoryRepository.findOne({
 			where: {
 				id: subcategoryId,
 				...baseWhere
@@ -242,7 +242,7 @@ export class ProductCategoryService {
 			throw new BadRequestException('Такого продукта не существует!');
 		}
 
-		let subcategory = await this.productSubcategoryRepository.findOne({
+		const subcategory = await this.productSubcategoryRepository.findOne({
 			where: {
 				id: subcategoryId,
 				...baseWhere

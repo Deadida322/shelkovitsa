@@ -42,7 +42,10 @@ export class CreateOrderDto {
 	})
 	tel!: string;
 
-	@ApiPropertyOptional({ description: 'Комментарий к заказу', example: 'Комментарий к заказу' })
+	@ApiPropertyOptional({
+		description: 'Комментарий к заказу',
+		example: 'Комментарий к заказу'
+	})
 	@IsOptional()
 	@IsString({
 		message: 'Поле должно быть строкой'
@@ -83,8 +86,8 @@ export class CreateOrderDto {
 	})
 	deliveryTypeId!: number;
 
-	@ApiProperty({ 
-		description: 'Список продуктов в заказе', 
+	@ApiProperty({
+		description: 'Список продуктов в заказе',
 		type: [CreateOrderProductDto],
 		example: [{ productId: 1, amount: 2 }]
 	})
