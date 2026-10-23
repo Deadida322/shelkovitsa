@@ -18,12 +18,13 @@ import {
 } from '@nestjs/common';
 import { ApiConsumes, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import * as fs from 'node:fs/promises';
-import { FormDataRequest } from 'nestjs-form-data';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import {
 	existsFile,
 	fileInterceptor,
 	getSrcPath,
+	imageInterceptor,
+	ParseImagePipe,
 	parseFileBuilder
 } from 'src/helpers/storageHelper';
 import { PaginatedDto } from 'src/common/dto/PaginatedDto';
@@ -31,10 +32,8 @@ import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { ProductArticleAdminDto } from './dto/ProductArticleAdminDto';
 import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
-import { UploadImageDto } from './dto/UploadImageDto';
 import { UploadProductArticleFileDto } from './dto/UploadProductArticleFileDto';
 import { ProductArticleService } from './product-article.service';
-import { excelFileType } from './product-article.types';
 import { ProductImportService } from './product-import.service';
 
 @ApiTags('Admin: Product Article')
@@ -74,13 +73,14 @@ export class ProductArticleAdminController {
 	}
 
 	@Post(':id/images')
-	@FormDataRequest()
+	@UseInterceptors(imageInterceptor)
 	@ApiConsumes('multipart/form-data')
+	@ApiOperation({ summary: 'Загрузить фото (поле image: JPEG, PNG или WebP до 5 МБ)' })
 	async uploadImage(
 		@Param('id', ParseIntPipe) id: number,
-		@Body() payload: UploadImageDto
+		@UploadedFile(new ParseImagePipe()) image: Express.Multer.File
 	): Promise<void> {
-		await this.productArticleService.uploadImage(id, payload);
+		await this.productArticleService.uploadImage(id, image);
 	}
 
 	@Patch('images/:fileId/logo')
@@ -103,7 +103,7 @@ export class ProductArticleAdminController {
 		summary: 'Импорт каталога из Excel. Возвращает Excel со строками-ошибками'
 	})
 	async import(
-		@UploadedFile(parseFileBuilder(excelFileType))
+		@UploadedFile(parseFileBuilder())
 		file: Express.Multer.File,
 		@Body() uploadFileDto: UploadProductArticleFileDto
 	) {

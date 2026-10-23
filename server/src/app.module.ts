@@ -14,10 +14,8 @@ import { ProductColorModule } from './product-color/product-color.module';
 import { OrderModule } from './order/order.module';
 import { DeliveryTypeModule } from './delivery-type/delivery-type.module';
 import { ProductArticleModule } from './product-article/product-article.module';
-import { MemoryStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 import { ProductSizeModule } from './product-size/product-size.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { TelegrafModule } from 'nestjs-telegraf';
 import { InitModule } from './init/init.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { baseDestPath, baseSrcPath } from './helpers/storageHelper';
@@ -64,10 +62,6 @@ type AppConfigService = ConfigService<EnvironmentVariables, true>;
 		MulterModule.register({
 			dest: baseSrcPath()
 		}),
-		NestjsFormDataModule.config({
-			storage: MemoryStoredFile,
-			isGlobal: true
-		}),
 		ServeStaticModule.forRootAsync({
 			useFactory: () => [
 				{
@@ -76,19 +70,6 @@ type AppConfigService = ConfigService<EnvironmentVariables, true>;
 				}
 			]
 		}),
-		...(process.env.TELEGRAM_ENABLED !== 'false' && process.env.TELEGRAM_TOKEN
-			? [
-					TelegrafModule.forRootAsync({
-						inject: [ConfigService],
-						useFactory: (config: AppConfigService) => ({
-							token: config.get('TELEGRAM_TOKEN'),
-							// Бот только отправляет сообщения из сервисов: polling/webhook не запускаем,
-							// чтобы приложение не падало при недоступности Telegram API
-							launchOptions: false
-						})
-					})
-				]
-			: []),
 		ProductModule,
 		AuthModule,
 		UserModule,

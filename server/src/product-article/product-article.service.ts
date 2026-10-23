@@ -33,7 +33,6 @@ import { moveFileToStatic, removeFile } from 'src/helpers/storageHelper';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
 import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
-import { UploadImageDto } from './dto/UploadImageDto';
 import { baseProductWhere } from './product-article.types';
 
 @Injectable()
@@ -186,7 +185,7 @@ export class ProductArticleService {
 		return articles;
 	}
 
-	async uploadImage(articleId: number, payload: UploadImageDto) {
+	async uploadImage(articleId: number, image: Express.Multer.File) {
 		const productArticle = await this.productArticleRepository.findOne({
 			where: { id: articleId },
 			withDeleted: true,
@@ -196,7 +195,7 @@ export class ProductArticleService {
 			throw new NotFoundException('Не найдено такого продукта');
 		}
 
-		const name = await moveFileToStatic(payload.image);
+		const name = await moveFileToStatic(image);
 		await this.productFileRepository.save({
 			name,
 			isLogo: productArticle.productFiles.length === 0,

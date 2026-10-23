@@ -1,14 +1,16 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
 import * as fsPromises from 'fs/promises';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { randomBytes } from 'crypto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage, memoryStorage } from 'multer';
 import {
 	HttpStatus,
 	InternalServerErrorException,
-	ParseFilePipeBuilder
+	ParseFilePipeBuilder,
+	PipeTransform,
+	UnprocessableEntityException
 } from '@nestjs/common';
-import { MemoryStoredFile } from 'nestjs-form-data';
 
 const COLORS_PATH = path.join(process.cwd(), 'data', 'colors.xlsx');
 const SIZES_PATH = path.join(process.cwd(), 'data', 'sizes.xlsx');
@@ -77,24 +79,58 @@ export const fileInterceptor = FileInterceptor('file', {
 	})
 });
 
-export function imagesInterceptor(filesCount: number = 10) {
-	return FilesInterceptor('images', filesCount, {
-		storage: diskStorage({
-			destination: function (req, file, cb) {
-				const path = getSrcPath();
-				cb(null, path);
-			},
-			filename: function (req, file, cb) {
-				cb(null, `${Date.now()}-${file.originalname}`); //Appending extension
-			}
-		})
-	});
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+// Фото товара: в память (в статику пишем под своим именем), до 5 МБ
+export const imageInterceptor = FileInterceptor('image', {
+	storage: memoryStorage(),
+	limits: { fileSize: MAX_IMAGE_BYTES }
+});
+
+const IMAGE_SIGNATURES: { ext: string; mime: string; test: (b: Buffer) => boolean }[] = [
+	{
+		ext: 'jpg',
+		mime: 'image/jpeg',
+		test: (b) => b.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))
+	},
+	{
+		ext: 'png',
+		mime: 'image/png',
+		test: (b) => b.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
+	},
+	{
+		ext: 'webp',
+		mime: 'image/webp',
+		test: (b) =>
+			b.subarray(0, 4).toString() === 'RIFF' &&
+			b.subarray(8, 12).toString() === 'WEBP'
+	}
+];
+
+// Проверяем содержимое файла, а не только заявленный Content-Type
+export class ParseImagePipe implements PipeTransform<
+	Express.Multer.File | undefined,
+	Express.Multer.File
+> {
+	transform(file?: Express.Multer.File): Express.Multer.File {
+		if (!file?.buffer?.length) {
+			throw new UnprocessableEntityException('Нужен файл изображения в поле image');
+		}
+		if (
+			!IMAGE_SIGNATURES.some(
+				(sig) => sig.mime === file.mimetype && sig.test(file.buffer)
+			)
+		) {
+			throw new UnprocessableEntityException(
+				'Допустимы только изображения JPEG, PNG или WebP'
+			);
+		}
+		return file;
+	}
 }
 
-export function parseFileBuilder(
-	_fileType: string | RegExp,
-	fileIsRequired: boolean = true
-) {
+// Excel-импорт: размер ограничен здесь, формат проверяется по сигнатуре в контроллере
+export function parseFileBuilder(fileIsRequired: boolean = true) {
 	return new ParseFilePipeBuilder()
 		.addMaxSizeValidator({
 			maxSize: getUploadMaxSizeBytes(),
@@ -106,11 +142,10 @@ export function parseFileBuilder(
 		});
 }
 
-export async function moveFileToStatic(image: MemoryStoredFile) {
-	const hash = (Math.random() + 1).toString(36).substring(5);
-	const fileName = `${hash}.${image.extension}`;
-	const destPath = getDestPath(fileName);
-	await fsPromises.writeFile(destPath, image.buffer);
+export async function moveFileToStatic(image: Express.Multer.File) {
+	const ext = IMAGE_SIGNATURES.find((sig) => sig.test(image.buffer))?.ext ?? 'jpg';
+	const fileName = `${randomBytes(8).toString('hex')}.${ext}`;
+	await fsPromises.writeFile(getDestPath(fileName), image.buffer);
 	return fileName;
 }
 

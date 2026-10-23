@@ -225,6 +225,24 @@ describe('Админка каталога (e2e)', () => {
 			expect(fs.existsSync(getDestPath(second.name))).toBe(false);
 		});
 
+		it('не-картинка и подделанный Content-Type — 422', async () => {
+			const upload = (buffer: Buffer, filename: string, contentType: string) =>
+				admin
+					.post(`/api/admin/product-article/${catalog.article.id}/images`)
+					.attach('image', buffer, { filename, contentType });
+
+			await upload(Buffer.from('просто текст'), 'note.txt', 'text/plain').expect(
+				422
+			);
+			await upload(Buffer.from('<?php echo 1;'), 'photo.png', 'image/png').expect(
+				422
+			);
+			await admin
+				.post(`/api/admin/product-article/${catalog.article.id}/images`)
+				.expect(422);
+			expect(await files()).toHaveLength(0);
+		});
+
 		it('загрузка фото к несуществующему артикулу — 404', async () => {
 			await uploadImage(9999).expect(404);
 		});

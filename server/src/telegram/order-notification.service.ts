@@ -1,9 +1,9 @@
-import { Injectable, Logger, OnApplicationShutdown, Optional } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationShutdown, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { InjectBot } from 'nestjs-telegraf';
-import { Telegraf } from 'telegraf';
+import { Telegram } from 'telegraf';
+import { TELEGRAM } from './telegram.constants';
 import { In, LessThan, Repository } from 'typeorm';
 import { Order } from 'src/db/entities/Order';
 import {
@@ -23,9 +23,8 @@ export class OrderNotificationService implements OnApplicationShutdown {
 		private readonly orderRepository: Repository<Order>,
 		@InjectRepository(TelegramOrderMessage)
 		private readonly telegramMessageRepository: Repository<TelegramOrderMessage>,
-		@Optional()
-		@InjectBot()
-		private readonly bot: Telegraf | undefined,
+		@Inject(TELEGRAM)
+		private readonly telegram: Telegram | null,
 		private readonly configService: ConfigService
 	) {}
 
@@ -67,7 +66,7 @@ export class OrderNotificationService implements OnApplicationShutdown {
 		}
 
 		// Проверяем наличие бота и токена перед отправкой
-		if (!this.bot) {
+		if (!this.telegram) {
 			await this.updateTelegramStatus(
 				newOrder.id,
 				TelegramMessageStatus.FAILED,
@@ -113,7 +112,7 @@ export class OrderNotificationService implements OnApplicationShutdown {
 			];
 
 			const parse_html = html.join('');
-			const message = await this.bot.telegram.sendMessage(chatTgId, parse_html, {
+			const message = await this.telegram.sendMessage(chatTgId, parse_html, {
 				parse_mode: 'HTML'
 			});
 
@@ -259,7 +258,7 @@ export class OrderNotificationService implements OnApplicationShutdown {
 			};
 		}
 
-		if (!this.bot) {
+		if (!this.telegram) {
 			return { success: false, message: 'Telegram бот недоступен' };
 		}
 
@@ -354,7 +353,7 @@ export class OrderNotificationService implements OnApplicationShutdown {
 			return;
 		}
 
-		if (!this.bot) {
+		if (!this.telegram) {
 			this.logger.log(
 				'[Cron] Telegram бот недоступен, пропуск автоматической реотправки'
 			);

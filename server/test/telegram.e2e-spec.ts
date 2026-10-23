@@ -47,7 +47,7 @@ describe('Telegram-уведомления (e2e)', () => {
 		service = new OrderNotificationService(
 			dataSource.getRepository(Order),
 			dataSource.getRepository(TelegramOrderMessage),
-			{ telegram: { sendMessage } } as any,
+			{ sendMessage } as any,
 			config
 		);
 	});
