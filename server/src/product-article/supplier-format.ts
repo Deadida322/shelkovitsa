@@ -1,4 +1,4 @@
-import * as xlsx from 'node-xlsx';
+import { readSheet } from 'src/helpers/excelHelper';
 import { getColorsPath, getSizesPath } from 'src/helpers/storageHelper';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 
@@ -50,8 +50,11 @@ export function normalizeSupplierSize(value: unknown): string {
 	return String(value ?? '').trim();
 }
 
-export function readMappingFile(filePath: string, normalize: (value: string) => string) {
-	const data = xlsx.parse(filePath)[0].data;
+export async function readMappingFile(
+	filePath: string,
+	normalize: (value: string) => string
+) {
+	const data = await readSheet(filePath);
 	const map = new Map<string, string>();
 	for (const [from, to] of data) {
 		const source = String(from ?? '').trim();

@@ -2,13 +2,13 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as xlsx from 'node-xlsx';
 import { DataSource } from 'typeorm';
 import { AppModule } from 'src/app.module';
 import { DeliveryType } from 'src/db/entities/DeliveryType';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { User, UserRole } from 'src/db/entities/User';
 import { hashPassword } from 'src/helpers/authHelper';
+import { buildXlsx, readSheet } from 'src/helpers/excelHelper';
 import { getSrcPath, initDiskStorage } from 'src/helpers/storageHelper';
 import { ProductImportService } from 'src/product-article/product-import.service';
 
@@ -103,8 +103,7 @@ async function seedCatalog(
 	articlesLimit: number,
 	downloadImages: boolean
 ) {
-	const [sheet] = xlsx.parse(sourceFile);
-	const [header, ...rows] = sheet.data as unknown[][];
+	const [header, ...rows] = await readSheet(sourceFile);
 
 	const articles = new Set<string>();
 	const selected = rows.filter((row) => {
@@ -116,10 +115,7 @@ async function seedCatalog(
 	});
 
 	const subsetFile = getSrcPath(`seed-${Date.now()}.xlsx`);
-	await fs.writeFile(
-		subsetFile,
-		xlsx.build([{ name: 'seed', data: [header, ...selected], options: {} }])
-	);
+	await fs.writeFile(subsetFile, await buildXlsx('seed', [header, ...selected]));
 	console.log(
 		`Импорт ${articles.size} артикулов (${selected.length} строк) из ${path.basename(sourceFile)}` +
 			(downloadImages
@@ -133,7 +129,7 @@ async function seedCatalog(
 			{ isDeletedOther: false },
 			{ downloadImages }
 		);
-		const errors = xlsx.parse(errorsFile)[0].data.length;
+		const errors = (await readSheet(errorsFile)).length;
 		console.log(errors ? `Строк с ошибками: ${errors}` : 'Импорт без ошибок');
 	} finally {
 		await fs.unlink(subsetFile).catch(() => undefined);

@@ -122,32 +122,37 @@ export class ProductArticleAdminController {
 	}
 }
 
-const EXCEL_MIME_TYPES = new Set([
+const XLSX_MIME_TYPES = new Set([
 	'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-	'application/vnd.ms-excel',
 	'application/octet-stream'
 ]);
 
+// Старый бинарный .xls не поддерживается: его нужно пересохранить в .xlsx
 async function assertExcelFile(filePath: string, file: Express.Multer.File) {
 	if (!(await existsFile(filePath))) {
 		throw new InternalServerErrorException('Файл не найден');
 	}
-	const mimeType = (file?.mimetype || '').toLowerCase();
-	const hasValidExtension = /\.(xlsx|xls)$/i.test(file?.originalname || '');
-	if (!EXCEL_MIME_TYPES.has(mimeType) && !hasValidExtension) {
-		throw new BadRequestException(
-			`Неверный тип файла: ${mimeType || 'unknown'}. Разрешены только Excel (.xlsx/.xls)`
-		);
-	}
-
 	const fh = await fs.open(filePath, 'r');
 	const header = Buffer.alloc(8);
 	await fh.read(header, 0, 8, 0);
 	await fh.close();
 	const signature = header.toString('hex');
-	const isXlsx = signature.startsWith('504b0304'); // ZIP
-	const isXls = signature.startsWith('d0cf11e0a1b11ae1'); // OLE Compound File
-	if (!isXlsx && !isXls) {
-		throw new BadRequestException('Файл не похож на Excel (.xlsx/.xls)');
+	if (signature.startsWith('d0cf11e0a1b11ae1')) {
+		// OLE Compound File
+		throw new BadRequestException(
+			'Формат .xls не поддерживается — пересохраните файл в Excel как .xlsx'
+		);
+	}
+
+	const mimeType = (file?.mimetype || '').toLowerCase();
+	const hasValidExtension = /\.xlsx$/i.test(file?.originalname || '');
+	if (!XLSX_MIME_TYPES.has(mimeType) && !hasValidExtension) {
+		throw new BadRequestException(
+			`Неверный тип файла: ${mimeType || 'unknown'}. Разрешён только Excel (.xlsx)`
+		);
+	}
+	if (!signature.startsWith('504b0304')) {
+		// ZIP
+		throw new BadRequestException('Файл не похож на Excel (.xlsx)');
 	}
 }

@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as xlsx from 'node-xlsx';
+import { readSheet } from 'src/helpers/excelHelper';
 import {
 	analyzeSupplierRows,
 	ReadinessReport
@@ -22,8 +22,7 @@ async function main() {
 	const imagesToCheck = Number(valueOf(args, '--check-images') ?? 0);
 	const jsonOut = valueOf(args, '--json');
 
-	const [sheet] = xlsx.parse(file);
-	const rows = sheet.data as unknown[][];
+	const rows = await readSheet(file);
 	const header = rows[0]?.map(String) ?? [];
 	const body = Number.isNaN(Number(rows[0]?.[7])) ? rows.slice(1) : rows;
 

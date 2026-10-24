@@ -1,8 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import * as xlsx from 'node-xlsx';
 import { ProductFile } from 'src/db/entities/ProductFile';
+import { buildXlsx, readSheet } from 'src/helpers/excelHelper';
 import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import { DataSource } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
@@ -42,10 +42,6 @@ function row(values: {
 	return cells;
 }
 
-function buildXlsx(rows: unknown[][]): Buffer {
-	return xlsx.build([{ name: 'Лист1', data: rows, options: {} }]);
-}
-
 const binaryParser = (res, callback) => {
 	const chunks: Buffer[] = [];
 	res.on('data', (chunk: Buffer) => chunks.push(chunk));
@@ -59,15 +55,16 @@ describe('Импорт каталога из Excel (e2e)', () => {
 	const manager = () => app.get(DataSource).manager;
 	const storage = () => app.get<FileStorage>(FILE_STORAGE);
 
-	const upload = (rows: unknown[][], isDeletedOther: string = 'false') =>
+	const upload = async (rows: unknown[][], isDeletedOther: string = 'false') =>
 		admin
 			.post('/api/admin/product-article/import')
 			.field('isDeletedOther', isDeletedOther)
-			.attach('file', buildXlsx(rows), 'import.xlsx')
+			.attach('file', await buildXlsx('Лист1', rows), 'import.xlsx')
 			.buffer(true)
-			.parse(binaryParser);
+			.parse(binaryParser)
+			.expect(200);
 
-	const errorRows = (body: Buffer) => xlsx.parse(body)[0].data as unknown[][];
+	const errorRows = (body: Buffer) => readSheet(body);
 
 	beforeAll(async () => {
 		app = await createTestApp();
@@ -91,10 +88,8 @@ describe('Импорт каталога из Excel (e2e)', () => {
 	});
 
 	it('создаёт скрытый артикул и вариант с сопоставленными цветом и размером', async () => {
-		const res = await upload([
-			row({ article: 'A-1', amount: 3, price: 1500 })
-		]).expect(200);
-		expect(errorRows(res.body)).toHaveLength(0);
+		const res = await upload([row({ article: 'A-1', amount: 3, price: 1500 })]);
+		expect(await errorRows(res.body)).toHaveLength(0);
 
 		const article = await manager().findOne(ProductArticle, {
 			where: { article: 'A-1' }
@@ -112,8 +107,8 @@ describe('Импорт каталога из Excel (e2e)', () => {
 	});
 
 	it('повторный импорт обновляет остаток, а не создаёт дубликат', async () => {
-		await upload([row({ article: 'A-1', amount: 3 })]).expect(200);
-		await upload([row({ article: 'A-1', amount: 7 })]).expect(200);
+		await upload([row({ article: 'A-1', amount: 3 })]);
+		await upload([row({ article: 'A-1', amount: 7 })]);
 
 		const products = await manager().find(Product, {
 			where: { productArticle: { article: 'A-1' } },
@@ -124,16 +119,16 @@ describe('Импорт каталога из Excel (e2e)', () => {
 	});
 
 	it('isDeletedOther=false (как шлёт фронт) не трогает остальной каталог', async () => {
-		await upload([row({ article: 'A-1' })]).expect(200);
-		await upload([row({ article: 'B-2' })], 'false').expect(200);
+		await upload([row({ article: 'A-1' })]);
+		await upload([row({ article: 'B-2' })], 'false');
 
 		const articles = await manager().find(ProductArticle);
 		expect(articles.map((a) => a.article).sort()).toEqual(['A-1', 'B-2']);
 	});
 
 	it('isDeletedOther=true заменяет каталог содержимым файла', async () => {
-		await upload([row({ article: 'A-1' }), row({ article: 'B-2' })]).expect(200);
-		await upload([row({ article: 'B-2' })], 'true').expect(200);
+		await upload([row({ article: 'A-1' }), row({ article: 'B-2' })]);
+		await upload([row({ article: 'B-2' })], 'true');
 
 		const articles = await manager().find(ProductArticle);
 		expect(articles.map((a) => a.article)).toEqual(['B-2']);
@@ -146,9 +141,9 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			row({ article: 'BAD-2', color: 'Неизвестный цвет' }),
 			row({ article: '', amount: 1 }),
 			row({ article: 'BAD-3', size: 'XXXXL-нет-такого' })
-		]).expect(200);
+		]);
 
-		const errors = errorRows(res.body);
+		const errors = await errorRows(res.body);
 		expect(errors).toHaveLength(4);
 		const text = errors.map((r) => r.join(' ')).join('\n');
 		expect(text).toMatch(/productSubcategory/);
@@ -168,7 +163,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			}),
 			row({ article: 'M-1', category: 'Мужское белье', subcategory: 'Трусы' }),
 			row({ article: 'M-2', category: 'Мужское белье', subcategory: 'Майки' })
-		]).expect(200);
+		]);
 
 		const categories = await manager().find(ProductCategory, {
 			relations: { productSubcategories: true },
@@ -190,9 +185,9 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			row({ article: 'A-1', amount: '>5' }),
 			row({ article: 'A-2', amount: '> 12', size: 2 }),
 			row({ article: 'A-3', amount: 'много' })
-		]).expect(200);
+		]);
 
-		expect(errorRows(res.body)).toHaveLength(1);
+		expect(await errorRows(res.body)).toHaveLength(1);
 		const amounts = (
 			await manager().find(Product, { relations: { productArticle: true } })
 		)
@@ -215,8 +210,8 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			'Размер',
 			'Цена'
 		];
-		const res = await upload([header, row({ article: 'A-1' })]).expect(200);
-		expect(errorRows(res.body)).toHaveLength(0);
+		const res = await upload([header, row({ article: 'A-1' })]);
+		expect(await errorRows(res.body)).toHaveLength(0);
 		expect(await manager().count(ProductArticle)).toBe(1);
 	});
 
@@ -269,8 +264,8 @@ describe('Импорт каталога из Excel (e2e)', () => {
 						`${base}/redirect`
 					]
 				})
-			]).expect(200);
-			expect(errorRows(res.body)).toHaveLength(0);
+			]);
+			expect(await errorRows(res.body)).toHaveLength(0);
 
 			const article = await manager().findOne(ProductArticle, {
 				where: { article: 'IMG-1' },
@@ -295,8 +290,8 @@ describe('Импорт каталога из Excel (e2e)', () => {
 
 		it('повторный импорт не скачивает уже загруженные фото', async () => {
 			const imported = row({ article: 'IMG-1', imageUrls: [`${base}/a.png`] });
-			await upload([imported]).expect(200);
-			await upload([imported]).expect(200);
+			await upload([imported]);
+			await upload([imported]);
 
 			expect(hits['/a.png']).toBe(1);
 			expect(await manager().count(ProductFile)).toBe(1);
@@ -310,11 +305,38 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			.expect((res) => expect([400, 422]).toContain(res.status));
 	});
 
+	it('старый .xls отклоняется с подсказкой пересохранить в .xlsx', async () => {
+		const ole = Buffer.concat([
+			Buffer.from('d0cf11e0a1b11ae1', 'hex'),
+			Buffer.alloc(504)
+		]);
+		const res = await admin
+			.post('/api/admin/product-article/import')
+			.attach('file', ole, 'import.xls')
+			.expect(400);
+		expect(res.body.error.message).toMatch(/пересохраните/);
+	});
+
+	it('битый xlsx — 400, каталог при isDeletedOther=true не очищается', async () => {
+		await upload([row({ article: 'A-1' })]);
+		const valid = await buildXlsx('Лист1', [row({ article: 'B-2' })]);
+		await admin
+			.post('/api/admin/product-article/import')
+			.field('isDeletedOther', 'true')
+			.attach('file', valid.subarray(0, valid.length - 30), 'import.xlsx')
+			.expect(400);
+		expect(await manager().count(ProductArticle)).toBe(1);
+	});
+
 	it('загружать каталог может только админ', async () => {
 		const customer = await registerAgent(app, CUSTOMER);
 		await customer
 			.post('/api/admin/product-article/import')
-			.attach('file', buildXlsx([row({ article: 'A-1' })]), 'import.xlsx')
+			.attach(
+				'file',
+				await buildXlsx('Лист1', [row({ article: 'A-1' })]),
+				'import.xlsx'
+			)
 			.expect(403);
 	});
 });

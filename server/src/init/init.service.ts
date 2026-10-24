@@ -1,9 +1,9 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as xlsx from 'node-xlsx';
 import { Repository } from 'typeorm';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductSize } from 'src/db/entities/ProductSize';
+import { readSheet } from 'src/helpers/excelHelper';
 import { getColorsPath, getSizesPath } from 'src/helpers/storageHelper';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 
@@ -41,7 +41,7 @@ export class InitService implements OnApplicationBootstrap {
 	}
 
 	async initColors() {
-		const names = readSecondColumn(await getColorsPath()).map((name) =>
+		const names = (await readSecondColumn(await getColorsPath())).map((name) =>
 			capitalizeFirstLetter(name)
 		);
 		const existing = await this.productColorRepository.find();
@@ -59,7 +59,7 @@ export class InitService implements OnApplicationBootstrap {
 	}
 
 	async initSizes() {
-		const names = readSecondColumn(await getSizesPath()).map((name) =>
+		const names = (await readSecondColumn(await getSizesPath())).map((name) =>
 			name.toUpperCase()
 		);
 		const existing = new Set(
@@ -74,9 +74,8 @@ export class InitService implements OnApplicationBootstrap {
 	}
 }
 
-function readSecondColumn(filePath: string): string[] {
-	const [sheet] = xlsx.parse(filePath);
-	return sheet.data
-		.map((row) => String(row?.[1] ?? '').trim())
+async function readSecondColumn(filePath: string): Promise<string[]> {
+	return (await readSheet(filePath))
+		.map((row) => String(row[1] ?? '').trim())
 		.filter((value) => value !== '');
 }

@@ -1,5 +1,4 @@
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
-import * as xlsx from 'node-xlsx';
 import { DataSource, EntityManager } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
@@ -8,6 +7,12 @@ import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
+import {
+	buildXlsx,
+	ExcelFileError,
+	readSheetRows,
+	SheetRow
+} from 'src/helpers/excelHelper';
 import { downloadImage } from 'src/helpers/imageDownloadHelper';
 import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
@@ -61,16 +66,12 @@ export class ProductImportService {
 		// для быстрого сида без сети картинки можно не качать
 		{ downloadImages = true }: { downloadImages?: boolean } = {}
 	): Promise<Buffer> {
-		let workSheetsFromFile: ReturnType<typeof xlsx.parse>;
-		try {
-			workSheetsFromFile = xlsx.parse(filePath);
-		} catch (e) {
-			throw new BadRequestException(
-				`Не удалось открыть Excel: ${e instanceof Error ? e.message : String(e)}`
-			);
-		}
-		const data = workSheetsFromFile?.[0]?.data as unknown[][];
-		if (!data?.length) {
+		// Первый проход — только проверка: каталог не трогаем, пока весь файл не прочитан
+		let rowCount = 0;
+		await this.readRows(filePath, () => {
+			rowCount++;
+		});
+		if (!rowCount) {
 			throw new BadRequestException(
 				'В файле нет данных на первом листе (пустой файл или неверный формат)'
 			);
@@ -83,19 +84,15 @@ export class ProductImportService {
 		const colorMap = await loadColorMap();
 		const sizeMap = await loadSizeMap();
 		const errorRows: unknown[][] = [];
+		let isFirstRow = true;
 
-		for (let index = 0; index < data.length; index++) {
-			const rowValues = Array.isArray(data[index]) ? data[index] : [];
-			const isRowEmpty = rowValues.every(
-				(value) =>
-					value === undefined || value === null || String(value).trim() === ''
-			);
-			if (isRowEmpty) {
-				continue;
-			}
+		await this.readRows(filePath, async ({ number, values: rowValues }) => {
 			// строка заголовка выгрузки («Код», «Категория», …, «Цена»)
-			if (index === 0 && Number.isNaN(Number(rowValues[COLUMNS.price]))) {
-				continue;
+			if (isFirstRow) {
+				isFirstRow = false;
+				if (Number.isNaN(Number(rowValues[COLUMNS.price]))) {
+					return;
+				}
 			}
 
 			try {
@@ -105,9 +102,9 @@ export class ProductImportService {
 					errorRows.push([
 						...rowValues,
 						'',
-						`В строке ${index + 1} отсутствуют обязательные поля: ${missing.join(', ')}`
+						`В строке ${number} отсутствуют обязательные поля: ${missing.join(', ')}`
 					]);
-					continue;
+					return;
 				}
 
 				const pending = await this.importRow(product, colorMap, sizeMap);
@@ -115,17 +112,28 @@ export class ProductImportService {
 					await this.downloadImages(pending);
 				}
 			} catch (err) {
-				errorRows.push([...rowValues, '', `Строка ${index + 1}: `, String(err)]);
+				errorRows.push([...rowValues, '', `Строка ${number}: `, String(err)]);
 			}
-		}
+		});
 
-		return xlsx.build([
-			{
-				name: errorRows.length ? 'Ошибки' : 'Ошибок нет',
-				data: errorRows,
-				options: {}
+		return buildXlsx(errorRows.length ? 'Ошибки' : 'Ошибок нет', errorRows);
+	}
+
+	// Строки файла по одной; ошибка формата или лимита — 400 с понятным текстом
+	private async readRows(
+		filePath: string,
+		handle: (row: SheetRow) => void | Promise<void>
+	) {
+		try {
+			for await (const row of readSheetRows(filePath)) {
+				await handle(row);
 			}
-		]);
+		} catch (error) {
+			if (error instanceof ExcelFileError) {
+				throw new BadRequestException(error.message);
+			}
+			throw error;
+		}
 	}
 
 	private readRow(rowValues: unknown[]): ParseProductArticleDto {

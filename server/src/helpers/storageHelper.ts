@@ -58,16 +58,24 @@ export function initDiskStorage() {
 	}
 }
 
+// Excel-импорт: на диск под случайным именем (имя от клиента не используем);
+// лимит размера обрывает загрузку сразу, не дожидаясь записи всего файла
 export const fileInterceptor = FileInterceptor('file', {
 	storage: diskStorage({
 		destination: function (req, file, cb) {
-			const path = getSrcPath();
-			cb(null, path);
+			cb(null, getSrcPath());
 		},
 		filename: function (req, file, cb) {
-			cb(null, `${Date.now()}-${file.originalname}`); //Appending extension
+			cb(null, `upload-${Date.now()}-${randomBytes(8).toString('hex')}.xlsx`);
 		}
-	})
+	}),
+	limits: {
+		// геттер: .env подгружает ConfigModule уже после импорта этого модуля
+		get fileSize() {
+			return getUploadMaxSizeBytes();
+		},
+		files: 1
+	}
 });
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
