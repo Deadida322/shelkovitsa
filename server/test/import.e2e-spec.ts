@@ -1,8 +1,12 @@
 import { INestApplication } from '@nestjs/common';
+import ExcelJS from 'exceljs';
+import * as fs from 'fs/promises';
 import * as http from 'http';
+import * as path from 'path';
 import { AddressInfo } from 'net';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { buildXlsx, readSheet } from 'src/helpers/excelHelper';
+import { InitService } from 'src/init/init.service';
 import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import { DataSource } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
@@ -11,6 +15,15 @@ import { ProductCategory } from 'src/db/entities/ProductCategory';
 import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
 import { CUSTOMER, createTestApp, registerAgent, resetDb, registerAdmin } from './utils';
+import {
+	cellRef,
+	excelLikeXlsx,
+	MAIN,
+	rawXlsx,
+	sheetXml,
+	workbookRels,
+	workbookXml
+} from './xlsx';
 
 // Строка выгрузки поставщика: значимы только колонки, которые читает импорт
 function row(values: {
@@ -339,4 +352,375 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			)
 			.expect(403);
 	});
+
+	describe('форматы файла', () => {
+		// файл как есть, без проверки статуса
+		const send = (file: Buffer, name = 'import.xlsx', isDeletedOther = 'false') =>
+			admin
+				.post('/api/admin/product-article/import')
+				.field('isDeletedOther', isDeletedOther)
+				.attach('file', file, name)
+				.buffer(true)
+				.parse(binaryParser);
+
+		const message = (res: { body: Buffer }) =>
+			JSON.parse(res.body.toString()).error.message as string;
+
+		it('файл, сохранённый Excel (листы раньше sharedStrings, workbook.xml в конце)', async () => {
+			const res = await send(
+				await excelLikeXlsx([
+					SUPPLIER_HEADER,
+					row({ article: 'XL-1', amount: '>5' }),
+					row({ article: 'XL-2', size: 2, price: '1014.3' })
+				])
+			).expect(200);
+			expect(await errorRows(res.body)).toEqual([]);
+
+			const products = await manager().find(Product, {
+				relations: { productArticle: true }
+			});
+			expect(
+				products
+					.map((p) => [p.productArticle.article, p.amount, p.productSize.name])
+					.sort()
+			).toEqual([
+				['XL-1', 5, '40'],
+				['XL-2', 3, '42']
+			]);
+			const xl2 = await manager().findOneBy(ProductArticle, { article: 'XL-2' });
+			expect(Number(xl2.price)).toBe(1014.3);
+		});
+
+		it('импортируется только первый лист книги', async () => {
+			const sheet = (article: string) =>
+				sheetXml(
+					`<row r="1">${row({ article })
+						.map((value, c) =>
+							value === null
+								? ''
+								: typeof value === 'number'
+									? `<c r="${cellRef(c, 1)}"><v>${value}</v></c>`
+									: `<c r="${cellRef(c, 1)}" t="inlineStr"><is><t>${value}</t></is></c>`
+						)
+						.join('')}</row>`
+				);
+			const file = await rawXlsx([
+				[
+					'xl/workbook.xml',
+					workbookXml([
+						{ name: 'Первый', id: 'rId2' },
+						{ name: 'Второй', id: 'rId1' }
+					])
+				],
+				[
+					'xl/_rels/workbook.xml.rels',
+					workbookRels(
+						[
+							{ id: 'rId1', target: 'worksheets/sheet1.xml' },
+							{ id: 'rId2', target: 'worksheets/sheet2.xml' }
+						],
+						null
+					)
+				],
+				['xl/worksheets/sheet1.xml', sheet('SECOND')],
+				['xl/worksheets/sheet2.xml', sheet('FIRST')]
+			]);
+			await send(file).expect(200);
+			const articles = await manager().find(ProductArticle);
+			expect(articles.map((a) => a.article)).toEqual(['FIRST']);
+		});
+
+		it('файл ошибок: номера строк как в Excel, исходные значения сохранены, «=» остаётся текстом', async () => {
+			const formula = '=HYPERLINK("http://evil","клик")';
+			const res = await send(
+				await excelLikeXlsx([
+					SUPPLIER_HEADER,
+					row({ article: 'OK-1' }),
+					[],
+					[],
+					row({ article: 'BAD-1', subcategory: '', name: formula }),
+					row({ article: 'BAD-2', color: 'Неизвестный' })
+				])
+			).expect(200);
+
+			const errors = await errorRows(res.body);
+			expect(errors).toHaveLength(2);
+			expect(errors[0].slice(0, 19)).toEqual(
+				row({ article: 'BAD-1', subcategory: '', name: formula }).map((v) =>
+					v === null || v === '' ? undefined : v
+				)
+			);
+			expect(errors[0].join(' ')).toMatch(
+				/В строке 5 отсутствуют обязательные поля: productSubcategory/
+			);
+			expect(errors[1].join(' ')).toMatch(/Строка 6: .*цвета/);
+
+			const book = new ExcelJS.Workbook();
+			await book.xlsx.load(res.body as unknown as ArrayBuffer);
+			expect(book.worksheets[0].name).toBe('Ошибки');
+			const cell = book.worksheets[0].getCell('Q1'); // «Наименование на сайте»
+			expect(cell.value).toBe(formula);
+			expect(cell.type).toBe(ExcelJS.ValueType.String);
+		});
+
+		it('без ошибок — пустой лист «Ошибок нет»', async () => {
+			const res = await send(await excelLikeXlsx([row({ article: 'A-1' })])).expect(
+				200
+			);
+			const book = new ExcelJS.Workbook();
+			await book.xlsx.load(res.body as unknown as ArrayBuffer);
+			expect(book.worksheets.map((s) => s.name)).toEqual(['Ошибок нет']);
+			expect(await errorRows(res.body)).toEqual([]);
+		});
+
+		it('заголовок после пустых строк тоже пропускается', async () => {
+			const res = await send(
+				await excelLikeXlsx([[], [], SUPPLIER_HEADER, row({ article: 'A-1' })])
+			).expect(200);
+			expect(await errorRows(res.body)).toEqual([]);
+			expect(await manager().count(ProductArticle)).toBe(1);
+		});
+
+		it('строки реальной выгрузки поставщика (без ссылок на фото)', async () => {
+			// справочники каталога, как при старте приложения (resetDb их очищает)
+			await app.get(InitService).initColors();
+			await app.get(InitService).initSizes();
+			const real = await readSheet(
+				path.resolve('..', 'temp-dev', 'shel_data_new.xlsx')
+			);
+			const [header, ...body] = real;
+			// первые 40 строк + детский размер «3/4», который Excel сохранил датой
+			const sample = [
+				...body.slice(0, 40),
+				body.find((r) => r[0] === '339дбПиждо-4гм')!
+			].map((r) => r.map((v, c) => (c === 5 || c === 15 ? undefined : v)));
+
+			const res = await send(await excelLikeXlsx([header, ...sample])).expect(200);
+			const errors = await errorRows(res.body);
+			const errorText = errors.map((r) => r.join(' ')).join('\n');
+
+			// «3/4» нет в sizes.xlsx — строка уходит в ошибки с понятной причиной
+			expect(errorText).toMatch(/339дбПиждо-4гм.*размера/);
+
+			expect(errors).toHaveLength(1);
+			// у 1030217Ут цвета поставщика Dune и Nilo оба → «Бежевый» по colors.xlsx:
+			// 3 пары строк (M, L, XL) склеиваются в один вариант каталога
+			expect(await manager().count(Product)).toBe(
+				sample.length - errors.length - 3
+			);
+
+			const first = await manager().findOne(ProductArticle, {
+				where: { article: '1025612Брк' },
+				relations: { products: true }
+			});
+			expect(first.name).toBe('1025612 Брюки пижамные Airy');
+			expect(first.composition).toBe('56% VI+ 32% PA + 12% EA');
+			expect(Number(first.price)).toBe(3579.03);
+			expect(first.productSubcategory.name).toBe('Брюки');
+			expect(first.productSubcategory.productCategory.name).toBe(
+				'Верхний трикотаж'
+			);
+		});
+
+		// ТЕКУЩЕЕ поведение, зафиксировано тестом намеренно: если два цвета поставщика
+		// сопоставлены одному цвету каталога, вариант один и остаток берётся из последней
+		// строки (не суммируется). В выгрузке так склеивается 2 609 строк в 1 230 вариантов.
+		it('два цвета поставщика → один цвет каталога: один вариант, остаток последней строки', async () => {
+			const res = await send(
+				await excelLikeXlsx([
+					row({ article: 'MERGE-1', color: 'Dune', amount: '>5' }),
+					row({ article: 'MERGE-1', color: 'Nilo', amount: 2 })
+				])
+			).expect(200);
+			expect(await errorRows(res.body)).toEqual([]);
+			const products = await manager().find(Product, {
+				relations: { productArticle: true }
+			});
+			expect(products.map((p) => [p.productColor.name, p.amount])).toEqual([
+				['Бежевый', 2]
+			]);
+		});
+
+		describe('отклоняется без изменений каталога (isDeletedOther=true)', () => {
+			beforeEach(async () => {
+				await upload([row({ article: 'KEEP-1' }), row({ article: 'KEEP-2' })]);
+			});
+
+			afterEach(async () => {
+				const articles = await manager().find(ProductArticle);
+				expect(articles.map((a) => a.article).sort()).toEqual([
+					'KEEP-1',
+					'KEEP-2'
+				]);
+			});
+
+			it('битый XML после нескольких корректных строк', async () => {
+				const good = row({ article: 'NEW-1' })
+					.map((value, c) =>
+						value === null
+							? ''
+							: typeof value === 'number'
+								? `<c r="${cellRef(c, 1)}"><v>${value}</v></c>`
+								: `<c r="${cellRef(c, 1)}" t="inlineStr"><is><t>${value}</t></is></c>`
+					)
+					.join('');
+				const file = await rawXlsx([
+					[
+						'xl/worksheets/sheet1.xml',
+						sheetXml(
+							`<row r="1">${good}</row><row r="2">${good}</row><row r="3"><c r="A3"><v>1</v>`
+						)
+					]
+				]);
+				const res = await send(file, 'import.xlsx', 'true').expect(400);
+				expect(message(res)).toMatch(/Не удалось прочитать Excel/);
+			});
+
+			it('zip-бомба', async () => {
+				const file = await rawXlsx([
+					[
+						'xl/worksheets/sheet1.xml',
+						`${sheetXml('<row r="1"><c r="A1"><v>1</v></c></row>')}<!--${' '.repeat(30 * 1024 * 1024)}-->`
+					]
+				]);
+				const res = await send(file, 'import.xlsx', 'true').expect(400);
+				expect(message(res)).toMatch(/zip-бомба/);
+			});
+
+			it('XXE / billion laughs', async () => {
+				const file = await rawXlsx([
+					[
+						'xl/worksheets/sheet1.xml',
+						`<!DOCTYPE x [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><worksheet xmlns="${MAIN}"><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>&xxe;</t></is></c></row></sheetData></worksheet>`
+					]
+				]);
+				const res = await send(file, 'import.xlsx', 'true').expect(400);
+				expect(message(res)).toMatch(/undefined entity/);
+			});
+
+			it('книга без данных', async () => {
+				const res = await send(
+					await excelLikeXlsx([]),
+					'import.xlsx',
+					'true'
+				).expect(400);
+				expect(message(res)).toMatch(/нет данных/);
+			});
+
+			it('пустой файл (0 байт)', async () => {
+				const res = await send(Buffer.alloc(0), 'import.xlsx', 'true');
+				expect([400, 422]).toContain(res.status);
+			});
+
+			it('Excel-содержимое под чужим расширением и типом', async () => {
+				const res = await admin
+					.post('/api/admin/product-article/import')
+					.field('isDeletedOther', 'true')
+					.attach('file', await buildXlsx('Лист1', [row({ article: 'X' })]), {
+						filename: 'import.csv',
+						contentType: 'text/csv'
+					})
+					.expect(400);
+				expect(res.body.error.message).toMatch(/Неверный тип файла/);
+			});
+		});
+
+		describe('загрузка', () => {
+			const tempDir = path.resolve(process.env.TEMP_PATH!);
+			const tempFiles = async () =>
+				(await fs.readdir(tempDir).catch(() => [] as string[])).filter(
+					(f) => !f.startsWith('.')
+				);
+
+			let before: string[];
+
+			beforeEach(async () => {
+				before = await tempFiles();
+			});
+
+			afterEach(async () => {
+				// загруженный файл живёт только на время импорта — и при успехе, и при ошибке
+				expect(await tempFiles()).toEqual(before);
+			});
+
+			it('имя файла от клиента не используется (../ в имени не выводит из папки)', async () => {
+				const escape = path.resolve(tempDir, '..', '..', 'evil.xlsx');
+				await send(
+					await buildXlsx('Лист1', [row({ article: 'A-1' })]),
+					'../../evil.xlsx'
+				).expect(200);
+				await expect(fs.stat(escape)).rejects.toThrow();
+				expect(await manager().count(ProductArticle)).toBe(1);
+			});
+
+			it('успешный и неуспешный импорт не оставляют временных файлов', async () => {
+				await send(await buildXlsx('Лист1', [row({ article: 'A-1' })])).expect(
+					200
+				);
+				await send(Buffer.from('not excel')).expect(400);
+			});
+
+			it('файл больше UPLOAD_MAX_FILE_SIZE_MB обрывается на загрузке — 413', async () => {
+				const previous = process.env.UPLOAD_MAX_FILE_SIZE_MB;
+				process.env.UPLOAD_MAX_FILE_SIZE_MB = '0.01'; // ~10 КБ, читается на каждый запрос
+				try {
+					const big = await buildXlsx(
+						'Лист1',
+						Array.from({ length: 2000 }, (_, i) =>
+							row({ article: `BIG-${i}` })
+						)
+					);
+					expect(big.length).toBeGreaterThan(10 * 1024);
+					const res = await send(big).expect(413);
+					expect(message(res)).toMatch(/too large/i);
+					// небольшой файл под тем же лимитом проходит
+					await send(
+						await buildXlsx('Лист1', [row({ article: 'SMALL' })])
+					).expect(200);
+				} finally {
+					process.env.UPLOAD_MAX_FILE_SIZE_MB = previous;
+				}
+				expect(await manager().count(ProductArticle)).toBe(1);
+			});
+
+			it('без файла — 422', async () => {
+				await admin
+					.post('/api/admin/product-article/import')
+					.field('isDeletedOther', 'false')
+					.expect(422);
+			});
+
+			it('два файла в одном запросе отклоняются', async () => {
+				const file = await buildXlsx('Лист1', [row({ article: 'A-1' })]);
+				const res = await admin
+					.post('/api/admin/product-article/import')
+					.attach('file', file, 'a.xlsx')
+					.attach('file', file, 'b.xlsx');
+				expect([400, 413]).toContain(res.status);
+				expect(await manager().count(ProductArticle)).toBe(0);
+			});
+		});
+	});
 });
+
+const SUPPLIER_HEADER = [
+	'Код',
+	'Категория',
+	'Тип',
+	'Торговая марка',
+	'Цвет',
+	'Фото цвета',
+	'Размер',
+	'Цена',
+	'Штрих-код',
+	'Страна',
+	'Описание',
+	'Состав',
+	'Производитель',
+	'Артикул на сайте',
+	'Полное наименование',
+	'Фото (через ;)',
+	'Наименование на сайте',
+	'Распродажа',
+	'Остаток'
+];

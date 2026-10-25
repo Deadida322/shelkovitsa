@@ -69,14 +69,15 @@ export const fileInterceptor = FileInterceptor('file', {
 			cb(null, `upload-${Date.now()}-${randomBytes(8).toString('hex')}.xlsx`);
 		}
 	}),
-	limits: {
-		// геттер: .env подгружает ConfigModule уже после импорта этого модуля
-		get fileSize() {
-			return getUploadMaxSizeBytes();
-		},
+	// функция вычисляется на каждый запрос (multer ≥ 2.5): значение из .env подхватывается,
+	// даже если ConfigModule загрузил его позже импорта этого модуля
+	limits: (() => ({
+		fileSize: getUploadMaxSizeBytes(),
 		files: 1
-	}
+	})) as unknown as MulterLimits
 });
+
+type MulterLimits = NonNullable<Parameters<typeof FileInterceptor>[1]>['limits'];
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -128,17 +129,14 @@ export class ParseImagePipe implements PipeTransform<
 	}
 }
 
-// Excel-импорт: размер ограничен здесь, формат проверяется по сигнатуре в контроллере
+// Excel-импорт: файл обязателен. Размер ограничивает multer (fileInterceptor) на каждый
+// запрос — здесь лимит вычислился бы один раз при объявлении декоратора, до загрузки .env.
+// Формат проверяется по сигнатуре в контроллере.
 export function parseFileBuilder(fileIsRequired: boolean = true) {
-	return new ParseFilePipeBuilder()
-		.addMaxSizeValidator({
-			maxSize: getUploadMaxSizeBytes(),
-			message: 'Превышен максимальный размер файла'
-		})
-		.build({
-			fileIsRequired,
-			errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
-		});
+	return new ParseFilePipeBuilder().build({
+		fileIsRequired,
+		errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY
+	});
 }
 
 // Имя для загруженного фото в хранилище: случайное, расширение — по содержимому
