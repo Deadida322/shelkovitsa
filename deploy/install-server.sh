@@ -47,15 +47,16 @@ if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
 	curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_INSTALL_VERSION}/install.sh" | bash
 fi
 
+# функции nvm обращаются к незаданным переменным — strict mode (set -u) их роняет
 set +u
 # shellcheck disable=SC1091
 source "$NVM_DIR/nvm.sh"
-set -u
 
 echo "    nvm install $NODE_VERSION"
 nvm install "$NODE_VERSION"
 nvm alias default "$NODE_VERSION"
 nvm use default
+set -u
 
 mkdir -p /usr/local/bin
 # Релиз целиком в /opt: systemd (User=www-data) не может exec через /root/.nvm/... (каталог /root закрыт).
