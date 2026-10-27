@@ -1,0 +1,93 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', '.github/workflows/backend.yml', '.nvmrc']
+  pull_request:
+    paths: ['server/**', '.github/workflows/backend.yml', '.nvmrc']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: E2E tests
+        run: npm run test:e2e
+        env:
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: postgres
+
+      - name: E2E tests on S3 storage (RustFS)
+        run: |
+          docker run -d --name s3 -p 9000:9000 -e RUSTFS_ACCESS_KEY=rustfsadmin -e RUSTFS_SECRET_KEY=rustfsadmin rustfs/rustfs:1.0.3
+          for i in $(seq 1 30); do curl -s -o /dev/null http://localhost:9000 && break; sleep 1; done
+          npm run test:e2e
+        env:
+          TEST_STORAGE_DRIVER: s3
+          TEST_S3_ENDPOINT: http://localhost:9000
+          TEST_DB_HOST: localhost
+          TEST_DB_PORT: 5432
+          TEST_DB_USER: postgres
+          TEST_DB_PASSWORD: postgres
+
+      - name: Postman (newman) against seeded app
+        env:
+          NODE_ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: shelkovitsa_postman
+          JWT_SECRET: ci-secret
+          JWT_EXPIRES_IN: 1 day
+          TEMP_PATH: temp/src
+          DEST_PATH: temp/dist
+          TELEGRAM_ENABLED: 'false'
+          THROTTLE_ENABLED: 'false'
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE shelkovitsa_postman"
+          npm run db:reset -- --force
+          npm run seed -- --no-images --articles 3
+          node dist/main.js > /tmp/app.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/api/health && break; sleep 2; done
+          npm run test:postman -- --env-var baseUrl=http://localhost:8000 || (cat /tmp/app.log; exit 1)

@@ -15,7 +15,7 @@ RESTful API сервер, предоставляющий функционал д
 
 ### Предварительные требования
 
-- Node.js 18+ 
+- Node.js 24 (версия в [`.nvmrc`](../.nvmrc))
 - PostgreSQL 12+
 - npm или yarn
 
@@ -33,15 +33,28 @@ npm install
 
 3. Настройте переменные окружения (см. раздел [Конфигурация](#конфигурация))
 
-4. Создайте базу данных PostgreSQL:
+4. Создайте базу данных PostgreSQL — либо поднимите её в Docker из корня репозитория
+   ([`docker-compose.yml`](../docker-compose.yml), параметры совпадают с `.env.example`):
+```bash
+docker compose up -d
+```
+   либо создайте вручную в установленном PostgreSQL:
 ```sql
 CREATE DATABASE shelkovitsa;
 ```
 
-5. Примените миграции:
+5. Подготовьте БД для разработки — схема с нуля и тестовые данные одной командой:
 ```bash
-npm run migrate:apply
+npm run dev:setup          # build + db:reset + seed
 ```
+   `seed` создаёт админа (`admin@shelkovitsa.local` / `admin12345`, меняется через
+   `SEED_ADMIN_MAIL` / `SEED_ADMIN_PASSWORD`), способы доставки и импортирует 30 артикулов
+   из `temp-dev/shel_data_new.xlsx` с картинками и публикует их. Опции:
+   `npm run seed -- --articles 200`, `--no-images` (без сети), `--file <xlsx>`.
+   `db:reset` удаляет все данные; оба скрипта не запускаются при `NODE_ENV=production`.
+
+   На проде вместо этого: `npm run migrate:apply` и `npm run admin:create -- <почта> <пароль>`,
+   каталог загружается через админку (импорт Excel сам создаёт категории).
 
 6. Запустите сервер:
 ```bash
@@ -79,19 +92,16 @@ DB_NAME=shelkovitsa
 ### JWT Аутентификация
 ```env
 # Публичный ключ (для пользователей)
-JWT_PUBLIC_KEY=your_public_jwt_secret_key_here
-JWT_PUBLIC_EXP=7d
-
-# Приватный ключ (для администраторов)
-JWT_PRIVATE_KEY=your_private_jwt_secret_key_here
-JWT_PRIVATE_EXP=1d
+JWT_SECRET=your_public_jwt_secret_key_here
+JWT_EXPIRES_IN=7d
 ```
 
-### Безопасность
-```env
-# Ключ для шифрования паролей
-PSD_KEY=your_password_encryption_key_here
-OWNER_ID=1
+### Администратор
+Права администратора задаются ролью пользователя (`user.role = admin`). Создать
+администратора или выдать права существующему пользователю:
+```bash
+npm run build
+npm run admin:create -- admin@example.com 'надёжный-пароль' 'Иван Иванов'
 ```
 
 ### CORS
@@ -105,6 +115,17 @@ CORS=http://localhost:3000,https://shelkovitsa.ru
 TEMP_PATH=temp/src
 DEST_PATH=temp/dist
 ```
+
+Фото товаров хранятся через `FileStorage` (`src/storage/`), драйвер — `STORAGE_DRIVER`:
+
+- `local` (по умолчанию) — файлы в `DEST_PATH`, раздаются по `/static/<имя>`;
+- `s3` — S3-совместимый бакет (Selectel, Yandex Object Storage, RustFS/MinIO). Адреса для фронта
+  те же: `/static/<имя>` редиректит на `S3_PUBLIC_URL` или, если он не задан, бэкенд отдаёт файл
+  из бакета сам. Бакет создаётся `npm run storage:init -- --public`.
+
+Для разработки S3 поднимается из `docker-compose.yml` (сервис `s3`, RustFS). E2E-тесты на S3:
+`TEST_STORAGE_DRIVER=s3 npm run test:e2e`. При `s3` `deploy/backup.sh` картинки не архивирует —
+за сохранность отвечает хранилище (версионирование/репликация у провайдера).
 
 ### Telegram (опционально)
 ```env
@@ -124,10 +145,9 @@ http://localhost:8000/api/docs
 ### Дополнительная документация
 Подробная документация находится в папке [`docs/`](./docs/):
 - [API.md](./docs/API.md) - Полная документация по API эндпоинтам
+- [INTEGRATION_YANDEX.md](./docs/INTEGRATION_YANDEX.md) - Анализ интеграции с Яндекс Доставкой и Маркетом (`npm run audit:marketplace`)
 - [DEPLOYMENT.md](./docs/DEPLOYMENT.md) - Руководство по развертыванию
 - [ENV_VARIABLES.md](./docs/ENV_VARIABLES.md) - Описание переменных окружения
-- [ANALYSIS_REPORT.md](./docs/ANALYSIS_REPORT.md) - Анализ кода и рекомендации
-- [DOCUMENTATION_SUMMARY.md](./docs/DOCUMENTATION_SUMMARY.md) - Резюме документации
 
 ## 🗄️ База данных
 
@@ -135,10 +155,12 @@ http://localhost:8000/api/docs
 
 Проект использует TypeORM для управления миграциями.
 
-**Создание новой миграции:**
+**Создание новой миграции** (по разнице между сущностями и текущей БД):
 ```bash
-npm run migrate:add
+npm run migrate:add -- src/db/migrations/add_something
 ```
+Сгенерированный класс добавьте в список [`src/db/migrations/index.ts`](src/db/migrations/index.ts):
+сущности и миграции подключаются явными списками, без glob.
 
 **Применение миграций:**
 ```bash
@@ -211,21 +233,42 @@ npm run lint
 npm run format
 
 # Миграции
-npm run migrate:add      # Создать миграцию
+npm run migrate:add -- src/db/migrations/<имя>   # Создать миграцию
 npm run migrate:apply   # Применить миграции
+
+# Unit-тесты (src/**/*.spec.ts)
+npm test
+
+# E2E-тесты (нужен запущенный PostgreSQL)
+npm run test:e2e
 ```
+
+### Тесты
+
+Тесты на [Vitest](https://vitest.dev) — Nest 12 распространяется только как ESM, а Jest его
+не загружает. Декораторы компилирует SWC (`unplugin-swc`), конфиги — [`vitest.config.ts`](vitest.config.ts)
+и [`vitest.e2e.config.ts`](vitest.e2e.config.ts).
+
+E2E-тесты в [`test/`](test/) поднимают приложение целиком и работают с отдельной базой
+`shelkovitsa_test`: она создаётся автоматически, миграции накатываются перед прогоном, а
+таблицы очищаются перед каждым тестом. Переменные окружения для тестов заданы в
+[`test/setup-env.ts`](test/setup-env.ts) и не зависят от `.env`; подключение к PostgreSQL
+можно переопределить через `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`,
+`TEST_DB_PASSWORD`, `TEST_DB_NAME`.
+
+Telegram в тестах не вызывается (бот подменяется), ограничение частоты запросов
+выключено (`THROTTLE_ENABLED=false`), кроме отдельного теста лимитов. В CI тесты
+запускаются на каждый PR, затрагивающий `server/` (`.github/workflows/backend.yml`).
 
 ## 🔐 Аутентификация
 
-API использует два типа токенов:
+Токен (JWT, подписан `JWT_SECRET`) выдаётся при входе и регистрации и хранится в
+httpOnly-куке `access_token`; выход — `POST /api/auth/logout`.
 
-1. **Публичные токены** (`JWT_PUBLIC_KEY`) - для обычных пользователей
-   - Хранятся в cookies как `access_token`
-   - Используются через декоратор `@Auth()`
+- `@Auth()` — маршрут только для вошедших пользователей
+- `@AdminAuth()` — только для пользователей с ролью `admin`
 
-2. **Приватные токены** (`JWT_PRIVATE_KEY`) - для администраторов
-   - Передаются через Bearer token в заголовке
-   - Используются через декоратор `@AdminAuth()`
+Пароли хранятся как bcrypt-хеши. Вход и регистрация ограничены 10 запросами в минуту с IP.
 
 ### Примеры использования
 
@@ -248,10 +291,9 @@ POST /api/auth/login
 }
 ```
 
-**Создание заказа (требует аутентификации):**
+**Создание заказа (гостем или вошедшим пользователем):**
 ```bash
 POST /api/order
-Cookie: access_token=...
 {
   "fio": "Иван Иванов",
   "mail": "ivan@example.com",

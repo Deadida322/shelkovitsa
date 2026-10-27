@@ -1,0 +1,10 @@
+{
+	"extends": "../tsconfig.json",
+	"compilerOptions": {
+		"types": ["node", "vitest/globals"],
+		// в тестах результат выборки проверяется expect-ом, null-проверки — лишний шум
+		"strictNullChecks": false,
+		"noImplicitAny": false
+	},
+	"include": ["./**/*.ts", "../src/**/*.ts"]
+}

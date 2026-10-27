@@ -9,21 +9,22 @@
 
     const choosen = ref(0);
     const onSubSave = ref(() => {
-        $api('/api/product-category/subcategory/create', { method: 'POST', body: editableSubCategory.value }).then(() => {
+        const { categoryId, name } = editableSubCategory.value;
+        $api(`/api/admin/product-category/${categoryId}/subcategories`, { method: 'POST', body: { name } }).then(() => {
             editableSubCategory.value = {};
             getCategories();
         });
     });
 
     function onSave() {
-        $api('/api/product-category/create', { method: 'POST', body: { name: editableCategory.value.name } }).then(() => {
+        $api('/api/admin/product-category', { method: 'POST', body: { name: editableCategory.value.name } }).then(() => {
             editableCategory.value = {};
             getCategories();
         });
     }
 
     function onDeleteSubCategory(id) {
-        $api(`/api/product-category/subcategory/delete/${id}`, { method: 'DELETE' }).then(() => {
+        $api(`/api/admin/product-subcategory/${id}`, { method: 'DELETE' }).then(() => {
             editableCategory.value = {};
             getCategories();
         }).catch(({ response }) => {
@@ -36,7 +37,7 @@
         });
     }
     function onDeleteCategory(id) {
-        $api(`/api/product-category/delete/${id}`, { method: 'DELETE' }).then(() => {
+        $api(`/api/admin/product-category/${id}`, { method: 'DELETE' }).then(() => {
             editableCategory.value = {};
             getCategories();
         }).catch(({ response }) => {

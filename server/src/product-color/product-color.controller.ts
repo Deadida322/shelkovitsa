@@ -1,37 +1,34 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
-import {
-	ApiTags,
-	ApiOperation,
-	ApiResponse,
-	ApiBearerAuth,
-	ApiCookieAuth,
-	ApiBody
-} from '@nestjs/swagger';
-import { ProductColorService } from './product-color.service';
-import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
-import { CreateProductColorDto } from './dto/CreateProductColorDto';
+import { Body, Controller, Get, Post, SerializeOptions } from '@nestjs/common';
+import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminAuth } from 'src/decorators/adminAuth';
+import { CreateProductColorDto } from './dto/CreateProductColorDto';
+import { ProductColorDto } from './dto/ProductColorDto';
+import { ProductColorService } from './product-color.service';
 
 @ApiTags('Product Color')
+@SerializeOptions({ type: ProductColorDto })
 @Controller('product-color')
 export class ProductColorController {
-	constructor(private readonly productService: ProductColorService) {}
+	constructor(private readonly productColorService: ProductColorService) {}
 
 	@Get()
-	@ApiOperation({ summary: 'Получить список цветов продуктов' })
-	@ApiResponse({ status: 200, description: 'Список цветов', type: [ProductColorDto] })
-	async getList(): Promise<ProductColorDto[]> {
-		return this.productService.getList();
+	@ApiOperation({ summary: 'Справочник цветов' })
+	@ApiResponse({ status: 200, type: [ProductColorDto] })
+	async getList() {
+		return this.productColorService.getList();
 	}
+}
 
-	@Post('create')
-	@AdminAuth()
-	@ApiOperation({ summary: 'Создать цвет продукта (админ)' })
-	@ApiBearerAuth('JWT-auth')
-	@ApiCookieAuth('access_token')
-	@ApiResponse({ status: 201, description: 'Цвет создан', type: ProductColorDto })
-	@ApiBody({ type: CreateProductColorDto })
-	async create(@Body() payload: CreateProductColorDto): Promise<ProductColorDto> {
-		return this.productService.create(payload);
+@ApiTags('Admin: Product Color')
+@ApiCookieAuth('access_token')
+@AdminAuth()
+@SerializeOptions({ type: ProductColorDto })
+@Controller('admin/product-color')
+export class ProductColorAdminController {
+	constructor(private readonly productColorService: ProductColorService) {}
+
+	@Post()
+	async create(@Body() payload: CreateProductColorDto) {
+		return this.productColorService.create(payload);
 	}
 }

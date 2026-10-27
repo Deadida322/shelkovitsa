@@ -1,14 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ProductColor } from 'src/db/entities/ProductColor';
 import { Repository } from 'typeorm';
-import * as xlsx from 'node-xlsx';
-import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
-import { getColorsPath, getSizesPath } from 'src/helpers/storageHelper';
+import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductSize } from 'src/db/entities/ProductSize';
+import { readSheet } from 'src/helpers/excelHelper';
+import { getColorsPath, getSizesPath } from 'src/helpers/storageHelper';
+import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 
+/**
+ * Справочники цветов и размеров каталога — второй столбец data/colors.xlsx и
+ * data/sizes.xlsx (первый — название у поставщика, им пользуется импорт).
+ * Синхронизируются при старте: недостающие добавляются, регистр цветов выравнивается.
+ */
 @Injectable()
-export class InitService {
+export class InitService implements OnApplicationBootstrap {
+	private readonly logger = new Logger(InitService.name);
+
 	constructor(
 		@InjectRepository(ProductColor)
 		private readonly productColorRepository: Repository<ProductColor>,
@@ -16,89 +23,59 @@ export class InitService {
 		private readonly productSizeRepository: Repository<ProductSize>
 	) {}
 
-	public async initColors() {
-		try {
-			const colorsPath = await getColorsPath();
-			const workSheetsFromFile = xlsx.parse(colorsPath);
-			const data = workSheetsFromFile[0].data;
-			//отбираем 2 колонку
-			const allColors = Array.from(new Set(data.map((el) => el[1])));
-
-			const allColorsLower = allColors
-				.filter((el) => typeof el === 'string' && !!el)
-				.map((el) => el.toLowerCase());
-
-			const existColors = await this.productColorRepository.find({});
-			const existColorNamesLower = existColors.map((el) => {
-				return el.name.toLowerCase();
-			});
-
-			//проверка на существование цвета без заглавной буквы - если так, то обновляем
-			const promises = allColorsLower.map((newColor) => {
-				if (existColorNamesLower.includes(newColor)) {
-					const existColor = existColors.find(
-						(color) => color.name.toLowerCase() == newColor
-					);
-
-					//здесь не должно быть ошибки никогда
-					if (!existColor) {
-						throw new Error('Ошибка при нахождении цвета');
-					} else {
-						return this.productColorRepository.update(existColor.id, {
-							...existColor,
-							name: capitalizeFirstLetter(existColor.name)
-						});
-					}
-				} else {
-					return this.productColorRepository.save({
-						name: capitalizeFirstLetter(newColor)
-					});
-				}
-			});
-			await Promise.all(promises);
-		} catch (err) {
-			throw err;
+	// Ошибка не должна ронять приложение: справочники можно поправить позже
+	async onApplicationBootstrap() {
+		for (const [name, init] of [
+			['цветов', () => this.initColors()],
+			['размеров', () => this.initSizes()]
+		] as const) {
+			try {
+				await init();
+			} catch (err) {
+				this.logger.error(
+					`Не удалось загрузить справочник ${name}`,
+					err instanceof Error ? err.stack : String(err)
+				);
+			}
 		}
 	}
 
-	public async initSizes() {
-		try {
-			const sizesPath = await getSizesPath();
-			const workSheetsFromFile = xlsx.parse(sizesPath);
-			const data = workSheetsFromFile[0].data;
-			//отбираем 2 колонку
-			const allSizes = Array.from(new Set(data.map((el) => el[1])));
+	async initColors() {
+		const names = (await readSecondColumn(await getColorsPath())).map((name) =>
+			capitalizeFirstLetter(name)
+		);
+		const existing = await this.productColorRepository.find();
 
-			const allSizesLower = allSizes
-				.filter((el) => !!el)
-				.map((el) => String(el).toUpperCase());
-
-			const existSizes = await this.productSizeRepository.find({});
-			const existSizeNamesUpper = existSizes.map((el) => {
-				return el.name.toUpperCase();
-			});
-
-			const promises = allSizesLower.map((newSize) => {
-				if (existSizeNamesUpper.includes(newSize)) {
-					const existSize = existSizes.find(
-						(color) => color.name.toUpperCase() == newSize
-					);
-
-					//здесь не должно быть ошибки никогда
-					if (!existSize) {
-						throw new Error('Ошибка при нахождении размера');
-					} else {
-						return this.productSizeRepository.update(existSize.id, existSize);
-					}
-				} else {
-					return this.productSizeRepository.save({
-						name: newSize
-					});
-				}
-			});
-			await Promise.all(promises);
-		} catch (err) {
-			throw err;
+		for (const name of new Set(names)) {
+			const color = existing.find(
+				(c) => c.name.toLowerCase() === name.toLowerCase()
+			);
+			if (!color) {
+				await this.productColorRepository.save({ name });
+			} else if (color.name !== name) {
+				await this.productColorRepository.update(color.id, { name });
+			}
 		}
 	}
+
+	async initSizes() {
+		const names = (await readSecondColumn(await getSizesPath())).map((name) =>
+			name.toUpperCase()
+		);
+		const existing = new Set(
+			(await this.productSizeRepository.find()).map((s) => s.name.toUpperCase())
+		);
+
+		for (const name of new Set(names)) {
+			if (!existing.has(name)) {
+				await this.productSizeRepository.save({ name });
+			}
+		}
+	}
+}
+
+async function readSecondColumn(filePath: string): Promise<string[]> {
+	return (await readSheet(filePath))
+		.map((row) => String(row[1] ?? '').trim())
+		.filter((value) => value !== '');
 }

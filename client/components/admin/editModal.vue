@@ -30,9 +30,8 @@
     async function updateImage(image) {
         const formData = new FormData();
         formData.append('image', image, image.name);
-        formData.append('productArticleId', item.value.id);
         loading.value = true;
-        await $api('/api/product-article/admin/image', { method: 'POST', body: formData }).then(() => {
+        await $api(`/api/admin/product-article/${item.value.id}/images`, { method: 'POST', body: formData }).then(() => {
             loading.value = false;
             VsNotification({
                 title: 'Отлично!',
@@ -55,9 +54,13 @@
         console.error('Ошибка загрузки изображения в админке:', event.target.src);
     }
 
+    // В PATCH уходят только редактируемые поля
     function mapProduct(product) {
         return {
-            ...product,
+            name: product.name,
+            description: product.description,
+            isVisible: product.isVisible,
+            is_deleted: product.is_deleted,
             productSizeIds: (product.productSizes || []).map(({ id }) => id),
             productColorIds: (product.productColors || []).map(({ id }) => id),
         };
@@ -65,9 +68,9 @@
 
     async function updateProduct() {
         const mappedProduct = mapProduct(item.value);
-        await $api('/api/product-article/admin/productArticle', {
+        await $api(`/api/admin/product-article/${item.value.id}`, {
             method: 'PATCH',
-            body: { productArticleId: item.value.id, ...mappedProduct },
+            body: mappedProduct,
         }).then(() => {
             loading.value = false;
             VsNotification({
@@ -78,11 +81,11 @@
             });
             getProduct();
             emit('updateProduct');
-        }).catch(() => {
+        }).catch(({ response }) => {
             getProduct();
             VsNotification({
                 title: 'Ошибка!',
-                content: 'Продукт не был обновлён',
+                content: response?._data?.error?.message || 'Продукт не был обновлён',
                 position: 'bottom-center',
                 border: 'danger',
             });
@@ -90,7 +93,7 @@
     };
 
     function deleteImage(productFileId) {
-        $api('/api/product-article/admin/image', { method: 'DELETE', body: { productFileId } }).then(() => {
+        $api(`/api/admin/product-article/images/${productFileId}`, { method: 'DELETE' }).then(() => {
             loading.value = false;
             VsNotification({
                 title: 'Отлично!',
@@ -103,7 +106,7 @@
     }
 
     function changeLogo(productFileId) {
-        $api('/api/product-article/admin/image', { method: 'PATCH', body: { productFileId } }).then(() => {
+        $api(`/api/admin/product-article/images/${productFileId}/logo`, { method: 'PATCH' }).then(() => {
             loading.value = false;
             getProduct();
             VsNotification({
@@ -116,9 +119,8 @@
     }
 
     function bindSubcategory(id) {
-        $api('/api/product-category/subcategory/bindProduct', { method: 'POST', body: {
-            productArticleId: item.value.id,
-            subcategoryId: id,
+        $api(`/api/admin/product-article/${item.value.id}`, { method: 'PATCH', body: {
+            productSubcategoryId: id,
         } }).then(() => {
             loading.value = false;
             VsNotification({
@@ -131,7 +133,7 @@
     }
 
     async function getProduct() {
-        await $api(`/api/product-article/admin/${item.value.id}`, { method: 'POST' }).then((res) => {
+        await $api(`/api/admin/product-article/${item.value.id}`).then((res) => {
             loading.value = false;
             item.value = res;
             category.value = item.value.productSubcategory?.productCategory.id;

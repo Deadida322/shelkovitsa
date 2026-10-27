@@ -21,14 +21,10 @@
     const totalItems = ref(6);
     const payload = computed(() => ({
         page: page.value,
-        search: filtersStore.filters.search,
         itemsPerPage: pageSize.value,
-        ...(filtersStore.filters.subcategory
-            ? {
-                categoryId: +filtersStore.filters.category,
-                subcategoryId: +filtersStore.filters.subcategory,
-            }
-            : null),
+        ...(filtersStore.filters.search ? { query: filtersStore.filters.search } : null),
+        ...(filtersStore.filters.category ? { categoryId: +filtersStore.filters.category } : null),
+        ...(filtersStore.filters.subcategory ? { subcategoryId: +filtersStore.filters.subcategory } : null),
     }));
 
     watch(search, updateSearch);
@@ -63,9 +59,8 @@
         payload,
         () => {
             isProductsLoading.value = true;
-            $api('/api/product-article/getList', {
-                method: 'POST',
-                body: payload.value,
+            $api('/api/product-article', {
+                query: payload.value,
             }).then((res) => {
                 shopItems.value = res.data;
                 totalItems.value = res.count;

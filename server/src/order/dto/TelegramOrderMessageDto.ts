@@ -10,4 +10,3 @@ export class TelegramOrderMessageDto {
 	@Expose()
 	errorMessage?: string;
 }
-

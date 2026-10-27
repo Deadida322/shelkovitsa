@@ -1,15 +1,15 @@
-import {
-	Entity,
-	Column,
-	PrimaryGeneratedColumn,
-	OneToMany
-} from 'typeorm';
-import { BaseEntity } from './BaseEntity';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { SoftDeleteEntity } from './BaseEntity';
 import { Type } from 'class-transformer';
 import { Order } from './Order';
 
+export enum UserRole {
+	CUSTOMER = 'customer',
+	ADMIN = 'admin'
+}
+
 @Entity()
-export class User extends BaseEntity {
+export class User extends SoftDeleteEntity {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
@@ -23,10 +23,17 @@ export class User extends BaseEntity {
 	password!: string;
 
 	@Column({
-		type: 'json',
+		type: 'enum',
+		enum: UserRole,
+		default: UserRole.CUSTOMER
+	})
+	role!: UserRole;
+
+	@Column({
+		type: 'jsonb',
 		nullable: true
 	})
-	basket!: string;
+	basket?: object[] | null;
 
 	@Type(() => Order)
 	@OneToMany(() => Order, (order) => order.user)

@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import 'reflect-metadata';
 import { GetListDto } from 'src/common/dto/GetListDto';
@@ -6,6 +6,7 @@ import { GetListDto } from 'src/common/dto/GetListDto';
 export class GetProductArticleListDto extends GetListDto {
 	@Expose()
 	@IsOptional()
+	@Type(() => Number)
 	@IsInt()
 	@Min(0, {
 		message: 'Должно быть >= 0'
@@ -14,6 +15,7 @@ export class GetProductArticleListDto extends GetListDto {
 
 	@Expose()
 	@IsOptional()
+	@Type(() => Number)
 	@IsInt()
 	@Min(0, {
 		message: 'Должно быть >= 0'
@@ -22,6 +24,7 @@ export class GetProductArticleListDto extends GetListDto {
 
 	@Expose()
 	@IsOptional()
+	@Type(() => Number)
 	@IsInt()
 	@Min(0, {
 		message: 'Должно быть >= 0'
@@ -30,6 +33,7 @@ export class GetProductArticleListDto extends GetListDto {
 
 	@Expose()
 	@IsOptional()
+	@Type(() => Number)
 	@IsInt()
 	@Min(0, {
 		message: 'Должно быть >= 0'

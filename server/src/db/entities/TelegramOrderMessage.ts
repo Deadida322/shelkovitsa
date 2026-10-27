@@ -42,7 +42,7 @@ export class TelegramOrderMessage extends BaseEntity {
 	errorMessage?: string; // Текст ошибки при отправке
 
 	@Column({
-		type: 'timestamp',
+		type: 'timestamptz',
 		nullable: true
 	})
 	sentAt?: Date; // Время успешной отправки
@@ -53,4 +53,3 @@ export class TelegramOrderMessage extends BaseEntity {
 	})
 	retryCount!: number; // Количество попыток отправки
 }
-

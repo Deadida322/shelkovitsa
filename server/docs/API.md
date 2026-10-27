@@ -1,304 +1,68 @@
-# API Документация
+# API
 
-Полное описание API эндпоинтов сервера Shelkovitsa.
+Все маршруты — с префиксом `/api`. Полная схема с телами запросов и ответов —
+Swagger UI: `http://localhost:8000/api/docs`.
 
-## 🔗 Базовый URL
-
-```
-http://localhost:8000/api
-```
-
-## 📚 Swagger UI
-
-Интерактивная документация доступна по адресу:
-```
-http://localhost:8000/api/docs
-```
-
-## 🔐 Аутентификация
-
-API использует два типа аутентификации:
-
-1. **Cookie-based** (для пользователей) - токен хранится в cookie `access_token`
-2. **Bearer Token** (для администраторов) - токен передается в заголовке `Authorization: Bearer <token>`
-
-### Получение токена
-
-**Регистрация:**
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "fio": "Иван Иванов",
-  "mail": "ivan@example.com",
-  "password": "password123"
-}
-```
-
-**Вход:**
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "mail": "ivan@example.com",
-  "password": "password123"
-}
-```
-
-## 📦 Основные эндпоинты
-
-### Auth (Аутентификация)
-
-#### Регистрация
-```http
-POST /api/auth/register
-```
-
-#### Вход
-```http
-POST /api/auth/login
-```
-
-#### Получить текущего пользователя
-```http
-GET /api/auth/me
-Cookie: access_token=...
-```
-
-#### Выход
-```http
-POST /api/auth/logout
-Cookie: access_token=...
-```
-
-### Order (Заказы)
-
-#### Получить список заказов пользователя
-```http
-POST /api/order
-Cookie: access_token=...
-Content-Type: application/json
-
-{
-  "page": 1,
-  "limit": 10
-}
-```
-
-#### Создать заказ
-```http
-POST /api/order/create
-Cookie: access_token=...
-Content-Type: application/json
-
-{
-  "fio": "Иван Иванов",
-  "mail": "ivan@example.com",
-  "tel": "+79001234567",
-  "region": "Москва",
-  "address": "ул. Примерная, д. 1",
-  "description": "Комментарий к заказу",
-  "deliveryTypeId": 1,
-  "orderProducts": [
-    { "productId": 1, "amount": 2 },
-    { "productId": 3, "amount": 1 }
-  ]
-}
-```
-
-#### Получить заказ по ID
-```http
-GET /api/order/:id
-Cookie: access_token=...
-```
-
-#### Изменить статус заказа (Админ)
-```http
-PATCH /api/order/admin/changeStatus
-Authorization: Bearer <admin_token>
-Content-Type: application/json
-
-{
-  "orderId": 1,
-  "status": "in_work"
-}
-```
-
-#### Получить список всех заказов (Админ)
-```http
-POST /api/order/admin/getList
-Authorization: Bearer <admin_token>
-Content-Type: application/json
-
-{
-  "page": 1,
-  "limit": 20,
-  "status": "create"
-}
-```
-
-### Product (Продукты)
-
-#### Получить информацию о продукте
-```http
-POST /api/product/get
-Content-Type: application/json
-
-{
-  "id": 1
-}
-```
-
-#### Получить информацию о продукте (Админ)
-```http
-POST /api/product/admin/get
-Authorization: Bearer <admin_token>
-Content-Type: application/json
-
-{
-  "id": 1
-}
-```
-
-### Product Article (Артикулы)
-
-#### Получить список артикулов
-```http
-POST /api/product-article/getList
-Content-Type: application/json
-
-{
-  "page": 1,
-  "limit": 20,
-  "categoryId": 1,
-  "subcategoryId": 2
-}
-```
-
-#### Получить детальную информацию об артикуле
-```http
-POST /api/product-article/getDetail
-Content-Type: application/json
-
-{
-  "id": 1
-}
-```
-
-### Product Category (Категории)
-
-#### Получить список категорий
-```http
-GET /api/product-category
-```
-
-#### Получить категорию с подкатегориями
-```http
-GET /api/product-category/:id
-```
-
-### User (Пользователи)
-
-#### Обновить корзину пользователя
-```http
-PATCH /api/user/basket
-Cookie: access_token=...
-Content-Type: application/json
-
-{
-  "basket": "[{\"productId\": 1, \"amount\": 2}]"
-}
-```
-
-### Benefit (Преимущества)
-
-#### Получить список преимуществ
-```http
-GET /api/benefit
-```
-
-### Delivery Type (Типы доставки)
-
-#### Получить список типов доставки
-```http
-GET /api/delivery-type
-```
-
-## 📊 Статусы заказов
-
-```typescript
-enum OrderStatus {
-  CREATE = 'create',      // Создан
-  IN_WORK = 'in_work',    // В работе
-  PAYMENT = 'payment',    // Оплата
-  DELIVERY = 'delivery',  // Доставка
-  CLOSE = 'close'         // Закрыт
-}
-```
-
-## 🔄 Пагинация
-
-Большинство эндпоинтов списков поддерживают пагинацию:
+Авторизация — httpOnly-кука `access_token`, которую ставят `register` и `login`.
+Ошибки приходят в едином формате:
 
 ```json
-{
-  "page": 1,      // Номер страницы (начиная с 1)
-  "limit": 20     // Количество элементов на странице
-}
+{ "error": { "statusCode": 400, "message": "…", "path": "/api/…", "timestamp": "…" } }
 ```
 
-Ответ:
-```json
-{
-  "data": [...],
-  "meta": {
-    "page": 1,
-    "limit": 20,
-    "total": 100,
-    "totalPages": 5
-  }
-}
-```
+Ошибки валидации — `422`, `message` — массив `{ property, message }`. Списки отдаются
+как `{ data, count, page, itemsPerPage }`, `page` считается с нуля, `itemsPerPage` — до 20.
 
-## 📁 Загрузка файлов
+## Публичные
 
-Для загрузки файлов используйте `multipart/form-data`:
+| Метод | Путь | Описание |
+|-------|------|----------|
+| GET | `/health` | Проверка сервиса и БД |
+| POST | `/auth/register` | Регистрация `{ mail, fio, password, rePassword }`; лимит 10/мин |
+| POST | `/auth/login` | Вход `{ mail, password }`; лимит 10/мин |
+| POST | `/auth/logout` | Выход (сбрасывает куку) |
+| GET | `/auth/me` | Текущий пользователь `{ mail, fio, isAdmin }` 🔒 |
+| GET | `/product-article` | Каталог: `page`, `itemsPerPage`, `categoryId`, `subcategoryId`, `minPrice`, `maxPrice`, `query` |
+| GET | `/product-article/popular` | Популярные за месяц (3 шт.) |
+| GET | `/product-article/:id` | Карточка; `productSizeId` — цвета только этого размера |
+| GET | `/product` | Вариант с остатком: `productArticleId`, `productColorId`, `productSizeId` |
+| GET | `/product-category` | Категории с подкатегориями |
+| GET | `/product-color`, `/product-size`, `/delivery-type` | Справочники |
+| POST | `/order` | Оформить заказ (гостем или вошедшим); лимит 20/мин |
+| GET | `/order` | Мои заказы: `page`, `itemsPerPage` 🔒 |
+| GET / PUT | `/user/basket` | Корзина пользователя (массив позиций, до 100) 🔒 |
 
-```http
-POST /api/file/upload
-Content-Type: multipart/form-data
+🔒 — нужен вход.
 
-file: <binary>
-```
+## Админка — `/api/admin/*`, только роль `admin`
 
-## ⚠️ Обработка ошибок
+| Метод | Путь | Описание |
+|-------|------|----------|
+| GET | `/admin/product-article` | Все артикулы, включая скрытые и архивные (`is_deleted`) |
+| GET | `/admin/product-article/:id` | Карточка для редактирования |
+| PATCH | `/admin/product-article/:id` | `name`, `description`, `isVisible`, `is_deleted`, `productSubcategoryId`, `productColorIds`, `productSizeIds` |
+| POST | `/admin/product-article/:id/images` | Загрузка фото (multipart, поле `image`, до 5 МБ) |
+| PATCH | `/admin/product-article/images/:fileId/logo` | Сделать фото логотипом → 204 |
+| DELETE | `/admin/product-article/images/:fileId` | Удалить фото → 204 |
+| POST | `/admin/product-article/import` | Импорт Excel (multipart `file`, `isDeletedOther`) → Excel со строками-ошибками |
+| GET | `/admin/product` | Вариант любого (в т.ч. скрытого) артикула |
+| GET | `/admin/order` | Все заказы, новые сначала |
+| PATCH | `/admin/order/:id` | Смена статуса `{ status }` |
+| POST | `/admin/order/:id/telegram-retry` | Повторить Telegram-уведомление |
+| GET | `/admin/order/telegram-failed` | Заказы с неотправленным уведомлением |
+| POST | `/admin/product-category` | Создать категорию `{ name }` |
+| PATCH / DELETE | `/admin/product-category/:id` | Переименовать / удалить пустую (204) |
+| POST | `/admin/product-category/:id/subcategories` | Создать подкатегорию `{ name }` |
+| PATCH / DELETE | `/admin/product-subcategory/:id` | `{ name, categoryId? }` / удалить пустую (204) |
+| POST | `/admin/product-color` | Создать цвет |
 
-API возвращает ошибки в следующем формате:
+### Правила, которые проверяет сервер
 
-```json
-{
-  "statusCode": 400,
-  "message": "Описание ошибки",
-  "error": "Bad Request"
-}
-```
-
-### Коды статусов
-
-- `200` - Успешно
-- `201` - Создано
-- `400` - Неверный запрос
-- `401` - Не авторизован
-- `403` - Доступ запрещен
-- `404` - Не найдено
-- `422` - Ошибка валидации
-- `500` - Внутренняя ошибка сервера
-
-## 🔗 Связанные ресурсы
-
-- [Swagger UI](http://localhost:8000/api/docs) - Интерактивная документация
-- [Postman коллекция](../../tests/Shelkovitsa_API.postman_collection.json) - Готовые запросы для тестирования
-- [README.md](../README.md) - Основная документация проекта
-
+- **Публикация артикула** (`isVisible: true`) — нужны имя, хотя бы одно фото, подкатегория
+  и хотя бы один вариант; иначе 400 и ни одно изменение из запроса не сохраняется.
+- **Варианты** — все сочетания `productColorIds × productSizeIds`. Убранные уходят в архив
+  (на них могут ссылаться заказы), вернувшиеся восстанавливаются с прежним остатком.
+- **Архив** (`is_deleted: true`) — артикул скрывается с витрины, но остаётся в старых заказах.
+- **Импорт** сам создаёт недостающие категории и подкатегории; `isDeletedOther=true` заменяет
+  каталог содержимым файла (товары с заказами уходят в архив, остальные удаляются).
+- **Заказ** списывает остаток; параллельные заказы последней единицы не проходят оба.

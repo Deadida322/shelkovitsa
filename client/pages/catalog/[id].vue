@@ -23,8 +23,8 @@
     const imageViewerIndex = ref(0);
     const { mobile } = useDisplay();
 
-    const { data: shopItem, pending: loading } = await useAsyncData('shopItem', async () => {
-        return await $api(`/api/product-article/${route.params.id}`, { method: 'POST' });
+    const { data: shopItem, pending: loading } = await useAsyncData(`shopItem-${route.params.id}`, async () => {
+        return await $api(`/api/product-article/${route.params.id}`);
     }, {
         default: () => {},
     });
@@ -45,7 +45,7 @@
             price: shopItem.value.price,
             amount: cartInfo.value.amount,
             maxAmount: shopItem.value.available,
-            logo: shopItem.value.productFiles.find(item => item.isLogo).name,
+            logo: (shopItem.value.productFiles?.find(item => item.isLogo) ?? shopItem.value.productFiles?.[0])?.name,
         };
         cartStore.updateCart(item);
         VsNotification({
@@ -116,9 +116,8 @@
     watch(cartInfo, async () => {
         await nextTick();
         if (cartInfo.value.color && cartInfo.value.size) {
-            $api(`/api/product/get`, {
-                method: 'POST',
-                body: {
+            $api('/api/product', {
+                query: {
                     ...payload.value,
                     productArticleId: +route.params.id,
                 },
@@ -128,7 +127,7 @@
             });
         }
         else {
-            $api(`/api/product-article/${route.params.id}`, { method: 'POST', body: payload.value }).then((res) => {
+            $api(`/api/product-article/${route.params.id}`, { query: payload.value }).then((res) => {
                 shopItem.value = res;
                 displayedImage.value = logo.value;
                 loading.value = false;

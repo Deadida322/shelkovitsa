@@ -31,10 +31,13 @@ export class ParseProductArticleDto {
 	composition?: string;
 
 	@Expose()
+	productCategory?: string;
+
+	@Expose()
 	productSubcategory?: string;
 
 	@Expose()
-	name: string;
+	name?: string;
 
 	@Expose()
 	imageUrls: string[] = [];

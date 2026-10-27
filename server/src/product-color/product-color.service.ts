@@ -1,42 +1,27 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ProductColor } from 'src/db/entities/ProductColor';
-import {
-	convertToClass,
-	convertToJson,
-	convertToJsonMany
-} from 'src/helpers/convertHelper';
-import { ProductColorDto } from 'src/product-color/dto/ProductColorDto';
 import { Repository } from 'typeorm';
+import { ProductColor } from 'src/db/entities/ProductColor';
 import { CreateProductColorDto } from './dto/CreateProductColorDto';
 
 @Injectable()
 export class ProductColorService {
 	constructor(
 		@InjectRepository(ProductColor)
-		private productColorRepository: Repository<ProductColor>
+		private readonly productColorRepository: Repository<ProductColor>
 	) {}
 
-	async getList(): Promise<ProductColorDto[]> {
-		const productColors = await this.productColorRepository.find({});
-
-		return convertToJsonMany(ProductColorDto, productColors);
+	async getList(): Promise<ProductColor[]> {
+		return this.productColorRepository.find({ order: { name: 'ASC' } });
 	}
 
-	async create(productColorDto: CreateProductColorDto): Promise<ProductColorDto> {
-		const existProductColor = await this.productColorRepository.findOne({
-			where: {
-				name: productColorDto.name
-			}
+	async create(productColorDto: CreateProductColorDto): Promise<ProductColor> {
+		const exists = await this.productColorRepository.exists({
+			where: { name: productColorDto.name }
 		});
-		if (existProductColor) {
+		if (exists) {
 			throw new BadRequestException('Данный цвет уже существует');
 		}
-
-		const color = convertToClass(ProductColor, productColorDto);
-
-		const newColor = await this.productColorRepository.save(color);
-
-		return convertToJson(ProductColorDto, newColor);
+		return this.productColorRepository.save({ ...productColorDto });
 	}
 }

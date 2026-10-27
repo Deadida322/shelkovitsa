@@ -8,7 +8,7 @@ const loading = ref(false);
 const orders = ref([]);
 function getOrders() {
     loading.value = true;
-    return $api('/api/order/admin', { method: 'POST', body: {
+    return $api('/api/admin/order', { query: {
         page: page.value - 1,
         itemsPerPage: 10,
     } }).then((res) => {
@@ -19,9 +19,8 @@ function getOrders() {
 };
 
 function updateStatus(status, orderId) {
-    return $api('/api/order/admin/changeStatus', { method: 'PATCH', body: {
+    return $api(`/api/admin/order/${orderId}`, { method: 'PATCH', body: {
         status,
-        orderId,
     } }).then(() => {
         VsNotification({
             title: 'Отлично!',
@@ -140,13 +139,13 @@ const headers = [
                             <tbody>
                                 <tr
                                     v-for="product in item.orderProducts"
-                                    :key="product.product.name"
+                                    :key="product.id"
                                 >
                                     <td>{{ product.product.productArticle.name }}</td>
                                     <td>{{ product.amount }}</td>
                                     <td>{{ product.product.productSize.name }}</td>
                                     <td>{{ product.product.productColor.name }}</td>
-                                    <td>{{ product.product.productArticle.price * product.amount }}</td>
+                                    <td>{{ (product.price ?? product.product.productArticle.price) * product.amount }}</td>
                                 </tr>
                             </tbody>
                         </v-table>

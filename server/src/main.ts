@@ -1,54 +1,24 @@
 import { NestFactory } from '@nestjs/core';
+import { Logger, LogLevel } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { UnprocessableEntityException, ValidationPipe } from '@nestjs/common';
-import { HttpExceptionFilter } from './middleware/errorMiddleware';
-import { errorFormatter } from './helpers/errorHelper';
-import { initDiskStorage } from './helpers/storageHelper';
-import * as cookieParser from 'cookie-parser';
-import { InitService } from './init/init.service';
-import helmet from 'helmet';
-import * as express from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { configureApp } from './app.setup';
+
+const LOG_LEVELS: LogLevel[] = ['fatal', 'error', 'warn', 'log', 'debug', 'verbose'];
+
+// LOG_LEVEL=info|log → до log включительно; debug, verbose, warn, error — соответственно
+function resolveLogLevels(raw?: string): LogLevel[] {
+	const level = (raw === 'info' ? 'log' : raw) as LogLevel;
+	const index = LOG_LEVELS.indexOf(level);
+	return LOG_LEVELS.slice(0, index === -1 ? LOG_LEVELS.indexOf('log') + 1 : index + 1);
+}
 
 async function bootstrap() {
-	initDiskStorage();
-
 	const app = await NestFactory.create(AppModule, {
-		bodyParser: true
+		bodyParser: true,
+		logger: resolveLogLevels(process.env.LOG_LEVEL)
 	});
-	app.setGlobalPrefix('api');
-	app.useGlobalPipes(
-		new ValidationPipe({
-			whitelist: true,
-			transform: true,
-			validationError: {
-				target: true
-			},
-			exceptionFactory: (errors) => {
-				const message = errorFormatter(errors);
-				return new UnprocessableEntityException(message);
-			},
-			stopAtFirstError: true
-		})
-	);
-	app.enableCors({
-		credentials: true,
-		// origin: '*'
-		origin:
-			process.env.CORS ?? process.env.CORS.split(',').map((origin) => origin.trim())
-	});
-
-	// Если используете HTTPS — разрешите прокси-заголовки
-	app.use(
-		helmet({
-			crossOriginResourcePolicy: false
-		})
-	);
-	const expressApp = app.getHttpAdapter().getInstance() as express.Express;
-	expressApp.set('trust proxy', 1); // доверять заголовкам от Nginx
-
-	app.useGlobalFilters(new HttpExceptionFilter());
-	app.use(cookieParser());
+	configureApp(app);
 
 	// Swagger configuration
 	const config = new DocumentBuilder()
@@ -79,12 +49,9 @@ async function bootstrap() {
 		}
 	});
 
-	await app.listen(process.env.PORT);
+	const port = process.env.PORT ?? 8000;
+	await app.listen(port);
 
-	const initService = app.get(InitService);
-	initService.initColors();
-	initService.initSizes();
-
-	console.log(`App started at http://localhost:${process.env.PORT}`);
+	new Logger('Bootstrap').log(`App started at http://localhost:${port}`);
 }
 bootstrap();

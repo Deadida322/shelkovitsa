@@ -2,7 +2,6 @@ import { Expose } from 'class-transformer';
 import {
 	IsBoolean,
 	IsInt,
-	IsNotEmpty,
 	IsOptional,
 	IsString,
 	IsArray,
@@ -12,10 +11,11 @@ import {
 import 'reflect-metadata';
 
 export class UpdateProductArticleDto {
-	@IsNotEmpty()
+	// перенос в другую подкатегорию
+	@IsOptional()
 	@IsInt()
 	@Expose()
-	id: number;
+	productSubcategoryId?: number;
 
 	@IsOptional()
 	@IsString()

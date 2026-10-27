@@ -1,18 +1,17 @@
-import { Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { CreateDateColumn, DeleteDateColumn, UpdateDateColumn } from 'typeorm';
 
 export abstract class BaseEntity {
-	@CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP(6)' })
+	@CreateDateColumn({ type: 'timestamptz' })
 	created_at!: Date;
 
-	@UpdateDateColumn({
-		type: 'timestamp',
-		default: () => 'CURRENT_TIMESTAMP(6)',
-		onUpdate: 'CURRENT_TIMESTAMP(6)'
-	})
+	@UpdateDateColumn({ type: 'timestamptz' })
 	updated_at!: Date;
+}
 
-	@Column({
-		default: false
-	})
-	is_deleted!: boolean;
+// Мягкое удаление — только для сущностей, на которые ссылаются заказы
+// (пользователи, артикулы, варианты товара). TypeORM сам исключает их из выборок;
+// чтобы увидеть удалённые, нужен withDeleted: true.
+export abstract class SoftDeleteEntity extends BaseEntity {
+	@DeleteDateColumn({ type: 'timestamptz', nullable: true })
+	deleted_at?: Date | null;
 }

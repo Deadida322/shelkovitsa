@@ -1,42 +1,48 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
 import {
-	ApiTags,
-	ApiOperation,
-	ApiResponse,
-	ApiCookieAuth,
-	ApiBody
-} from '@nestjs/swagger';
-import { UserService } from './user.service';
-import { Auth } from 'src/decorators/auth';
+	BadRequestException,
+	Body,
+	Controller,
+	Get,
+	ParseArrayPipe,
+	Put,
+	Req,
+	SerializeOptions
+} from '@nestjs/common';
+import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
+import { Auth } from 'src/decorators/auth';
+import { BasketItemDto } from './dto/BasketItemDto';
+import { UserService } from './user.service';
+
+const MAX_BASKET_ITEMS = 100;
 
 @ApiTags('User')
+@ApiCookieAuth('access_token')
+@Auth()
+@SerializeOptions({ type: BasketItemDto })
 @Controller('user')
 export class UserController {
-	constructor(private userService: UserService) {}
-	@Post('basket')
-	@Auth()
-	@ApiOperation({ summary: 'Обновить корзину пользователя' })
-	@ApiCookieAuth('access_token')
-	@ApiResponse({ status: 200, description: 'Корзина обновлена' })
-	@ApiBody({ schema: { type: 'object' } })
-	async updateBasket(@Body() payload: any, @Req() request: Request) {
-		const basket = await this.userService.updateBasket(
-			JSON.stringify(payload),
-			request.user.id
-		);
-
-		return basket;
-	}
+	constructor(private readonly userService: UserService) {}
 
 	@Get('basket')
-	@Auth()
-	@ApiOperation({ summary: 'Получить корзину пользователя' })
-	@ApiCookieAuth('access_token')
-	@ApiResponse({ status: 200, description: 'Корзина пользователя' })
-	async getBasket(@Body() payload: any, @Req() request: Request) {
-		const basket = await this.userService.getBasket(request.user.id);
+	@ApiOperation({ summary: 'Корзина пользователя' })
+	async getBasket(@Req() request: Request) {
+		return (await this.userService.getBasket(request.user.id)) ?? [];
+	}
 
-		return basket;
+	@Put('basket')
+	@ApiOperation({ summary: 'Сохранить корзину пользователя целиком' })
+	@ApiBody({ type: [BasketItemDto] })
+	async updateBasket(
+		@Body(new ParseArrayPipe({ items: BasketItemDto, whitelist: true }))
+		items: BasketItemDto[],
+		@Req() request: Request
+	) {
+		if (items.length > MAX_BASKET_ITEMS) {
+			throw new BadRequestException(
+				`В корзине не больше ${MAX_BASKET_ITEMS} позиций`
+			);
+		}
+		return this.userService.updateBasket(items, request.user.id);
 	}
 }

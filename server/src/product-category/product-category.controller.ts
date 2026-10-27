@@ -1,94 +1,18 @@
-import {
-	Body,
-	Controller,
-	Delete,
-	Get,
-	Param,
-	ParseIntPipe,
-	Patch,
-	Post
-} from '@nestjs/common';
-import {
-	ApiTags,
-	ApiOperation,
-	ApiResponse,
-	ApiBearerAuth,
-	ApiCookieAuth,
-	ApiBody,
-	ApiParam
-} from '@nestjs/swagger';
-import { ProductCategoryService } from './product-category.service';
+import { Controller, Get, SerializeOptions } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
-import { ProductCategoryDto } from './dto/ProductCategoryDto';
-import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
-import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
-import { AdminAuth } from 'src/decorators/adminAuth';
-import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
-import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
-import { FullProductArticleDto } from 'src/product-article/dto/FullProductArticleDto';
-import { BindProductArticleToSubcategoryDto } from './dto/BindProductArticleToSubcategoryDto';
+import { ProductCategoryService } from './product-category.service';
 
 @ApiTags('Product Category')
+@SerializeOptions({ type: ListProductCategoryDto })
 @Controller('product-category')
 export class ProductCategoryController {
 	constructor(private readonly productCategoryService: ProductCategoryService) {}
+
 	@Get()
-	@ApiOperation({ summary: 'Получить список категорий продуктов' })
-	@ApiResponse({ status: 200, description: 'Список категорий', type: [ListProductCategoryDto] })
-	async getList(): Promise<ListProductCategoryDto[]> {
+	@ApiOperation({ summary: 'Категории с подкатегориями' })
+	@ApiResponse({ status: 200, type: [ListProductCategoryDto] })
+	async getList() {
 		return this.productCategoryService.getList();
-	}
-
-	@Post('create')
-	@AdminAuth()
-	@ApiOperation({ summary: 'Создать категорию продукта (админ)' })
-	@ApiBearerAuth('JWT-auth')
-	@ApiCookieAuth('access_token')
-	@ApiResponse({ status: 201, description: 'Категория создана', type: ProductCategoryDto })
-	@ApiBody({ type: CreateProductCategoryDto })
-	async create(@Body() payload: CreateProductCategoryDto): Promise<ProductCategoryDto> {
-		return this.productCategoryService.createCategory(payload);
-	}
-
-	@Patch('update')
-	@AdminAuth()
-	async update(@Body() payload: ProductCategoryDto): Promise<ProductCategoryDto> {
-		return this.productCategoryService.updateCategory(payload);
-	}
-
-	@Delete('delete/:id')
-	@AdminAuth()
-	async delete(@Param('id', ParseIntPipe) id: number) {
-		return this.productCategoryService.deleteCategory(id);
-	}
-
-	@Post('/subcategory/create')
-	@AdminAuth()
-	async createSubCategory(
-		@Body() payload: CreateProductSubcategoryDto
-	): Promise<ProductSubcategoryDto> {
-		return this.productCategoryService.createSubCategory(payload);
-	}
-
-	@Patch('/subcategory/update')
-	@AdminAuth()
-	async updateSubCategory(
-		@Body() payload: UpdateProductSubcategoryDto
-	): Promise<ProductSubcategoryDto> {
-		return this.productCategoryService.updateSubCategory(payload);
-	}
-
-	@Delete('subcategory/delete/:id')
-	@AdminAuth()
-	async deleteSubcategory(@Param('id', ParseIntPipe) id: number) {
-		return this.productCategoryService.deleteSubcategory(id);
-	}
-
-	@Post('/subcategory/bindProduct')
-	@AdminAuth()
-	async bindProductToSubcategory(
-		@Body() payload: BindProductArticleToSubcategoryDto
-	): Promise<FullProductArticleDto> {
-		return this.productCategoryService.bindProductToSubcategory(payload);
 	}
 }

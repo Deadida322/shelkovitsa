@@ -1,0 +1,40 @@
+# Локальное окружение для разработки бэкенда. Запуск: docker compose up -d
+# - postgres: параметры как в server/.env.example (занят порт 5432 — POSTGRES_PORT=5433)
+# - s3: RustFS — S3-совместимое хранилище, замена MinIO (его образы больше не публикуются).
+#   Нужно только для STORAGE_DRIVER=s3: бакет — npm run storage:init -- --public,
+#   консоль — http://localhost:9001 (rustfsadmin / rustfsadmin)
+# Тестовая БД shelkovitsa_test создаётся автоматически при `npm run test:e2e`.
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shelkovitsa
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  s3:
+    image: rustfs/rustfs:1.0.3
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      RUSTFS_CONSOLE_ENABLE: 'true'
+    ports:
+      - '${S3_PORT:-9000}:9000'
+      - '${S3_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - s3data:/data
+
+volumes:
+  pgdata:
+  s3data:

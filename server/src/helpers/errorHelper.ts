@@ -1,28 +1,18 @@
 import { ValidationError } from '@nestjs/common';
 
+// Ошибки class-validator → плоский список { property, message } (вложенные — через точку)
 export function errorFormatter(
 	errors: ValidationError[],
-	errMessage?: any,
 	parentField?: string
-): any {
-	const message = errMessage || {};
-	let errorField = '';
-	let validationList = [];
-	errors.forEach((error) => {
-		errorField = parentField ? `${parentField}.${error.property}` : error?.property;
-		if (!error.constraints && error.children.length) {
-			errorFormatter(error.children, message, errorField);
-		} else {
-			validationList = Object.values(error?.constraints);
-			message[errorField] =
-				validationList.length > 0 ? validationList.pop() : 'Invalid value';
+): { property: string; message: string }[] {
+	return errors.flatMap((error) => {
+		const property = parentField
+			? `${parentField}.${error.property}`
+			: error.property;
+		if (!error.constraints && error.children?.length) {
+			return errorFormatter(error.children, property);
 		}
-	});
-
-	return Object.entries(message).map((el) => {
-		return {
-			property: el[0],
-			message: el[1]
-		};
+		const messages = Object.values(error.constraints ?? {});
+		return [{ property, message: messages.pop() ?? 'Invalid value' }];
 	});
 }

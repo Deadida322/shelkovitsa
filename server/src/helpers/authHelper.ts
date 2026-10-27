@@ -1,7 +1,17 @@
-import * as crypto from 'crypto-js';
-const secret = process.env.PSD_KEY ?? 'secret';
+import * as bcrypt from 'bcrypt';
 
-function encodePsd(password: string): string {
-	return crypto.HmacSHA256(password, secret).toString();
+const BCRYPT_ROUNDS = 10;
+
+export function hashPassword(password: string): Promise<string> {
+	return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
-export { encodePsd };
+
+export async function verifyPassword(
+	password: string,
+	storedHash: string
+): Promise<boolean> {
+	if (!storedHash) {
+		return false;
+	}
+	return bcrypt.compare(password, storedHash);
+}
