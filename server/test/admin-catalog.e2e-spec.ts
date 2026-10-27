@@ -9,8 +9,10 @@ import { ProductSize } from 'src/db/entities/ProductSize';
 import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import {
 	createTestApp,
+	CUSTOMER,
 	orderPayload,
 	registerAdmin,
+	registerAgent,
 	resetDb,
 	SeededCatalog,
 	seedCatalog
@@ -199,6 +201,82 @@ describe('Админка каталога (e2e)', () => {
 			await update({ is_deleted: true }).expect(200);
 			const res = await update({ is_deleted: false }).expect(200);
 			expect(res.body.is_deleted).toBe(false);
+		});
+	});
+
+	describe('полное удаление', () => {
+		const remove = (articleId = catalog.article.id) =>
+			admin.delete(`/api/admin/product-article/${articleId}`);
+		const orderOne = () =>
+			request(app.getHttpServer())
+				.post('/api/order')
+				.send(
+					orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }])
+				);
+
+		beforeEach(async () => {
+			await uploadImage().expect(201);
+		});
+
+		it('без заказов — удаляются артикул, варианты (и архивные) и фото', async () => {
+			const archived = await manager().save(Product, {
+				amount: 1,
+				productArticle: catalog.article,
+				productColor: await manager().save(ProductColor, { name: 'Белый' }),
+				productSize: catalog.size
+			});
+			await manager().softDelete(Product, archived.id);
+			const [photo] = await files();
+			await manager().softDelete(ProductArticle, catalog.article.id);
+
+			await remove().expect(204);
+
+			expect(
+				await manager().count(ProductArticle, {
+					where: { id: catalog.article.id },
+					withDeleted: true
+				})
+			).toBe(0);
+			expect(await manager().count(Product, { withDeleted: true })).toBe(0);
+			expect(await manager().count(ProductFile)).toBe(0);
+			expect(await storage().exists(photo.name)).toBe(false);
+			// артикул снова можно завести с тем же кодом (импортом)
+			await manager().save(ProductArticle, {
+				article: catalog.article.article,
+				price: 100,
+				productSubcategory: catalog.article.productSubcategory
+			});
+		});
+
+		it('заказанный товар удалить нельзя — только в архив; ничего не удаляется', async () => {
+			await update({ isVisible: true }).expect(200);
+			await orderOne().expect(201);
+
+			const res = await remove().expect(400);
+			expect(res.body.error.message).toMatch(/только отправить в архив/);
+			expect(await manager().count(Product)).toBe(1);
+			expect(await files()).toHaveLength(1);
+		});
+
+		it('заказ на вариант, ушедший потом в архив, тоже запрещает удаление', async () => {
+			await update({ isVisible: true }).expect(200);
+			await orderOne().expect(201);
+			await manager().softDelete(Product, catalog.product.id);
+			await manager().softDelete(ProductArticle, catalog.article.id);
+
+			await remove().expect(400);
+		});
+
+		it('несуществующий артикул — 404, покупатель — 403, гость — 401', async () => {
+			await remove(9999).expect(404);
+			const customer = await registerAgent(app, CUSTOMER);
+			await customer
+				.delete(`/api/admin/product-article/${catalog.article.id}`)
+				.expect(403);
+			await request(app.getHttpServer())
+				.delete(`/api/admin/product-article/${catalog.article.id}`)
+				.expect(401);
+			expect(await manager().count(ProductArticle)).toBe(1);
 		});
 	});
 

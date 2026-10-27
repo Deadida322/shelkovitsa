@@ -25,6 +25,11 @@
 
     getProducts();
 
+    // Layout грузит категории при SSR без куки админа (только с опубликованными товарами),
+    // а в карточке товара нужны все подкатегории
+    const categoriesStore = useCategoriesStore();
+    onMounted(() => categoriesStore.getCategories());
+
     async function updateXlsx(file) {
         const formData = new FormData();
         formData.append('file', file, file.name);

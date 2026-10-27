@@ -2,7 +2,16 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
-import { createTestApp, registerAdmin, resetDb, seedCatalog } from './utils';
+import { ProductCategory } from 'src/db/entities/ProductCategory';
+import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
+import {
+	createTestApp,
+	CUSTOMER,
+	registerAdmin,
+	registerAgent,
+	resetDb,
+	seedCatalog
+} from './utils';
 
 describe('Категории (e2e)', () => {
 	let app: INestApplication;
@@ -81,6 +90,69 @@ describe('Категории (e2e)', () => {
 			.send({ productSubcategoryId: target.body.id })
 			.expect(200);
 		expect(res.body.productSubcategory.id).toBe(target.body.id);
+	});
+
+	describe('список зависит от роли', () => {
+		const names = (
+			body: { name: string; productSubcategories: { name: string }[] }[]
+		) => body.map((c) => [c.name, c.productSubcategories.map((s) => s.name)]);
+
+		beforeEach(async () => {
+			// «Бюстгальтеры / Классические» — с опубликованным артикулом
+			const catalog = await seedCatalog(app);
+			const manager = app.get(DataSource).manager;
+			const subcategory = (name: string, category: ProductCategory) =>
+				manager.save(ProductSubcategory, { name, productCategory: category });
+			const article = (code: string, sub: ProductSubcategory, isVisible: boolean) =>
+				manager.save(ProductArticle, {
+					article: code,
+					price: 100,
+					isVisible,
+					productSubcategory: sub
+				});
+
+			const bras = catalog.article.productSubcategory.productCategory;
+			await article('HIDDEN', await subcategory('Скрытые', bras), false);
+			const archived = await article(
+				'ARCH',
+				await subcategory('Архив', bras),
+				true
+			);
+			await manager.softDelete(ProductArticle, archived.id);
+
+			const empty = await manager.save(ProductCategory, { name: 'Пустая' });
+			await subcategory('Без товаров', empty);
+			const onlyHidden = await manager.save(ProductCategory, { name: 'Скрытая' });
+			await article(
+				'HIDDEN-2',
+				await subcategory('Тоже скрытые', onlyHidden),
+				false
+			);
+		});
+
+		const publicView = [['Бюстгальтеры', ['Классические']]];
+
+		it('гостю — только подкатегории с опубликованными товарами', async () => {
+			const res = await request(app.getHttpServer())
+				.get('/api/product-category')
+				.expect(200);
+			expect(names(res.body)).toEqual(publicView);
+		});
+
+		it('покупателю — так же, как гостю', async () => {
+			const customer = await registerAgent(app, CUSTOMER);
+			const res = await customer.get('/api/product-category').expect(200);
+			expect(names(res.body)).toEqual(publicView);
+		});
+
+		it('админу — все категории и подкатегории, в том числе пустые', async () => {
+			const res = await admin.get('/api/product-category').expect(200);
+			expect(names(res.body)).toEqual([
+				['Бюстгальтеры', ['Классические', 'Скрытые', 'Архив']],
+				['Пустая', ['Без товаров']],
+				['Скрытая', ['Тоже скрытые']]
+			]);
+		});
 	});
 
 	it('несуществующая категория — 404', async () => {

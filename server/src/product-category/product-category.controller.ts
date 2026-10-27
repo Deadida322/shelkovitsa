@@ -1,5 +1,6 @@
-import { Controller, Get, SerializeOptions } from '@nestjs/common';
+import { Controller, Get, Req, SerializeOptions } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
 import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
 import { ProductCategoryService } from './product-category.service';
 
@@ -10,9 +11,12 @@ export class ProductCategoryController {
 	constructor(private readonly productCategoryService: ProductCategoryService) {}
 
 	@Get()
-	@ApiOperation({ summary: 'Категории с подкатегориями' })
+	@ApiOperation({
+		summary:
+			'Категории с подкатегориями: покупателю — только с опубликованными товарами, админу — все'
+	})
 	@ApiResponse({ status: 200, type: [ListProductCategoryDto] })
-	async getList() {
-		return this.productCategoryService.getList();
+	async getList(@Req() request: Request) {
+		return this.productCategoryService.getList(!!request.user?.isAdmin);
 	}
 }
