@@ -23,12 +23,33 @@ export class ProductCategoryService {
 		private readonly productArticleRepository: Repository<ProductArticle>
 	) {}
 
-	async getList(): Promise<ProductCategory[]> {
-		const categories = await this.productCategoryRepository.find({
-			relations: { productSubcategories: true },
-			order: { id: 'ASC', productSubcategories: { id: 'ASC' } }
-		});
-		return categories;
+	// Админ видит все категории; покупатель — только подкатегории с опубликованными
+	// артикулами и категории, в которых такие подкатегории остались
+	async getList(isAdmin: boolean): Promise<ProductCategory[]> {
+		if (isAdmin) {
+			return this.productCategoryRepository.find({
+				relations: { productSubcategories: true },
+				order: { id: 'ASC', productSubcategories: { id: 'ASC' } }
+			});
+		}
+
+		return this.productCategoryRepository
+			.createQueryBuilder('category')
+			.innerJoinAndSelect('category.productSubcategories', 'subcategory')
+			.where((qb) => {
+				const published = qb
+					.subQuery()
+					.select('1')
+					.from(ProductArticle, 'article')
+					.where('article.productSubcategoryId = subcategory.id')
+					.andWhere('article.isVisible = true')
+					.andWhere('article.deleted_at IS NULL')
+					.getQuery();
+				return `EXISTS ${published}`;
+			})
+			.orderBy('category.id', 'ASC')
+			.addOrderBy('subcategory.id', 'ASC')
+			.getMany();
 	}
 
 	async createCategory({ name }: CreateProductCategoryDto): Promise<ProductCategory> {

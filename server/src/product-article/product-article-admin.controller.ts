@@ -72,6 +72,16 @@ export class ProductArticleAdminController {
 		return this.productArticleService.updateProductArticle(id, payload);
 	}
 
+	@Delete(':id')
+	@HttpCode(204)
+	@ApiOperation({
+		summary:
+			'Удалить артикул полностью (с вариантами и фото). Только если его ни разу не заказывали'
+	})
+	async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+		await this.productArticleService.deleteProductArticle(id);
+	}
+
 	@Post(':id/images')
 	@UseInterceptors(imageInterceptor)
 	@ApiConsumes('multipart/form-data')

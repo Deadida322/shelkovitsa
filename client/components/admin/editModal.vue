@@ -92,6 +92,37 @@
         });
     };
 
+    // Полное удаление — только для товаров, которые ни разу не заказывали (иначе бэк вернёт 400).
+    // Первый клик просит подтверждения, второй удаляет
+    const confirmDelete = ref(false);
+    function deleteProduct() {
+        if (!confirmDelete.value) {
+            confirmDelete.value = true;
+            return;
+        }
+        confirmDelete.value = false;
+        loading.value = true;
+        $api(`/api/admin/product-article/${item.value.id}`, { method: 'DELETE' }).then(() => {
+            loading.value = false;
+            VsNotification({
+                title: 'Отлично!',
+                content: 'Товар удалён',
+                position: 'bottom-center',
+                border: 'success',
+            });
+            emit('update:visible', false);
+            emit('updateProduct');
+        }).catch(({ response }) => {
+            loading.value = false;
+            VsNotification({
+                title: 'Ошибка!',
+                content: response?._data?.error?.message || 'Товар не был удалён',
+                position: 'bottom-center',
+                border: 'danger',
+            });
+        });
+    }
+
     function deleteImage(productFileId) {
         $api(`/api/admin/product-article/images/${productFileId}`, { method: 'DELETE' }).then(() => {
             loading.value = false;
@@ -144,6 +175,7 @@
     watch(() => props.visible, async (value) => {
         if (!value)
             return;
+        confirmDelete.value = false;
         item.value = props.modelValue;
         getProduct();
     });
@@ -280,6 +312,17 @@
                     :disabled="item.is_deleted"
                     @update:model-value="updateImage"
                 />
+                <v-btn
+                    v-tooltip="'Только для товаров, которые ни разу не заказывали. Заказанный товар можно лишь отправить в архив'"
+                    class="mt-4"
+                    color="red"
+                    :variant="confirmDelete ? 'flat' : 'outlined'"
+                    prepend-icon="mdi-delete-forever"
+                    :loading="loading"
+                    @click="deleteProduct"
+                >
+                    {{ confirmDelete ? 'Точно удалить? Нажмите ещё раз' : 'Удалить навсегда' }}
+                </v-btn>
             </v-card-text>
         </v-card>
     </v-dialog>

@@ -19,6 +19,7 @@ import {
 	Repository
 } from 'typeorm';
 import { filterDuplicateObjectById } from 'src/common/utils';
+import { OrderProduct } from 'src/db/entities/OrderProduct';
 import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductColor } from 'src/db/entities/ProductColor';
@@ -307,6 +308,59 @@ export class ProductArticleService {
 		});
 
 		return this.getProductArticle(id, true, {} as GetDetailProductArticleDto);
+	}
+
+	/**
+	 * Полное удаление артикула вместе с вариантами и фото. Только если ни один вариант
+	 * (включая архивные) не попадал в заказы — иначе артикул можно лишь отправить в архив.
+	 */
+	async deleteProductArticle(id: number) {
+		const files = await this.dataSource.transaction(async (manager) => {
+			const article = await manager.findOne(ProductArticle, {
+				where: { id },
+				withDeleted: true,
+				relations: { productFiles: true }
+			});
+			if (!article) {
+				throw new NotFoundException('Не найден такой артикул!');
+			}
+
+			// заказ блокирует те же строки (OrderService.create): параллельный заказ
+			// не проскочит между проверкой и удалением
+			await manager
+				.createQueryBuilder(Product, 'product')
+				.setLock('pessimistic_write')
+				.withDeleted()
+				.where('product.productArticleId = :id', { id })
+				.getMany();
+
+			const ordered = await manager.exists(OrderProduct, {
+				where: { product: { productArticle: { id } } },
+				withDeleted: true
+			});
+			if (ordered) {
+				throw new BadRequestException(
+					'Товар уже заказывали — его можно только отправить в архив'
+				);
+			}
+
+			await manager.delete(Product, { productArticle: { id } });
+			// фото удаляются каскадом (product_file.productArticleId ON DELETE CASCADE)
+			await manager.delete(ProductArticle, id);
+			return article.productFiles;
+		});
+
+		await Promise.all(
+			files.map((file) =>
+				this.storage
+					.delete(file.name)
+					.catch((error) =>
+						this.logger.warn(
+							`Не удалось удалить файл ${file.name}: ${error?.message ?? error}`
+						)
+					)
+			)
+		);
 	}
 
 	/**
