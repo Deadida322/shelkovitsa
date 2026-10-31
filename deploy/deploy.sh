@@ -58,17 +58,26 @@ prepare_server_writable_dirs() {
 	if [[ -d "$s" ]]; then
 		mkdir -p "$s/docs" "$s/static"
 		chown -R www-data:www-data "$s/docs" "$s/static"
-		chmod -R 755 "$s/docs" "$s/static"
 	fi
 }
 
-apply_permissions() {
-	log "права: каталоги 755, файлы 644; .git и node_modules не трогаем (иначе git status — mass mode change). Скрипты в репо не chmod: запуск с другого пути — bash /path/to/script.sh"
-	cd "$PROJECT_DIR" || die "нет каталога $PROJECT_DIR"
-	find . \( -name .git -o -name node_modules \) -prune -o -type d -exec chmod 755 {} +
-	find . \( -name .git -o -name node_modules \) -prune -o -type f -exec chmod 644 {} +
-	prepare_server_writable_dirs
+# Права остальных файлов задаёт git (скрипты — исполняемые); секреты читают только root и www-data
+protect_env() {
+	log "server/.env: root:www-data, 640"
+	chown root:www-data "$PROJECT_DIR/server/.env"
+	chmod 640 "$PROJECT_DIR/server/.env"
 }
+
+# Временный backend не должен пережить скрипт, даже если деплой оборвётся
+BACKEND_PID=""
+stop_temp_backend() {
+	if [[ -n "$BACKEND_PID" ]]; then
+		log "остановка временного backend (pid $BACKEND_PID)"
+		kill "$BACKEND_PID" 2>/dev/null || true
+		BACKEND_PID=""
+	fi
+}
+trap stop_temp_backend EXIT
 
 write_systemd_units() {
 	log "systemd: shelkovitsa-backend, shelkovitsa-frontend (User=www-data)"
@@ -135,7 +144,7 @@ prepare_server_writable_dirs
 
 [[ -f "$PROJECT_DIR/server/.env" ]] || die "нет $PROJECT_DIR/server/.env — скопируйте из .env.example и настройте БД"
 
-apply_permissions
+protect_env
 
 log "backend: npm ci, build"
 cd "$PROJECT_DIR/server"
@@ -156,11 +165,7 @@ cd "$PROJECT_DIR/client"
 npm ci
 npm run build
 
-rm -rf /var/cache/nginx/* 2>/dev/null || true
-systemctl reload nginx
-
-log "остановка временного backend (pid $BACKEND_PID)"
-kill "$BACKEND_PID" 2>/dev/null || true
+stop_temp_backend
 
 write_systemd_units
 systemctl daemon-reload
@@ -172,7 +177,14 @@ systemctl start shelkovitsa-backend
 systemctl start shelkovitsa-frontend
 
 wait_healthy "shelkovitsa-backend" || die "backend не отвечает на /api/health: journalctl -u shelkovitsa-backend -n 50 --no-pager"
-systemctl is-active shelkovitsa-frontend && systemctl is-active nginx
+systemctl is-active shelkovitsa-frontend
+
+# Приложение уже обновлено: сбой nginx не должен выглядеть как неудачный деплой приложения
+rm -rf /var/cache/nginx/* 2>/dev/null || true
+if ! systemctl reload nginx; then
+	log "ВНИМАНИЕ: nginx не перезагрузился: nginx -t; journalctl -u nginx -n 30 --no-pager"
+fi
+systemctl is-active nginx
 
 log "готово"
 log "первый деплой на пустую БД — создайте администратора:"
