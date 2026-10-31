@@ -76,9 +76,9 @@ sudo -E ./deploy.sh
 
 **Нужна ли папка проекта заранее?** Обычно **нет**. Если запускаете [`deploy.sh`](./deploy.sh) с переменной **`GIT_REPO`**, скрипт сам создаст родительский каталог (например `/var/www`) и выполнит **`git clone`** в **`PROJECT_DIR`** (по умолчанию `/var/www/shelkovitsa`). Не создавайте вручную пустой каталог `/var/www/shelkovitsa` без `.git` — в этом случае `deploy.sh` завершится с ошибкой.
 
-**От какого пользователя:** оба скрипта — **только от root** (`sudo ./install-server.sh`, `sudo ./deploy.sh`). Отдельный Unix-пользователь для деплоя не нужен: после `git` дерево может принадлежать **root**; [`deploy.sh`](./deploy.sh) сам выставит **chmod** на проект и **chown www-data** на каталоги записи (`server/temp`, `docs`, `static`). Процессы Node в systemd идут от **www-data**.
+**От какого пользователя:** оба скрипта — **только от root** (`sudo ./install-server.sh`, `sudo ./deploy.sh`). Отдельный Unix-пользователь для деплоя не нужен: после `git` дерево может принадлежать **root**; [`deploy.sh`](./deploy.sh) сам выставит **chown www-data** на каталоги записи (`/temp`, `server/docs`, `server/static`) и защитит `server/.env`. Права остальных файлов задаёт git, скрипты в репозитории уже исполняемые. Процессы Node в systemd идут от **www-data**.
 
-**Права до деплоя:** ничего специально не выставляйте. После появления `server/.env` сделайте **`chown root:www-data server/.env`** и **`chmod 640 server/.env`**, чтобы **www-data** мог читать секреты, а остальные пользователи ОС — нет.
+**Права до деплоя:** ничего специально не выставляйте. [`deploy.sh`](./deploy.sh) при каждом запуске делает **`chown root:www-data server/.env`** и **`chmod 640 server/.env`**, чтобы **www-data** мог читать секреты, а остальные пользователи ОС — нет.
 
 **Что физически положить на сервер до клона:** достаточно скопировать каталог **`deploy/`** (или хотя бы `install-server.sh` и `deploy.sh`) в удобное место, например `/root/shelkovitsa-deploy/`, выставить **`chmod +x *.sh`**, затем запускать оттуда. Полный клон репозитория до этого **не обязателен**, если первый раз используете **`deploy.sh`** с **`GIT_REPO`**.
 
@@ -93,13 +93,12 @@ sudo -E ./deploy.sh
 | **www-data** | Воркеры nginx; процессы Node в `shelkovitsa-backend` и `shelkovitsa-frontend` |
 | Роль в БД (`DB_USER` в `.env`) | Подключение приложения к PostgreSQL (не пользователь ОС) |
 
-Дерево проекта: `chmod 755` для чтения процессами `www-data`. Запись: `server/temp`, `server/docs`, `server/static` — **`www-data:www-data`**. Файл **`server/.env`**: `chown root:www-data`, `chmod 640`.
+Дерево проекта: права из git, `www-data` может читать. Запись: `/temp`, `server/docs`, `server/static` — **`www-data:www-data`**. Файл **`server/.env`**: `chown root:www-data`, `chmod 640`.
 
 ## 1. Чистый сервер
 
 ```bash
 cd /path/to/shelkovitsa/deploy   # или скопируйте скрипты на сервер
-chmod +x install-server.sh deploy.sh
 
 export DB_PASSWORD='пароль_роли_БД'
 sudo -E ./install-server.sh
