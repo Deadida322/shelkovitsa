@@ -19,7 +19,10 @@
         router.replace({ path: router.currentRoute.value.path });
     }, 500);
 
-    const totalItems = ref(6);
+    const totalItems = ref(0);
+    const pageCount = computed(() =>
+        Math.max(1, Math.ceil(totalItems.value / pageSize.value) || 1),
+    );
     const payload = computed(() => ({
         page: page.value - 1,
         itemsPerPage: pageSize.value,
@@ -37,6 +40,10 @@
         },
     );
 
+    watch(page, () => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+
     const isProductsLoading = ref(true);
 
     function clearFilters() {
@@ -44,11 +51,6 @@
         filtersStore.clearFilters();
         page.value = 1;
         router.replace({ path: router.currentRoute.value.path });
-    }
-
-    function onPageChange(nextPage) {
-        page.value = nextPage;
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 
     const breadcrumbs = computed(() => {
@@ -183,14 +185,17 @@
                 />
             </div>
         </div>
-        <div class="d-flex justify-end mt-10">
-            <vs-pagination
-                v-show="!isProductsLoading"
-                :current-page="page"
-                :layout="['prev', 'pager', 'next']"
-                :page-size="pageSize"
-                :total="totalItems"
-                @update:current-page="onPageChange"
+        <div
+            v-if="pageCount > 1"
+            class="d-flex justify-end mt-10"
+        >
+            <v-pagination
+                v-model="page"
+                :length="pageCount"
+                :disabled="isProductsLoading"
+                :total-visible="7"
+                density="comfortable"
+                active-color="primary"
             />
         </div>
     </div>
