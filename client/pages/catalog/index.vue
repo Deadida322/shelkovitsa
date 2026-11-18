@@ -8,19 +8,20 @@
     const router = useRouter();
 
     const { $api } = useNuxtApp();
-    const page = ref(0);
+    // vs-pagination — 1-based; в API уходит page - 1
+    const page = ref(1);
     const pageSize = ref(6);
     const search = ref('');
 
     const updateSearch = debounce(() => {
         filtersStore.filters.search = search.value;
-        page.value = 0;
+        page.value = 1;
         router.replace({ path: router.currentRoute.value.path });
     }, 500);
 
     const totalItems = ref(6);
     const payload = computed(() => ({
-        page: page.value,
+        page: page.value - 1,
         itemsPerPage: pageSize.value,
         ...(filtersStore.filters.search ? { query: filtersStore.filters.search } : null),
         ...(filtersStore.filters.category ? { categoryId: +filtersStore.filters.category } : null),
@@ -29,13 +30,25 @@
 
     watch(search, updateSearch);
 
+    watch(
+        () => [filtersStore.filters.category, filtersStore.filters.subcategory, filtersStore.filters.search],
+        () => {
+            page.value = 1;
+        },
+    );
+
     const isProductsLoading = ref(true);
 
     function clearFilters() {
         filtersStore.filters = {};
         filtersStore.clearFilters();
-        page.value = 0;
+        page.value = 1;
         router.replace({ path: router.currentRoute.value.path });
+    }
+
+    function onPageChange(nextPage) {
+        page.value = nextPage;
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 
     const breadcrumbs = computed(() => {
@@ -172,12 +185,12 @@
         </div>
         <div class="d-flex justify-end mt-10">
             <vs-pagination
-                v-if="!isProductsLoading"
-                :model-value="page"
+                v-show="!isProductsLoading"
+                :current-page="page"
                 :layout="['prev', 'pager', 'next']"
                 :page-size="pageSize"
                 :total="totalItems"
-                @update:current-page="page = $event - 1"
+                @update:current-page="onPageChange"
             />
         </div>
     </div>
