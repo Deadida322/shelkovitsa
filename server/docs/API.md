@@ -22,7 +22,7 @@ Swagger UI: `http://localhost:8000/api/docs`.
 | POST | `/auth/login` | Вход `{ mail, password }`; лимит 10/мин |
 | POST | `/auth/logout` | Выход (сбрасывает куку) |
 | GET | `/auth/me` | Текущий пользователь `{ mail, fio, isAdmin }` 🔒 |
-| GET | `/product-article` | Каталог: `page`, `itemsPerPage`, `categoryId`, `subcategoryId`, `minPrice`, `maxPrice`, `query` |
+| GET | `/product-article` | Каталог: `page`, `itemsPerPage`, `categoryId`, `subcategoryId`, `minPrice`, `maxPrice`, `productSizeId`, `brand`, `query` |
 | GET | `/product-article/popular` | Популярные за месяц (3 шт.) |
 | GET | `/product-article/:id` | Карточка; `productSizeId` — цвета только этого размера |
 | GET | `/product` | Вариант с остатком: `productArticleId`, `productColorId`, `productSizeId` |
