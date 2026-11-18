@@ -96,7 +96,7 @@
         height: 100% !important;
         margin-top: 0 !important;
         padding-top: 60px !important;
-        z-index: 8;
+        z-index: 1100 !important;
         &.vs-sidebar.is-open {
             position: fixed !important;
             border-radius: 0 10px 10px 0 !important;

@@ -8,6 +8,8 @@ body {
 
 .vs-sidebar {
     position: relative !important;
+    // иначе остаётся --vs-z-index-top и меню перекрывает плавающую корзину
+    z-index: 1 !important;
     height: fit-content !important;
     border-radius: 0 0 12px 12px !important;
     min-width: 300px !important;
