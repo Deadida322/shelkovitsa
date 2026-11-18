@@ -40,6 +40,22 @@ export class GetProductArticleListDto extends GetListDto {
 	})
 	maxPrice: number;
 
+	/** Фильтр по id размера: артикулы, у которых есть вариант этого размера */
+	@Expose()
+	@IsOptional()
+	@Type(() => Number)
+	@IsInt()
+	@Min(0, {
+		message: 'Должно быть >= 0'
+	})
+	productSizeId: number;
+
+	/** Фильтр по торговой марке (точное совпадение без учёта регистра) */
+	@Expose()
+	@IsOptional()
+	@IsString()
+	brand: string;
+
 	@Expose()
 	@IsOptional()
 	@IsString()

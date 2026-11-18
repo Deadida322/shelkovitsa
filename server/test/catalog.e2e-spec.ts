@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
+import { ProductSize } from 'src/db/entities/ProductSize';
 import {
 	CUSTOMER,
 	createTestApp,
@@ -104,6 +105,42 @@ describe('Catalog (e2e)', () => {
 			.query({ page: 0, itemsPerPage: 500 })
 			.expect(422);
 		await request(app.getHttpServer()).get('/api/product-article/abc').expect(400);
+	});
+
+	it('фильтр каталога по размеру и бренду', async () => {
+		const catalog = await seedCatalog(app);
+		const manager = app.get(DataSource).manager;
+
+		await manager.query(
+			`UPDATE product_article SET brand = $1 WHERE id = $2`,
+			['Milavitsa', catalog.article.id]
+		);
+
+		const otherSize = await manager.save(ProductSize, { name: '80C' });
+
+		const bySize = await request(app.getHttpServer())
+			.get('/api/product-article')
+			.query({ page: 0, itemsPerPage: 10, productSizeId: catalog.size.id })
+			.expect(200);
+		expect(bySize.body.count).toBe(1);
+
+		const byOtherSize = await request(app.getHttpServer())
+			.get('/api/product-article')
+			.query({ page: 0, itemsPerPage: 10, productSizeId: otherSize.id })
+			.expect(200);
+		expect(byOtherSize.body.count).toBe(0);
+
+		const byBrand = await request(app.getHttpServer())
+			.get('/api/product-article')
+			.query({ page: 0, itemsPerPage: 10, brand: 'milavitsa' })
+			.expect(200);
+		expect(byBrand.body.count).toBe(1);
+
+		const byUnknownBrand = await request(app.getHttpServer())
+			.get('/api/product-article')
+			.query({ page: 0, itemsPerPage: 10, brand: 'UnknownBrand' })
+			.expect(200);
+		expect(byUnknownBrand.body.count).toBe(0);
 	});
 
 	it('корзина: сохранение, чтение, валидация', async () => {

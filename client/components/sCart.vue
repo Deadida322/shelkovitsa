@@ -125,7 +125,7 @@
     .s-cart {
         display: flex;
         position: fixed;
-        z-index: 1;
+        z-index: 200;
         bottom: 0;
         right: 20px;
         width: 400px;

@@ -117,6 +117,16 @@ export class ProductArticleService {
 			where.price = LessThanOrEqual(payload.maxPrice);
 		}
 
+		if (payload.productSizeId) {
+			where.products = {
+				productSize: { id: payload.productSizeId }
+			};
+		}
+
+		if (payload.brand?.trim()) {
+			where.brand = ILike(payload.brand.trim());
+		}
+
 		const whereWithSearch = payload.query
 			? (['article', 'name', 'description'] as const).map((field) => ({
 					...where,

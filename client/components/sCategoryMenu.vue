@@ -10,9 +10,10 @@
             category.value = '';
         }
     });
-    function navigate(item, nest) {
+    async function navigate(item, nest) {
         filtersStore.filters = { category: item.id, subcategory: nest.id };
-        navigateTo({ path: '/catalog', query: { ...filtersStore.filters } });
+        await navigateTo({ path: '/catalog', query: { ...filtersStore.filters } });
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 
     const isCategoriesLoading = computed(() => {
