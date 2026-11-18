@@ -111,10 +111,10 @@ describe('Catalog (e2e)', () => {
 		const catalog = await seedCatalog(app);
 		const manager = app.get(DataSource).manager;
 
-		await manager.query(
-			`UPDATE product_article SET brand = $1 WHERE id = $2`,
-			['Milavitsa', catalog.article.id]
-		);
+		await manager.query(`UPDATE product_article SET brand = $1 WHERE id = $2`, [
+			'Milavitsa',
+			catalog.article.id
+		]);
 
 		const otherSize = await manager.save(ProductSize, { name: '80C' });
 
