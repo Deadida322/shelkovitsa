@@ -1,0 +1,5 @@
+# Сайт деплоится через deploy/ (nginx + systemd), не через Netlify.
+# В репозиторий по ошибке привязан preview-сайт vermillion-conkies-850b71 —
+# эта настройка отменяет все Netlify-сборки, пока интеграцию не отвяжут в кабинете.
+[build]
+  ignore = "exit 0"
