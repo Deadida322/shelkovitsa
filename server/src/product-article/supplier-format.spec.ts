@@ -4,7 +4,42 @@ import * as path from 'path';
 import { excelLikeXlsx } from '../../test/xlsx';
 import { buildXlsx } from 'src/helpers/excelHelper';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
-import { loadColorMap, loadSizeMap, readMappingFile } from './supplier-format';
+import {
+	isExcludedCategory,
+	loadColorMap,
+	loadSizeMap,
+	normalizeBrand,
+	normalizeSubcategory,
+	readMappingFile
+} from './supplier-format';
+
+describe('правила нормализации выгрузки поставщика', () => {
+	it('служебные категории распознаются без учёта регистра и пробелов', () => {
+		for (const name of ['Образцы', 'некондиция', ' УЦЕНКА ']) {
+			expect(isExcludedCategory(name)).toBe(true);
+		}
+		for (const name of ['Женское нижнее белье', '', undefined, null]) {
+			expect(isExcludedCategory(name)).toBe(false);
+		}
+	});
+
+	it('у бренда отбрасываются суффиксы линеек', () => {
+		expect(normalizeBrand('Sielei куп.')).toBe('Sielei');
+		expect(normalizeBrand('Jolidon мужское')).toBe('Jolidon');
+		expect(normalizeBrand('Infiore купальники')).toBe('Infiore');
+		expect(normalizeBrand('Брестские муж.')).toBe('Брестские');
+		expect(normalizeBrand('Милавица')).toBe('Милавица');
+		expect(normalizeBrand('Mark & Spencer')).toBe('Mark & Spencer');
+		expect(normalizeBrand('  ')).toBeUndefined();
+		expect(normalizeBrand(undefined)).toBeUndefined();
+	});
+
+	it('«Бюсты» → «Бюстгальтеры», остальные типы не меняются', () => {
+		expect(normalizeSubcategory('Бюсты')).toBe('Бюстгальтеры');
+		expect(normalizeSubcategory(' бюсты ')).toBe('Бюстгальтеры');
+		expect(normalizeSubcategory('Трусы')).toBe('Трусы');
+	});
+});
 
 describe('файлы преобразования цветов и размеров', () => {
 	let dir: string;

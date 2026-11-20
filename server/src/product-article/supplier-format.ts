@@ -25,6 +25,34 @@ export const SUPPLIER_COLUMNS = {
 	amount: 18 // «Остаток»
 } as const;
 
+// Служебные «категории» выгрузки: склад образцов и брака, а не товарные разделы.
+// Строки из них не импортируются и попадают в файл ошибок.
+const EXCLUDED_CATEGORIES = new Set(['образцы', 'некондиция', 'уценка']);
+
+export function isExcludedCategory(name: unknown): boolean {
+	return EXCLUDED_CATEGORIES.has(
+		String(name ?? '')
+			.trim()
+			.toLowerCase()
+	);
+}
+
+// Линейки одного бренда у поставщика записаны отдельными «брендами»:
+// «Sielei куп.», «Jolidon мужское», «Infiore купальники», «Брестские муж.»
+const BRAND_LINE_SUFFIX = /\s+(?:куп\.?|купальники|мужское|муж\.?)$/i;
+
+export function normalizeBrand(value: string | undefined): string | undefined {
+	const brand = value?.replace(BRAND_LINE_SUFFIX, '').trim();
+	return brand || undefined;
+}
+
+// Названия типов у поставщика, которые покупатель не узнаёт («Бюсты» — это бюстгальтеры)
+const TYPE_ALIASES = new Map([['бюсты', 'Бюстгальтеры']]);
+
+export function normalizeSubcategory(name: string): string {
+	return TYPE_ALIASES.get(name.trim().toLowerCase()) ?? name;
+}
+
 // Остаток у поставщика: число или «>5» (больше пяти) — берём гарантированный минимум
 export function parseAmount(value: unknown): number {
 	if (typeof value === 'number') {

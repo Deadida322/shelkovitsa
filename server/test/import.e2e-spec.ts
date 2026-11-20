@@ -30,6 +30,7 @@ function row(values: {
 	article: string;
 	category?: string;
 	subcategory?: string;
+	brand?: string;
 	color?: string;
 	size?: string | number;
 	price?: number | string;
@@ -41,7 +42,7 @@ function row(values: {
 	const cells: unknown[] = new Array(19).fill(null);
 	cells[1] = values.category ?? 'Женское нижнее белье';
 	cells[2] = values.subcategory ?? 'Трусы';
-	cells[3] = 'Janira';
+	cells[3] = values.brand ?? 'Janira';
 	cells[4] = values.color ?? 'Avena'; // по data/colors.xlsx → «Бежевый»
 	cells[5] = values.colorUrl ?? null;
 	cells[6] = values.size ?? 1; // по data/sizes.xlsx → «40»
@@ -191,6 +192,60 @@ describe('Импорт каталога из Excel (e2e)', () => {
 
 		const m1 = await manager().findOne(ProductArticle, { where: { article: 'M-1' } });
 		expect(m1.productSubcategory.productCategory.name).toBe('Мужское белье');
+	});
+
+	it('служебные категории (образцы, некондиция, уценка) попадают в файл ошибок и не импортируются', async () => {
+		const res = await upload([
+			row({ article: 'OK-1' }),
+			row({ article: 'S-1', category: 'Образцы' }),
+			row({ article: 'S-2', category: 'некондиция' }),
+			row({ article: 'S-3', category: ' Уценка ' })
+		]);
+
+		const errors = await errorRows(res.body);
+		expect(errors).toHaveLength(3);
+		expect(errors.map((r) => r.join(' ')).join('\n')).toMatch(/не импортируется/);
+
+		const articles = await manager().find(ProductArticle);
+		expect(articles.map((a) => a.article)).toEqual(['OK-1']);
+		expect(await manager().count(ProductCategory)).toBe(1);
+	});
+
+	it('линейки бренда («куп.», «мужское») сливаются в один бренд', async () => {
+		await upload([
+			row({ article: 'B-1', brand: 'Sielei' }),
+			row({ article: 'B-2', brand: 'Sielei куп.', size: 2 }),
+			row({ article: 'B-3', brand: 'Jolidon мужское' }),
+			row({ article: 'B-4', brand: 'Infiore купальники' })
+		]);
+
+		const brands = (
+			await manager().find(ProductArticle, { order: { id: 'ASC' } })
+		).map((a) => a.brand);
+		expect(brands).toEqual(['Sielei', 'Sielei', 'Jolidon', 'Infiore']);
+	});
+
+	it('тип «Бюсты» переименован в «Бюстгальтеры»', async () => {
+		await upload([
+			row({
+				article: 'T-1',
+				category: 'Женское корсетное белье',
+				subcategory: 'Бюсты'
+			}),
+			row({
+				article: 'T-2',
+				category: 'Женское корсетное белье',
+				subcategory: 'Бюстгальтеры',
+				size: 2
+			})
+		]);
+
+		const subcategories = await manager().find(ProductSubcategory, {
+			where: { productCategory: { name: 'Женское корсетное белье' } }
+		});
+		expect(subcategories.map((s) => s.name)).toEqual(['Бюстгальтеры']);
+		const t1 = await manager().findOne(ProductArticle, { where: { article: 'T-1' } });
+		expect(t1.productSubcategory.name).toBe('Бюстгальтеры');
 	});
 
 	it('остаток «>5» из выгрузки поставщика читается как 5', async () => {
@@ -490,10 +545,13 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			);
 			const [header, ...body] = real;
 			// первые 40 строк + детский размер «3/4», который Excel сохранил датой
-			const sample = [
-				...body.slice(0, 40),
-				body.find((r) => r[0] === '339дбПиждо-4гм')!
-			].map((r) => r.map((v, c) => (c === 5 || c === 15 ? undefined : v)));
+			// (в выгрузке он лежит в служебной категории «Образцы» — подменяем на товарную)
+			const kids = body
+				.find((r) => r[0] === '339дбПиждо-4гм')!
+				.map((v, c) => (c === 1 ? 'Детское белье' : v));
+			const sample = [...body.slice(0, 40), kids].map((r) =>
+				r.map((v, c) => (c === 5 || c === 15 ? undefined : v))
+			);
 
 			const res = await send(await excelLikeXlsx([header, ...sample])).expect(200);
 			const errors = await errorRows(res.body);

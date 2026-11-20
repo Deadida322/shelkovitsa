@@ -11,6 +11,7 @@ import { hashPassword } from 'src/helpers/authHelper';
 import { buildXlsx, readSheet } from 'src/helpers/excelHelper';
 import { getSrcPath, initDiskStorage } from 'src/helpers/storageHelper';
 import { ProductImportService } from 'src/product-article/product-import.service';
+import { isExcludedCategory } from 'src/product-article/supplier-format';
 
 /**
  * Наполнение БД для разработки. Повторный запуск безопасен (всё через upsert).
@@ -25,6 +26,7 @@ import { ProductImportService } from 'src/product-article/product-import.service
 
 const DEFAULT_FILE = path.resolve(process.cwd(), '..', 'temp-dev', 'shel_data_new.xlsx');
 const ARTICLE_COLUMN = 13;
+const CATEGORY_COLUMN = 1;
 
 const DELIVERY_TYPES = [
 	{ name: 'Почта России', description: 'Доставка в отделение Почты России' },
@@ -109,6 +111,8 @@ async function seedCatalog(
 	const selected = rows.filter((row) => {
 		const article = String(row?.[ARTICLE_COLUMN] ?? '').trim();
 		if (!article) return false;
+		// служебные категории (образцы, некондиция, уценка) импорт всё равно отклонит
+		if (isExcludedCategory(row?.[CATEGORY_COLUMN])) return false;
 		if (!articles.has(article) && articles.size >= articlesLimit) return false;
 		articles.add(article);
 		return true;
