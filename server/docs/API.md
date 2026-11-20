@@ -22,7 +22,8 @@ Swagger UI: `http://localhost:8000/api/docs`.
 | POST | `/auth/login` | Вход `{ mail, password }`; лимит 10/мин |
 | POST | `/auth/logout` | Выход (сбрасывает куку) |
 | GET | `/auth/me` | Текущий пользователь `{ mail, fio, isAdmin }` 🔒 |
-| GET | `/product-article` | Каталог: `page`, `itemsPerPage`, `categoryId`, `subcategoryId`, `minPrice`, `maxPrice`, `productSizeId`, `brand`, `query` |
+| GET | `/product-article` | Каталог: `page`, `itemsPerPage` (≤ 20), `categoryId`, `subcategoryId`, `minPrice`, `maxPrice`, `productSizeId` и `brand` (повторяющиеся: `?brand=A&brand=B`; размер — только в наличии), `inStock=true`, `sort` (`default` \| `new` \| `priceAsc` \| `priceDesc`), `query` (артикул, название, описание, бренд) |
+| GET | `/product-article/filters` | Значения фильтров для `categoryId`/`subcategoryId`/`query`: `brands[{name,count}]`, `sizes[{id,name,count}]` (в наличии), `price{min,max}` |
 | GET | `/product-article/popular` | Популярные за месяц (3 шт.) |
 | GET | `/product-article/:id` | Карточка; `productSizeId` — цвета только этого размера |
 | GET | `/product` | Вариант с остатком: `productArticleId`, `productColorId`, `productSizeId` |
@@ -38,7 +39,8 @@ Swagger UI: `http://localhost:8000/api/docs`.
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/admin/product-article` | Все артикулы, включая скрытые и архивные (`is_deleted`) |
+| GET | `/admin/product-article` | Все артикулы, включая скрытые и архивные (`is_deleted`, `totalAmount` — остаток). Те же фильтры, что в каталоге, плюс `status` (`published` \| `hidden` \| `archive`), `noImage=true`, `noStock=true` |
+| GET | `/admin/product-article/filters` | Бренды и диапазон цен для фильтров списка (без архива) |
 | GET | `/admin/product-article/:id` | Карточка для редактирования |
 | PATCH | `/admin/product-article/:id` | `name`, `description`, `isVisible`, `is_deleted`, `productSubcategoryId`, `productColorIds`, `productSizeIds` |
 | POST | `/admin/product-article/:id/images` | Загрузка фото (multipart, поле `image`, до 5 МБ) |

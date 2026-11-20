@@ -30,7 +30,9 @@ import {
 import { PaginatedDto } from 'src/common/dto/PaginatedDto';
 import { FullProductArticleAdminDto } from './dto/FullProductArticleAdminDto';
 import { ProductArticleAdminDto } from './dto/ProductArticleAdminDto';
+import { GetProductArticleFiltersDto } from './dto/GetProductArticleFiltersDto';
 import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
+import { ProductArticleFiltersDto } from './dto/ProductArticleFiltersDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 import { UploadProductArticleFileDto } from './dto/UploadProductArticleFileDto';
 import { ProductArticleService } from './product-article.service';
@@ -51,6 +53,13 @@ export class ProductArticleAdminController {
 	@ApiOperation({ summary: 'Все артикулы, включая скрытые и архивные' })
 	async getList(@Query() query: GetProductArticleListDto) {
 		return this.productArticleService.getList(query, true);
+	}
+
+	@SerializeOptions({ type: ProductArticleFiltersDto })
+	@Get('filters')
+	@ApiOperation({ summary: 'Бренды и диапазон цен для фильтров списка (без архива)' })
+	async getFilters(@Query() query: GetProductArticleFiltersDto) {
+		return this.productArticleService.getFilters(query, true);
 	}
 
 	@SerializeOptions({ type: FullProductArticleAdminDto })

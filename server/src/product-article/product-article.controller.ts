@@ -11,7 +11,9 @@ import { ProductArticleDto } from './dto/ProductArticleDto';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FullProductArticleDto } from './dto/FullProductArticleDto';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
+import { GetProductArticleFiltersDto } from './dto/GetProductArticleFiltersDto';
 import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
+import { ProductArticleFiltersDto } from './dto/ProductArticleFiltersDto';
 import { ProductArticleService } from './product-article.service';
 
 @ApiTags('Product Article')
@@ -26,6 +28,16 @@ export class ProductArticleController {
 	})
 	async getList(@Query() query: GetProductArticleListDto) {
 		return this.productArticleService.getList(query, false);
+	}
+
+	@SerializeOptions({ type: ProductArticleFiltersDto })
+	@Get('filters')
+	@ApiOperation({
+		summary:
+			'Значения для фильтров каталога: бренды, размеры в наличии, диапазон цен (для категории/подкатегории/поиска)'
+	})
+	async getFilters(@Query() query: GetProductArticleFiltersDto) {
+		return this.productArticleService.getFilters(query, false);
 	}
 
 	@SerializeOptions({ type: ProductArticleDto })
