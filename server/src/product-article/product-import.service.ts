@@ -18,8 +18,11 @@ import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import {
+	isExcludedCategory,
 	loadColorMap,
 	loadSizeMap,
+	normalizeBrand,
+	normalizeSubcategory,
 	normalizeSupplierSize,
 	parseAmount,
 	SUPPLIER_COLUMNS
@@ -97,6 +100,14 @@ export class ProductImportService {
 
 			try {
 				const product = this.readRow(rowValues);
+				if (isExcludedCategory(product.productCategory)) {
+					errorRows.push([
+						...rowValues,
+						'',
+						`В строке ${number} категория «${product.productCategory}» не импортируется (служебная: образцы, некондиция, уценка)`
+					]);
+					return;
+				}
 				const missing = this.findMissingFields(product);
 				if (missing.length) {
 					errorRows.push([
@@ -156,10 +167,10 @@ export class ProductImportService {
 			price: Number(rowValues[COLUMNS.price]),
 			country: optional(COLUMNS.country),
 			description: optional(COLUMNS.description),
-			brand: optional(COLUMNS.brand),
+			brand: normalizeBrand(optional(COLUMNS.brand)),
 			composition: optional(COLUMNS.composition),
 			productCategory: cell(COLUMNS.productCategory),
-			productSubcategory: cell(COLUMNS.productSubcategory),
+			productSubcategory: normalizeSubcategory(cell(COLUMNS.productSubcategory)),
 			name: optional(COLUMNS.name),
 			imageUrls: cell(COLUMNS.imageUrls)
 				.split(';')

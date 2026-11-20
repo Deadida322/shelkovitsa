@@ -1,4 +1,13 @@
 <script setup>
+    const address = 'Москва, Леснорядский переулок, 18с19А';
+    const lon = 37.677382;
+    const lat = 55.783909;
+    // рамка карты вокруг метки (~масштаб 17)
+    const bbox = [lon - 0.0054, lat - 0.0015, lon + 0.0054, lat + 0.0015].join(',');
+    const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`;
+    const osmMapUrl = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`;
+    const yandexMapUrl = `https://yandex.ru/maps/?pt=${lon},${lat}&z=17&l=map`;
+
     useHead({
         title: 'Контакты - Шелковица',
         meta: [
@@ -44,14 +53,40 @@
         <div class="text-body-1 mt-4">
             Либо найти на карте
         </div>
+        <div class="d-flex align-center mt-1 ml-2">
+            {{ address }}
+        </div>
+        <!--
+            Карта OpenStreetMap вместо виджета Яндекс.Конструктора: тот показывает
+            рекламные метки, а скрыть их снаружи нельзя (iframe чужого домена).
+        -->
         <div class="contact__map mt-4">
             <iframe
-                src="https://yandex.ru/map-widget/v1/?um=constructor%3A8aec74c2534299d8e4e760eb2ee73a84c8ff428b0687e1771396d10bb52279b6&amp;source=constructor"
+                :src="mapSrc"
                 width="100%"
                 height="500"
                 frameborder="0"
+                loading="lazy"
                 title="Карта проезда до Шелковица"
             />
+        </div>
+        <div class="d-flex flex-wrap mt-2 ml-2">
+            <a
+                :href="yandexMapUrl"
+                target="_blank"
+                rel="noopener"
+                class="s-footer__item a mr-6"
+            >
+                Открыть в Яндекс Картах
+            </a>
+            <a
+                :href="osmMapUrl"
+                target="_blank"
+                rel="noopener"
+                class="s-footer__item a"
+            >
+                Открыть в OpenStreetMap
+            </a>
         </div>
     </div>
 </template>
