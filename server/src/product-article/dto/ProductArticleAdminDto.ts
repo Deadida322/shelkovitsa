@@ -10,4 +10,8 @@ export class ProductArticleAdminDto extends ProductArticleDto {
 
 	@Expose()
 	isVisible!: boolean;
+
+	// суммарный остаток по активным вариантам (в списке; в карточке не приходит)
+	@Expose()
+	totalAmount?: number;
 }

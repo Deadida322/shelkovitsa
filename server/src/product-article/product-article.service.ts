@@ -10,13 +10,19 @@ import moment from 'moment';
 import {
 	DataSource,
 	EntityManager,
+	FindOptionsOrder,
 	FindOptionsWhere,
 	ILike,
 	In,
+	IsNull,
 	LessThanOrEqual,
 	MoreThanOrEqual,
+	Not,
 	Between,
-	Repository
+	Raw,
+	Repository,
+	SelectQueryBuilder,
+	Brackets
 } from 'typeorm';
 import { filterDuplicateObjectById } from 'src/common/utils';
 import { OrderProduct } from 'src/db/entities/OrderProduct';
@@ -34,9 +40,21 @@ import {
 import { uploadedImageKey } from 'src/helpers/storageHelper';
 import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
 import { GetDetailProductArticleDto } from './dto/GetDetailProductArticleDto';
-import { GetProductArticleListDto } from './dto/GetProductArticleListDto';
+import { GetProductArticleFiltersDto } from './dto/GetProductArticleFiltersDto';
+import { GetProductArticleListDto, ProductSort } from './dto/GetProductArticleListDto';
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 import { baseProductWhere } from './product-article.types';
+
+// Порядок списка; id всегда в конце, чтобы страницы не «плавали» при равной цене
+const LIST_ORDERS: Record<ProductSort, FindOptionsOrder<ProductArticle>> = {
+	default: { id: 'ASC' },
+	new: { id: 'DESC' },
+	priceAsc: { price: 'ASC', id: 'ASC' },
+	priceDesc: { price: 'DESC', id: 'ASC' }
+};
+
+// % и _ в поисковой строке — обычные символы, а не шаблон
+const escapeLike = (value: string) => value.replace(/[\\%_]/g, '\\$&');
 
 @Injectable()
 export class ProductArticleService {
@@ -117,20 +135,31 @@ export class ProductArticleService {
 			where.price = LessThanOrEqual(payload.maxPrice);
 		}
 
-		if (payload.productSizeId) {
-			where.products = {
-				productSize: { id: payload.productSizeId }
-			};
+		// Остальные условия — подзапросы по варианту/фото/бренду. Они собираются в один Raw
+		// на колонке id: у where один ключ на колонку, а поиск ниже ветвит условие по полям.
+		const conditions = this.listConditions(payload, isAdmin);
+		if (conditions.length) {
+			const params = Object.assign({}, ...conditions.map((c) => c.params));
+			where.id = Raw(
+				(id) => conditions.map((c) => `(${c.sql(id)})`).join(' AND '),
+				params
+			);
 		}
 
-		if (payload.brand?.trim()) {
-			where.brand = ILike(payload.brand.trim());
+		if (isAdmin) {
+			if (payload.status === 'archive') {
+				where.deleted_at = Not(IsNull());
+			} else if (payload.status) {
+				where.deleted_at = IsNull();
+				where.isVisible = payload.status === 'published';
+			}
 		}
 
-		const whereWithSearch = payload.query
-			? (['article', 'name', 'description'] as const).map((field) => ({
+		const query = payload.query?.trim();
+		const whereWithSearch = query
+			? (['article', 'name', 'description', 'brand'] as const).map((field) => ({
 					...where,
-					[field]: ILike(`%${payload.query}%`)
+					[field]: ILike(`%${escapeLike(query)}%`)
 				}))
 			: where;
 
@@ -140,13 +169,18 @@ export class ProductArticleService {
 			// в админке нужны и архивные артикулы
 			withDeleted: isAdmin,
 			relations: { productFiles: true },
-			order: { id: 'ASC' }
+			order: LIST_ORDERS[payload.sort ?? 'default']
 		});
+
+		const amounts = isAdmin
+			? await this.totalAmounts(result.map((el) => el.id))
+			: new Map<number, number>();
 
 		return getPaginateResult(
 			result.map((el) => ({
 				...el,
-				productFiles: el.productFiles.filter((file) => file.isLogo)
+				productFiles: el.productFiles.filter((file) => file.isLogo),
+				...(isAdmin ? { totalAmount: amounts.get(el.id) ?? 0 } : {})
 			})),
 			total,
 			{
@@ -154,6 +188,149 @@ export class ProductArticleService {
 				page: payload.page
 			}
 		);
+	}
+
+	/**
+	 * Условия списка, которые не выражаются полями артикула. `sql` получает выражение
+	 * id артикула ("ProductArticle"."id") и возвращает SQL подзапроса; живые варианты —
+	 * без мягко удалённых.
+	 */
+	private listConditions(payload: GetProductArticleListDto, isAdmin: boolean) {
+		const conditions: {
+			sql: (id: string) => string;
+			params: Record<string, unknown>;
+		}[] = [];
+		const inStock = (id: string, extra = '') =>
+			`SELECT 1 FROM product p WHERE p."productArticleId" = ${id} ` +
+			`AND p.deleted_at IS NULL AND p.amount > 0 ${extra}`;
+
+		if (payload.brand?.length) {
+			conditions.push({
+				sql: (id) =>
+					`EXISTS (SELECT 1 FROM product_article b WHERE b.id = ${id} ` +
+					`AND LOWER(b.brand) IN (:...brandNames))`,
+				params: { brandNames: payload.brand.map((b) => b.trim().toLowerCase()) }
+			});
+		}
+
+		// размер имеет смысл только в наличии: покупателю не нужен 70B, которого нет
+		if (payload.productSizeId?.length) {
+			conditions.push({
+				sql: (id) =>
+					`EXISTS (${inStock(id, 'AND p."productSizeId" IN (:...sizeIds)')})`,
+				params: { sizeIds: payload.productSizeId }
+			});
+		}
+
+		if (payload.inStock) {
+			conditions.push({ sql: (id) => `EXISTS (${inStock(id)})`, params: {} });
+		}
+
+		if (isAdmin && payload.noStock) {
+			conditions.push({ sql: (id) => `NOT EXISTS (${inStock(id)})`, params: {} });
+		}
+
+		if (isAdmin && payload.noImage) {
+			conditions.push({
+				sql: (id) =>
+					`NOT EXISTS (SELECT 1 FROM product_file f WHERE f."productArticleId" = ${id})`,
+				params: {}
+			});
+		}
+
+		return conditions;
+	}
+
+	// Суммарный остаток по живым вариантам для страницы админского списка
+	private async totalAmounts(articleIds: number[]) {
+		const amounts = new Map<number, number>();
+		if (!articleIds.length) return amounts;
+
+		const rows: { id: number; total: string }[] = await this.dataSource.query(
+			`SELECT "productArticleId" AS id, SUM(amount) AS total FROM product
+			 WHERE deleted_at IS NULL AND "productArticleId" = ANY($1)
+			 GROUP BY "productArticleId"`,
+			[articleIds]
+		);
+		rows.forEach((row) => amounts.set(Number(row.id), Number(row.total)));
+		return amounts;
+	}
+
+	/**
+	 * Значения для панели фильтров: бренды и размеры в наличии с количеством артикулов,
+	 * диапазон цен. Область — категория/подкатегория/поиск; публично — только
+	 * опубликованные артикулы, в админке — все живые (не в архиве).
+	 */
+	async getFilters(payload: GetProductArticleFiltersDto, isAdmin: boolean) {
+		const scoped = (qb: SelectQueryBuilder<ProductArticle>, alias = 'a') => {
+			if (!isAdmin) qb.andWhere(`${alias}.isVisible = true`);
+			if (payload.subcategoryId || payload.categoryId) {
+				qb.innerJoin(`${alias}.productSubcategory`, 'sub').innerJoin(
+					'sub.productCategory',
+					'cat'
+				);
+				if (payload.subcategoryId) {
+					qb.andWhere('sub.id = :subcategoryId', {
+						subcategoryId: payload.subcategoryId
+					});
+				}
+				if (payload.categoryId) {
+					qb.andWhere('cat.id = :categoryId', {
+						categoryId: payload.categoryId
+					});
+				}
+			}
+			const query = payload.query?.trim();
+			if (query) {
+				qb.andWhere(
+					new Brackets((search) => {
+						(['article', 'name', 'description', 'brand'] as const).forEach(
+							(field) => search.orWhere(`${alias}.${field} ILIKE :search`)
+						);
+					}),
+					{ search: `%${escapeLike(query)}%` }
+				);
+			}
+			return qb;
+		};
+
+		const brands: { name: string; count: string }[] = await scoped(
+			this.productArticleRepository.createQueryBuilder('a')
+		)
+			.andWhere('a.brand IS NOT NULL')
+			.select('a.brand', 'name')
+			.addSelect('COUNT(*)', 'count')
+			.groupBy('a.brand')
+			.orderBy('a.brand', 'ASC')
+			.getRawMany();
+
+		const sizes: { id: number; name: string; count: string }[] = await scoped(
+			this.productArticleRepository
+				.createQueryBuilder('a')
+				.innerJoin('a.products', 'p', 'p.amount > 0 AND p.deleted_at IS NULL')
+				.innerJoin('p.productSize', 'size')
+		)
+			.select('size.id', 'id')
+			.addSelect('size.name', 'name')
+			.addSelect('COUNT(DISTINCT a.id)', 'count')
+			.groupBy('size.id')
+			.addGroupBy('size.name')
+			.getRawMany();
+
+		const price: { min: string | null; max: string | null } | undefined =
+			await scoped(this.productArticleRepository.createQueryBuilder('a'))
+				.select('MIN(a.price)', 'min')
+				.addSelect('MAX(a.price)', 'max')
+				.getRawOne();
+
+		return {
+			brands: brands.map((b) => ({ name: b.name, count: Number(b.count) })),
+			sizes: sizes
+				.map((s) => ({ id: Number(s.id), name: s.name, count: Number(s.count) }))
+				// 70A, 70B, 75A … затем 38, 40 … и буквенные — по возрастанию с учётом чисел
+				.sort((a, b) => a.name.localeCompare(b.name, 'ru', { numeric: true })),
+			price: { min: Number(price?.min ?? 0), max: Number(price?.max ?? 0) }
+		};
 	}
 
 	// Популярные за месяц опубликованные артикулы; если заказов не было — любые опубликованные
