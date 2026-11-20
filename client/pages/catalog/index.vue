@@ -189,13 +189,17 @@
             v-if="pageCount > 1"
             class="d-flex justify-end mt-10"
         >
-            <v-pagination
-                v-model="page"
-                :length="pageCount"
-                :disabled="isProductsLoading"
-                :total-visible="7"
-                density="comfortable"
-                active-color="primary"
+            <!--
+                Не прячем через v-show/v-if во время загрузки: индикатор активной страницы
+                vs-pagination считает offsetLeft кнопки, у скрытого блока он 0 и «2» рисуется
+                поверх «1». key пересоздаёт пагинацию, когда меняется число страниц.
+            -->
+            <vs-pagination
+                :key="`pagination-${pageCount}`"
+                v-model:current-page="page"
+                :layout="['prev', 'pager', 'next']"
+                :page-size="pageSize"
+                :total="totalItems"
             />
         </div>
     </div>
