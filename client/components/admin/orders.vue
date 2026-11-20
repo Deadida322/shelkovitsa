@@ -18,10 +18,12 @@ function getOrders() {
     });
 };
 
-function updateStatus(status, orderId) {
-    return $api(`/api/admin/order/${orderId}`, { method: 'PATCH', body: {
+function updateStatus(status, order) {
+    return $api(`/api/admin/order/${order.id}`, { method: 'PATCH', body: {
         status,
     } }).then(() => {
+        // select показывает текущий статус заказа, а не локальный выбор
+        order.status = status;
         VsNotification({
             title: 'Отлично!',
             content: 'Статус был обновлён',
@@ -30,14 +32,6 @@ function updateStatus(status, orderId) {
         });
     });
 }
-
-const statusesMap = {
-    create: 'Создано',
-    in_work: 'В работе',
-    payment: 'Оплата',
-    delivery: 'В доставке',
-    close: 'Завершено',
-};
 
 const statuses = [
     {
@@ -159,9 +153,9 @@ const headers = [
                     density="compact"
                     item-title="title"
                     item-value="value"
-                    :value="statusesMap[item.status]"
+                    :model-value="item.status"
                     :items="statuses"
-                    @update:model-value="updateStatus($event, item.id)"
+                    @update:model-value="updateStatus($event, item)"
                 >
                     <template #item="{ props, item }">
                         <v-list-item v-bind="props" :subtitle="item.label" />
