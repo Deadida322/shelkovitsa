@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { Product } from 'src/db/entities/Product';
 import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { ProductCategory } from 'src/db/entities/ProductCategory';
+import { ProductColor } from 'src/db/entities/ProductColor';
 import { ProductFile } from 'src/db/entities/ProductFile';
 import { ProductSize } from 'src/db/entities/ProductSize';
 import { ProductSubcategory } from 'src/db/entities/ProductSubcategory';
@@ -420,6 +421,239 @@ describe('Catalog (e2e)', () => {
 				sizes: [],
 				price: { min: 0, max: 0 }
 			});
+		});
+
+		it('minPrice=0 не игнорируется', async () => {
+			expect(articles(await publicList({ minPrice: 0, maxPrice: 1600 }))).toEqual([
+				'ART-001'
+			]);
+			expect(articles(await publicList({ maxPrice: 0 }))).toEqual([]);
+		});
+	});
+
+	/**
+	 * Матрица фасетов (публичный каталог).
+	 *
+	 * Фикстура:
+	 *  A1 Milavitsa  1000  75B×3          — в наличии
+	 *  A2 Milavitsa  2000  80C×2          — в наличии
+	 *  A3 Janira     1500  75B×1, 80C×0   — 75B в наличии, 80C нет
+	 *  A4 Janira     2500  80C×5          — в наличии
+	 *  A5 Sielei     1800  75B×0          — опубликован, но нет остатка ни по одному размеру
+	 *
+	 * Контракт UI:
+	 *  - список = AND между типами фильтров, OR внутри brand[] и productSizeId[];
+	 *  - счётчик в алерте = count списка;
+	 *  - /filters: бренды считаются без фильтра brand, размеры — без productSizeId,
+	 *    цена — без min/max (чтобы можно было сменить значение);
+	 *  - в фасетах размеров только варианты с amount > 0;
+	 *  - сумма count по размерам может быть > числа артикулов (один артикул — несколько размеров).
+	 */
+	describe('фасеты: матрица пересечений', () => {
+		let size75B: ProductSize;
+		let size80C: ProductSize;
+
+		const manager = () => app.get(DataSource).manager;
+		const filters = async (query: Record<string, unknown> = {}) =>
+			(
+				await request(app.getHttpServer())
+					.get('/api/product-article/filters')
+					.query(query)
+					.expect(200)
+			).body;
+		const list = async (query: Record<string, unknown> = {}) =>
+			(
+				await request(app.getHttpServer())
+					.get('/api/product-article')
+					.query({ page: 0, itemsPerPage: 20, ...query })
+					.expect(200)
+			).body;
+		const articles = (body: { data: { article: string }[] }) =>
+			body.data.map((a) => a.article).sort();
+		const brandMap = (body: { brands: { name: string; count: number }[] }) =>
+			Object.fromEntries(body.brands.map((b) => [b.name, b.count]));
+		const sizeMap = (body: { sizes: { name: string; count: number }[] }) =>
+			Object.fromEntries(body.sizes.map((s) => [s.name, s.count]));
+
+		beforeEach(async () => {
+			const category = await manager().save(ProductCategory, {
+				name: 'Корсетное'
+			});
+			const subcategory = await manager().save(ProductSubcategory, {
+				name: 'Бюстгальтеры',
+				productCategory: category
+			});
+			const color = await manager().save(ProductColor, { name: 'Чёрный' });
+			size75B = await manager().save(ProductSize, { name: '75B' });
+			size80C = await manager().save(ProductSize, { name: '80C' });
+
+			async function article(
+				code: string,
+				brand: string,
+				price: number,
+				variants: [ProductSize, number][]
+			) {
+				const saved = await manager().save(ProductArticle, {
+					article: code,
+					name: code,
+					brand,
+					price,
+					isVisible: true,
+					productSubcategory: subcategory
+				});
+				await manager().save(ProductFile, {
+					name: `${code}.png`,
+					isLogo: true,
+					productArticle: saved
+				});
+				for (const [size, amount] of variants) {
+					await manager().save(Product, {
+						amount,
+						productArticle: saved,
+						productColor: color,
+						productSize: size
+					});
+				}
+			}
+
+			await article('A1', 'Milavitsa', 1000, [[size75B, 3]]);
+			await article('A2', 'Milavitsa', 2000, [[size80C, 2]]);
+			await article('A3', 'Janira', 1500, [
+				[size75B, 1],
+				[size80C, 0]
+			]);
+			await article('A4', 'Janira', 2500, [[size80C, 5]]);
+			await article('A5', 'Sielei', 1800, [[size75B, 0]]);
+		});
+
+		it('без фильтров: бренды, размеры в наличии, цена; Sielei без остатка есть в брендах', async () => {
+			const body = await filters();
+			expect(brandMap(body)).toEqual({
+				Janira: 2,
+				Milavitsa: 2,
+				Sielei: 1
+			});
+			// A5 не даёт 75B (amount=0); 75B = A1+A3, 80C = A2+A4
+			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
+			expect(body.price).toEqual({ min: 1000, max: 2500 });
+			expect(articles(await list())).toEqual(['A1', 'A2', 'A3', 'A4', 'A5']);
+		});
+
+		it('бренд: список сужается; размеры/цена — по бренду; другие бренды остаются в фасетах', async () => {
+			expect(articles(await list({ brand: 'Milavitsa' }))).toEqual(['A1', 'A2']);
+
+			const body = await filters({ brand: 'Milavitsa' });
+			expect(sizeMap(body)).toEqual({ '75B': 1, '80C': 1 });
+			expect(body.price).toEqual({ min: 1000, max: 2000 });
+			// omit brand → счётчики брендов как без brand-фильтра
+			expect(brandMap(body)).toEqual({
+				Janira: 2,
+				Milavitsa: 2,
+				Sielei: 1
+			});
+		});
+
+		it('размер: только артикулы с этим размером в наличии; бренды сужаются, размеры — нет', async () => {
+			expect(articles(await list({ productSizeId: size75B.id }))).toEqual([
+				'A1',
+				'A3'
+			]);
+			// A3 имеет 80C с amount=0 — в список по 80C не попадает
+			expect(articles(await list({ productSizeId: size80C.id }))).toEqual([
+				'A2',
+				'A4'
+			]);
+
+			const body = await filters({ productSizeId: size75B.id });
+			expect(brandMap(body)).toEqual({ Janira: 1, Milavitsa: 1 });
+			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
+			expect(body.price).toEqual({ min: 1000, max: 1500 });
+		});
+
+		it('бренд + размер: AND; пустое пересечение; фасеты не запирают свой тип', async () => {
+			expect(
+				articles(await list({ brand: 'Milavitsa', productSizeId: size75B.id }))
+			).toEqual(['A1']);
+			expect(
+				articles(await list({ brand: 'Milavitsa', productSizeId: size80C.id }))
+			).toEqual(['A2']);
+			expect(
+				(await list({ brand: 'Sielei', productSizeId: size75B.id })).count
+			).toBe(0);
+
+			const milavitsa75 = await filters({
+				brand: 'Milavitsa',
+				productSizeId: size75B.id
+			});
+			// размеры без учёта выбранного размера, но с брендом → оба размера Milavitsa
+			expect(sizeMap(milavitsa75)).toEqual({ '75B': 1, '80C': 1 });
+			// бренды без учёта бренда, но с размером 75B
+			expect(brandMap(milavitsa75)).toEqual({ Janira: 1, Milavitsa: 1 });
+			expect(milavitsa75.price).toEqual({ min: 1000, max: 1000 });
+		});
+
+		it('несколько брендов/размеров — OR внутри типа', async () => {
+			expect(articles(await list({ brand: ['Milavitsa', 'Sielei'] }))).toEqual([
+				'A1',
+				'A2',
+				'A5'
+			]);
+			expect(
+				articles(await list({ productSizeId: [size75B.id, size80C.id] }))
+			).toEqual(['A1', 'A2', 'A3', 'A4']);
+
+			const body = await filters({ brand: ['Milavitsa', 'Janira'] });
+			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
+			expect(body.price).toEqual({ min: 1000, max: 2500 });
+		});
+
+		it('цена: список и фасеты согласованы; диапазон цен не сужается сам собой', async () => {
+			expect(articles(await list({ minPrice: 1800, maxPrice: 2200 }))).toEqual([
+				'A2',
+				'A5'
+			]);
+
+			const body = await filters({ minPrice: 1800, maxPrice: 2200 });
+			// omit price → полный диапазон каталога
+			expect(body.price).toEqual({ min: 1000, max: 2500 });
+			expect(brandMap(body)).toEqual({ Milavitsa: 1, Sielei: 1 });
+			expect(sizeMap(body)).toEqual({ '80C': 1 });
+		});
+
+		it('inStock: убирает A5 из списка и из счётчиков брендов', async () => {
+			expect(articles(await list({ inStock: 'true' }))).toEqual([
+				'A1',
+				'A2',
+				'A3',
+				'A4'
+			]);
+			const body = await filters({ inStock: 'true' });
+			expect(brandMap(body)).toEqual({ Janira: 2, Milavitsa: 2 });
+			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
+			expect(body.price).toEqual({ min: 1000, max: 2500 });
+		});
+
+		it('count списка совпадает с алертом; сумма sizes может превышать count', async () => {
+			const body = await list({ brand: 'Janira' });
+			expect(body.count).toBe(2);
+			expect(articles(body)).toEqual(['A3', 'A4']);
+
+			const facets = await filters({ brand: 'Janira' });
+			// A3 даёт 75B, A4 даёт 80C → сумма 2 == count; у Milavitsa сумма sizes = 2 == count
+			expect(Object.values(sizeMap(facets)).reduce((a, b) => a + b, 0)).toBe(2);
+
+			// артикул с двумя размерами в наличии раздувает сумму
+			const zeroStock = await manager().findOneOrFail(Product, {
+				where: {
+					productArticle: { article: 'A3' },
+					productSize: { id: size80C.id }
+				}
+			});
+			await manager().update(Product, zeroStock.id, { amount: 2 });
+			const after = await filters({ brand: 'Janira' });
+			expect(sizeMap(after)).toEqual({ '75B': 1, '80C': 2 });
+			expect(Object.values(sizeMap(after)).reduce((a, b) => a + b, 0)).toBe(3);
+			expect((await list({ brand: 'Janira' })).count).toBe(2);
 		});
 	});
 

@@ -127,11 +127,12 @@ export class ProductArticleService {
 			};
 		}
 
-		if (payload.minPrice && payload.maxPrice) {
+		// 0 — валидная цена; нельзя писать `if (minPrice)`, иначе 0 отбрасывается
+		if (payload.minPrice != null && payload.maxPrice != null) {
 			where.price = Between(payload.minPrice, payload.maxPrice);
-		} else if (payload.minPrice) {
+		} else if (payload.minPrice != null) {
 			where.price = MoreThanOrEqual(payload.minPrice);
-		} else if (payload.maxPrice) {
+		} else if (payload.maxPrice != null) {
 			where.price = LessThanOrEqual(payload.maxPrice);
 		}
 
