@@ -359,6 +359,34 @@ describe('Catalog (e2e)', () => {
 				.expect(401);
 		});
 
+		it('счётчики фасетов учитывают пересечение бренда и размера', async () => {
+			// бренд сужает размеры: у Milavitsa только 75B, у Janira (публично) — только 80C
+			const byMilavitsa = await request(app.getHttpServer())
+				.get('/api/product-article/filters')
+				.query({ brand: 'Milavitsa' })
+				.expect(200);
+			expect(byMilavitsa.body.sizes).toEqual([
+				{ id: catalog.size.id, name: '75B', count: 1 }
+			]);
+			expect(byMilavitsa.body.price).toEqual({ min: 1500, max: 1500 });
+			// список брендов не «запирается» выбранным брендом
+			expect(byMilavitsa.body.brands.map((b: { name: string }) => b.name)).toEqual([
+				'Janira',
+				'Milavitsa'
+			]);
+
+			const bySize = await request(app.getHttpServer())
+				.get('/api/product-article/filters')
+				.query({ productSizeId: size80C.id })
+				.expect(200);
+			expect(bySize.body.brands).toEqual([{ name: 'Janira', count: 1 }]);
+			// размеры считаются без учёта выбранного размера
+			expect(bySize.body.sizes).toEqual([
+				{ id: catalog.size.id, name: '75B', count: 1 },
+				{ id: size80C.id, name: '80C', count: 1 }
+			]);
+		});
+
 		it('значения фильтров ограничиваются категорией', async () => {
 			const other = await manager().save(ProductCategory, { name: 'Купальники' });
 			const sub = await manager().save(ProductSubcategory, {

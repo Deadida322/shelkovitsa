@@ -54,21 +54,25 @@
         Math.max(1, Math.ceil(totalItems.value / PAGE_SIZE) || 1),
     );
 
-    // Область для значений фильтров (бренды, размеры, цены)
+    // Категория/поиск — общая область каталога
     const scopeQuery = computed(() => ({
         ...(filtersStore.filters.search ? { query: filtersStore.filters.search } : null),
         ...(filtersStore.filters.category ? { categoryId: +filtersStore.filters.category } : null),
         ...(filtersStore.filters.subcategory ? { subcategoryId: +filtersStore.filters.subcategory } : null),
     }));
-    const payload = computed(() => ({
-        page: page.value - 1,
-        itemsPerPage: PAGE_SIZE,
+    // Выбранные фильтры без пагинации и сортировки — для списка и для счётчиков фасетов
+    const filterQuery = computed(() => ({
         ...scopeQuery.value,
         ...(brands.value.length ? { brand: brands.value } : null),
         ...(sizes.value.length ? { productSizeId: sizes.value } : null),
         ...(minPrice.value != null ? { minPrice: minPrice.value } : null),
         ...(maxPrice.value != null ? { maxPrice: maxPrice.value } : null),
         ...(inStock.value ? { inStock: true } : null),
+    }));
+    const payload = computed(() => ({
+        page: page.value - 1,
+        itemsPerPage: PAGE_SIZE,
+        ...filterQuery.value,
         ...(sort.value !== 'default' ? { sort: sort.value } : null),
     }));
 
@@ -148,7 +152,7 @@
 
     const facets = ref({ brands: [], sizes: [], price: { min: 0, max: 0 } });
     const brandSearch = ref('');
-    // Выбранный бренд остаётся в списке, даже если в новой области его нет
+    // Выбранный бренд/размер остаётся в списке, даже если в пересечении count = 0
     const brandOptions = computed(() => {
         const known = new Set(facets.value.brands.map(brand => brand.name.toLowerCase()));
         const missing = brands.value
@@ -159,13 +163,26 @@
             brand => !needle || brand.name.toLowerCase().includes(needle),
         );
     });
+    // имена размеров кэшируем: при пересечении размер может пропасть из фасетов
+    const sizeNameCache = ref({});
+    const sizeOptions = computed(() => {
+        const known = new Set(facets.value.sizes.map(size => size.id));
+        const missing = sizes.value
+            .filter(id => !known.has(id))
+            .map(id => ({ id, name: sizeNameCache.value[id] || String(id), count: 0 }));
+        return [...facets.value.sizes, ...missing];
+    });
 
     watch(
-        scopeQuery,
+        filterQuery,
         () => {
-            $api('/api/product-article/filters', { query: scopeQuery.value })
+            $api('/api/product-article/filters', { query: filterQuery.value })
                 .then((res) => {
                     facets.value = res;
+                    sizeNameCache.value = {
+                        ...sizeNameCache.value,
+                        ...Object.fromEntries(res.sizes.map(size => [size.id, size.name])),
+                    };
                 })
                 .catch(() => {
                     // панель фильтров необязательна: каталог работает и без неё
@@ -174,7 +191,10 @@
         { immediate: true, deep: true },
     );
 
-    const sizeNames = computed(() => Object.fromEntries(facets.value.sizes.map(size => [size.id, size.name])));
+    const sizeNames = computed(() => ({
+        ...sizeNameCache.value,
+        ...Object.fromEntries(facets.value.sizes.map(size => [size.id, size.name])),
+    }));
     const priceLabel = computed(() => {
         if (minPrice.value != null && maxPrice.value != null) {
             return `${minPrice.value} – ${maxPrice.value} ₽`;
@@ -375,7 +395,7 @@
             </div>
 
             <div
-                v-if="facets.sizes.length"
+                v-if="sizeOptions.length"
                 class="catalog-filters__block"
             >
                 <div class="catalog-filters__title">
@@ -383,7 +403,7 @@
                 </div>
                 <div class="catalog-filters__sizes">
                     <button
-                        v-for="size in facets.sizes"
+                        v-for="size in sizeOptions"
                         :key="size.id"
                         type="button"
                         class="catalog-filters__size"

@@ -23,7 +23,7 @@ Swagger UI: `http://localhost:8000/api/docs`.
 | POST | `/auth/logout` | Выход (сбрасывает куку) |
 | GET | `/auth/me` | Текущий пользователь `{ mail, fio, isAdmin }` 🔒 |
 | GET | `/product-article` | Каталог: `page`, `itemsPerPage` (≤ 20), `categoryId`, `subcategoryId`, `minPrice`, `maxPrice`, `productSizeId` и `brand` (повторяющиеся: `?brand=A&brand=B`; размер — только в наличии), `inStock=true`, `sort` (`default` \| `new` \| `priceAsc` \| `priceDesc`), `query` (артикул, название, описание, бренд) |
-| GET | `/product-article/filters` | Значения фильтров для `categoryId`/`subcategoryId`/`query`: `brands[{name,count}]`, `sizes[{id,name,count}]` (в наличии), `price{min,max}` |
+| GET | `/product-article/filters` | Значения фильтров: `brands[{name,count}]`, `sizes[{id,name,count}]` (в наличии), `price{min,max}`. Область: `categoryId`/`subcategoryId`/`query`, плюс пересечение `brand`/`productSizeId`/`minPrice`/`maxPrice`/`inStock` (счётчики брендов не сужаются выбранным брендом, размеров — выбранным размером) |
 | GET | `/product-article/popular` | Популярные за месяц (3 шт.) |
 | GET | `/product-article/:id` | Карточка; `productSizeId` — цвета только этого размера |
 | GET | `/product` | Вариант с остатком: `productArticleId`, `productColorId`, `productSizeId` |
