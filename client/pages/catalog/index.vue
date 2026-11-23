@@ -77,12 +77,7 @@
         return Number.isInteger(number) && number >= 0 ? number : null;
     }
 
-    const applyPrice = debounce(() => {
-        filters.value.minPrice = toInt(priceInput.min);
-        filters.value.maxPrice = toInt(priceInput.max);
-        filters.value.page = 1;
-    }, 600);
-    watch(() => [priceInput.min, priceInput.max], applyPrice);
+    let lastPriceSide = 'max';
 
     function resetPrice() {
         priceInput.min = '';
@@ -145,6 +140,71 @@
     });
 
     const facets = ref({ brands: [], sizes: [], price: { min: 0, max: 0 } });
+
+    /** Сжать min/max: в пределах фасетов и так, чтобы min ≤ max */
+    function clampPriceRange(min, max, side = lastPriceSide) {
+        const rawMin = facets.value.price?.min;
+        const rawMax = facets.value.price?.max;
+        const floor = rawMin != null && rawMax > 0 ? Math.floor(rawMin) : null;
+        const ceil = rawMax != null && rawMax > 0 ? Math.ceil(rawMax) : null;
+
+        if (min != null && floor != null) {
+            min = Math.max(min, floor);
+        }
+        if (max != null && ceil != null) {
+            max = Math.min(max, ceil);
+        }
+        if (min != null && ceil != null) {
+            min = Math.min(min, ceil);
+        }
+        if (max != null && floor != null) {
+            max = Math.max(max, floor);
+        }
+        if (min != null && max != null && min > max) {
+            if (side === 'min') {
+                min = max;
+            }
+            else {
+                max = min;
+            }
+        }
+        return { min, max };
+    }
+
+    const applyPrice = debounce(() => {
+        const emptyMin = priceInput.min === '' || priceInput.min == null;
+        const emptyMax = priceInput.max === '' || priceInput.max == null;
+        let min = emptyMin ? null : toInt(priceInput.min);
+        let max = emptyMax ? null : toInt(priceInput.max);
+        if (!emptyMin && min == null) {
+            priceInput.min = '';
+        }
+        if (!emptyMax && max == null) {
+            priceInput.max = '';
+        }
+
+        ({ min, max } = clampPriceRange(min, max));
+
+        if (min != null && String(priceInput.min) !== String(min)) {
+            priceInput.min = min;
+        }
+        if (max != null && String(priceInput.max) !== String(max)) {
+            priceInput.max = max;
+        }
+
+        filters.value.minPrice = min;
+        filters.value.maxPrice = max;
+        filters.value.page = 1;
+    }, 600);
+    watch(() => priceInput.min, () => {
+        lastPriceSide = 'min';
+        applyPrice();
+    });
+    watch(() => priceInput.max, () => {
+        lastPriceSide = 'max';
+        applyPrice();
+    });
+
     const brandSearch = ref('');
     const brandOptions = computed(() => {
         const known = new Set(facets.value.brands.map(brand => brand.name.toLowerCase()));
@@ -175,6 +235,19 @@
                         ...sizeNameCache.value,
                         ...Object.fromEntries(res.sizes.map(size => [size.id, size.name])),
                     };
+                    // подтянуть уже выбранные цены к актуальным границам
+                    if (filters.value.minPrice != null || filters.value.maxPrice != null) {
+                        const { min, max } = clampPriceRange(
+                            filters.value.minPrice,
+                            filters.value.maxPrice,
+                        );
+                        if (min !== filters.value.minPrice || max !== filters.value.maxPrice) {
+                            filters.value.minPrice = min;
+                            filters.value.maxPrice = max;
+                            priceInput.min = min ?? '';
+                            priceInput.max = max ?? '';
+                        }
+                    }
                 })
                 .catch(() => {});
         },
@@ -404,6 +477,8 @@
                         v-model="priceInput.min"
                         class="s-input"
                         type="number"
+                        :min="facets.price.max ? Math.floor(facets.price.min) : undefined"
+                        :max="toInt(priceInput.max) ?? (facets.price.max ? Math.ceil(facets.price.max) : undefined)"
                         :placeholder="facets.price.max ? `от ${Math.floor(facets.price.min)}` : 'от'"
                     />
                     <span>–</span>
@@ -411,6 +486,8 @@
                         v-model="priceInput.max"
                         class="s-input"
                         type="number"
+                        :min="toInt(priceInput.min) ?? (facets.price.max ? Math.floor(facets.price.min) : undefined)"
+                        :max="facets.price.max ? Math.ceil(facets.price.max) : undefined"
                         :placeholder="facets.price.max ? `до ${Math.ceil(facets.price.max)}` : 'до'"
                     />
                 </div>
