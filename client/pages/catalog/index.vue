@@ -77,7 +77,7 @@
         return Number.isInteger(number) && number >= 0 ? number : null;
     }
 
-    let lastPriceSide = 'max';
+    const lastPriceSide = 'max';
 
     function resetPrice() {
         priceInput.min = '';
@@ -141,37 +141,57 @@
 
     const facets = ref({ brands: [], sizes: [], price: { min: 0, max: 0 } });
 
-    /** Сжать min/max: в пределах фасетов и так, чтобы min ≤ max */
-    function clampPriceRange(min, max, side = lastPriceSide) {
-        const rawMin = facets.value.price?.min;
-        const rawMax = facets.value.price?.max;
-        const floor = rawMin != null && rawMax > 0 ? Math.floor(rawMin) : null;
-        const ceil = rawMax != null && rawMax > 0 ? Math.ceil(rawMax) : null;
+    /** Макс. цена самого дорогого товара в текущей выдаче фасетов */
+    const catalogPriceMax = computed(() => {
+        const raw = facets.value.price?.max;
+        return raw != null && raw > 0 ? Math.ceil(raw) : null;
+    });
 
-        if (min != null && floor != null) {
-            min = Math.max(min, floor);
+    /**
+     * min: [0 … productMax−1], max: [1 … productMax], разница ≥ 1 ₽
+     */
+    function clampPriceRange(min, max, side = lastPriceSide) {
+        const productMax = catalogPriceMax.value;
+        const minFloor = 0;
+        const minCeil = productMax != null ? Math.max(0, productMax - 1) : null;
+        const maxFloor = 1;
+        const maxCeil = productMax;
+
+        if (min != null) {
+            min = Math.max(minFloor, min);
+            if (minCeil != null) {
+                min = Math.min(min, minCeil);
+            }
         }
-        if (max != null && ceil != null) {
-            max = Math.min(max, ceil);
+        if (max != null) {
+            max = Math.max(maxFloor, max);
+            if (maxCeil != null) {
+                max = Math.min(max, maxCeil);
+            }
         }
-        if (min != null && ceil != null) {
-            min = Math.min(min, ceil);
-        }
-        if (max != null && floor != null) {
-            max = Math.max(max, floor);
-        }
-        if (min != null && max != null && min > max) {
+
+        if (min != null && max != null && max < min + 1) {
             if (side === 'min') {
-                min = max;
+                if (maxCeil != null && min + 1 <= maxCeil) {
+                    max = min + 1;
+                }
+                else {
+                    min = Math.max(minFloor, max - 1);
+                    max = Math.max(max, min + 1);
+                }
+            }
+            else if (max - 1 >= minFloor) {
+                min = max - 1;
             }
             else {
-                max = min;
+                max = min + 1;
             }
         }
         return { min, max };
     }
 
-    const applyPrice = debounce(() => {
+    /** Применяем фильтр только когда ушли из блока цены */
+    function applyPrice() {
         const emptyMin = priceInput.min === '' || priceInput.min == null;
         const emptyMax = priceInput.max === '' || priceInput.max == null;
         let min = emptyMin ? null : toInt(priceInput.min);
@@ -192,18 +212,28 @@
             priceInput.max = max;
         }
 
+        if (filters.value.minPrice === min && filters.value.maxPrice === max) {
+            return;
+        }
         filters.value.minPrice = min;
         filters.value.maxPrice = max;
         filters.value.page = 1;
-    }, 600);
-    watch(() => priceInput.min, () => {
-        lastPriceSide = 'min';
+    }
+
+    function onPriceBlockFocusOut(event) {
+        if (event.currentTarget.contains(event.relatedTarget)) {
+            return;
+        }
         applyPrice();
-    });
-    watch(() => priceInput.max, () => {
-        lastPriceSide = 'max';
-        applyPrice();
-    });
+    }
+
+    /** Скролл страницы не должен крутить value number-инпута */
+    function onPriceWheel(event) {
+        const target = event.target;
+        if (target instanceof HTMLInputElement && target.type === 'number') {
+            target.blur();
+        }
+    }
 
     const brandSearch = ref('');
     const brandOptions = computed(() => {
@@ -472,23 +502,29 @@
                 <div class="catalog-filters__title">
                     Цена, ₽
                 </div>
-                <div class="catalog-filters__price">
+                <div
+                    class="catalog-filters__price"
+                    @focusout="onPriceBlockFocusOut"
+                    @wheel.capture="onPriceWheel"
+                >
                     <vs-input
                         v-model="priceInput.min"
-                        class="s-input"
+                        class="s-input catalog-filters__price-input"
                         type="number"
-                        :min="facets.price.max ? Math.floor(facets.price.min) : undefined"
-                        :max="toInt(priceInput.max) ?? (facets.price.max ? Math.ceil(facets.price.max) : undefined)"
+                        :min="0"
+                        :max="catalogPriceMax != null ? catalogPriceMax - 1 : undefined"
                         :placeholder="facets.price.max ? `от ${Math.floor(facets.price.min)}` : 'от'"
+                        @focus="lastPriceSide = 'min'"
                     />
                     <span>–</span>
                     <vs-input
                         v-model="priceInput.max"
-                        class="s-input"
+                        class="s-input catalog-filters__price-input"
                         type="number"
-                        :min="toInt(priceInput.min) ?? (facets.price.max ? Math.floor(facets.price.min) : undefined)"
-                        :max="facets.price.max ? Math.ceil(facets.price.max) : undefined"
+                        :min="1"
+                        :max="catalogPriceMax ?? undefined"
                         :placeholder="facets.price.max ? `до ${Math.ceil(facets.price.max)}` : 'до'"
+                        @focus="lastPriceSide = 'max'"
                     />
                 </div>
             </div>
@@ -724,6 +760,20 @@
 
             .s-input {
                 flex: 1;
+            }
+        }
+
+        &__price-input {
+            /* без стрелок вверх/вниз — скролл не меняет цену */
+            input[type='number'] {
+                -moz-appearance: textfield;
+                appearance: textfield;
+
+                &::-webkit-outer-spin-button,
+                &::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
             }
         }
     }
