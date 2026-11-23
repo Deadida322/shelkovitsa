@@ -633,6 +633,26 @@ describe('Catalog (e2e)', () => {
 			expect(body.price).toEqual({ min: 1000, max: 2500 });
 		});
 
+		it('query: поиск по артикулу/бренду сужает список и фасеты', async () => {
+			expect(articles(await list({ query: 'A3' }))).toEqual(['A3']);
+			expect(articles(await list({ query: 'Janira' }))).toEqual(['A3', 'A4']);
+
+			const byBrand = await filters({ query: 'Milavitsa' });
+			expect(brandMap(byBrand)).toEqual({ Milavitsa: 2 });
+			expect(sizeMap(byBrand)).toEqual({ '75B': 1, '80C': 1 });
+			expect(byBrand.price).toEqual({ min: 1000, max: 2000 });
+
+			const byCodeAndSize = await filters({
+				query: 'A1',
+				productSizeId: size80C.id
+			});
+			expect(articles(await list({ query: 'A1', productSizeId: size80C.id }))).toEqual(
+				[]
+			);
+			expect(brandMap(byCodeAndSize)).toEqual({});
+			expect(sizeMap(byCodeAndSize)).toEqual({ '75B': 1 });
+		});
+
 		it('count списка совпадает с алертом; сумма sizes может превышать count', async () => {
 			const body = await list({ brand: 'Janira' });
 			expect(body.count).toBe(2);

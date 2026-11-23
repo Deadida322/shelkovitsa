@@ -2,6 +2,7 @@
     import { useCategoriesStore, useFiltersStore, useRouter } from '#imports';
     import debounce from 'lodash/debounce';
     import { storeToRefs } from 'pinia';
+    import { clampPriceRange, toInt } from '~/utils/catalogFilters';
 
     const categoriesStore = useCategoriesStore();
     const filtersStore = useFiltersStore();
@@ -71,11 +72,6 @@
         ...filterQuery.value,
         ...(filters.value.sort !== 'default' ? { sort: filters.value.sort } : null),
     }));
-
-    function toInt(value) {
-        const number = Number.parseInt(value, 10);
-        return Number.isInteger(number) && number >= 0 ? number : null;
-    }
 
     const lastPriceSide = 'max';
 
@@ -147,41 +143,6 @@
         return raw != null && raw > 0 ? Math.ceil(raw) : null;
     });
 
-    /**
-     * min: [0 … productMax−1], max: [1 … productMax].
-     * Конфликт min > max: ушли с max → стираем min; ушли с min → стираем max.
-     */
-    function clampPriceRange(min, max, side = lastPriceSide) {
-        const productMax = catalogPriceMax.value;
-        const minFloor = 0;
-        const minCeil = productMax != null ? Math.max(0, productMax - 1) : null;
-        const maxFloor = 1;
-        const maxCeil = productMax;
-
-        if (min != null) {
-            min = Math.max(minFloor, min);
-            if (minCeil != null) {
-                min = Math.min(min, minCeil);
-            }
-        }
-        if (max != null) {
-            max = Math.max(maxFloor, max);
-            if (maxCeil != null) {
-                max = Math.min(max, maxCeil);
-            }
-        }
-
-        if (min != null && max != null && min > max) {
-            if (side === 'max') {
-                min = null;
-            }
-            else {
-                max = null;
-            }
-        }
-        return { min, max };
-    }
-
     /** Применяем фильтр только когда ушли из блока цены */
     function applyPrice() {
         const emptyMin = priceInput.min === '' || priceInput.min == null;
@@ -195,7 +156,10 @@
             priceInput.max = '';
         }
 
-        ({ min, max } = clampPriceRange(min, max));
+        ({ min, max } = clampPriceRange(min, max, {
+            productMax: catalogPriceMax.value,
+            side: lastPriceSide,
+        }));
 
         priceInput.min = min == null ? '' : min;
         priceInput.max = max == null ? '' : max;
@@ -258,6 +222,7 @@
                         const { min, max } = clampPriceRange(
                             filters.value.minPrice,
                             filters.value.maxPrice,
+                            { productMax: catalogPriceMax.value, side: lastPriceSide },
                         );
                         if (min !== filters.value.minPrice || max !== filters.value.maxPrice) {
                             filters.value.minPrice = min;

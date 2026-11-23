@@ -1,27 +1,9 @@
 import { defineStore } from 'pinia';
-
-const SORT_IDS = new Set(['default', 'new', 'priceAsc', 'priceDesc']);
-
-const toArray = value => (value == null ? [] : Array.isArray(value) ? value : [value]);
-function toInt(value) {
-    const number = Number.parseInt(value, 10);
-    return Number.isInteger(number) && number >= 0 ? number : null;
-}
-
-function emptyFilters() {
-    return {
-        category: undefined,
-        subcategory: undefined,
-        search: '',
-        brands: [],
-        sizes: [],
-        minPrice: null,
-        maxPrice: null,
-        inStock: false,
-        sort: 'default',
-        page: 1,
-    };
-}
+import {
+    emptyFilters,
+    filtersFromQuery,
+    filtersToQuery,
+} from '~/utils/catalogFilters';
 
 /**
  * Состояние фильтров каталога живёт в Pinia, чтобы при уходе на карточку
@@ -38,47 +20,11 @@ export const useFiltersStore = defineStore('filters', () => {
     }
 
     function applyFromQuery(query = {}) {
-        const next = emptyFilters();
-        if (query.category && query.subcategory) {
-            next.category = String(query.category);
-            next.subcategory = String(query.subcategory);
-        }
-        next.search = query.q != null ? String(query.q) : '';
-        next.brands = toArray(query.brand).map(String);
-        next.sizes = toArray(query.size).map(Number).filter(Number.isInteger);
-        next.minPrice = toInt(query.minPrice);
-        next.maxPrice = toInt(query.maxPrice);
-        next.inStock = query.inStock === '1' || query.inStock === 'true';
-        next.sort = SORT_IDS.has(query.sort) ? query.sort : 'default';
-        next.page = Math.max(1, toInt(query.page) || 1);
-        filters.value = next;
+        filters.value = filtersFromQuery(query);
     }
 
-    /** Query для router.push / replace — без пустых значений */
     function toQuery() {
-        const {
-            category,
-            subcategory,
-            search,
-            brands,
-            sizes,
-            minPrice,
-            maxPrice,
-            inStock,
-            sort,
-            page,
-        } = filters.value;
-        return {
-            ...(category && subcategory ? { category: String(category), subcategory: String(subcategory) } : null),
-            ...(search.trim() ? { q: search.trim() } : null),
-            ...(brands.length ? { brand: brands } : null),
-            ...(sizes.length ? { size: sizes.map(String) } : null),
-            ...(minPrice != null ? { minPrice: String(minPrice) } : null),
-            ...(maxPrice != null ? { maxPrice: String(maxPrice) } : null),
-            ...(inStock ? { inStock: '1' } : null),
-            ...(sort !== 'default' ? { sort } : null),
-            ...(page > 1 ? { page: String(page) } : null),
-        };
+        return filtersToQuery(filters.value);
     }
 
     function resetProductFilters() {

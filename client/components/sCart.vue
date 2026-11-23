@@ -1,7 +1,8 @@
 <script setup>
-    import { useCartStore, useMappingStore } from '#imports';
+    import { useCartStore, useFiltersStore, useMappingStore } from '#imports';
 
     const cartStore = useCartStore();
+    const filtersStore = useFiltersStore();
     const mapps = useMappingStore();
     const opened = ref(false);
     const config = useRuntimeConfig();
@@ -101,7 +102,10 @@
             </template>
             <template v-else>
                 Добавьте
-                <nuxt-link class="link" to="/catalog">
+                <nuxt-link
+                    class="link"
+                    :to="{ path: '/catalog', query: filtersStore.toQuery() }"
+                >
                     товары
                 </nuxt-link> в корзину
             </template>

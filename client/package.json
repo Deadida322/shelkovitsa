@@ -10,7 +10,9 @@
         "dev": "nuxt dev --dotenv .env.dev",
         "generate": "nuxt generate",
         "preview": "nuxt preview",
-        "postinstall": "nuxt prepare"
+        "postinstall": "nuxt prepare",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "dependencies": {
         "@antfu/eslint-config": "^3.8.0",
@@ -38,7 +40,8 @@
     "devDependencies": {
         "eslint": "^9.27.0",
         "sass": "^1.77.8",
-        "typescript": "^5.6.3"
+        "typescript": "^5.6.3",
+        "vitest": "^3.2.7"
     },
     "allowScripts": {
         "esbuild@0.20.2": true,
