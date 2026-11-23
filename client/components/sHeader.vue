@@ -1,10 +1,11 @@
 <script setup>
     import { NuxtLink } from '#components';
-    import { useAuthStore } from '#imports';
+    import { useAuthStore, useFiltersStore } from '#imports';
     import menu from '~/assets/js/menu';
     import useBreakpoints from '~/composables/breakpoints';
 
     const authStore = useAuthStore();
+    const filtersStore = useFiltersStore();
     const route = useRoute();
     const active = ref(route.path);
     const bp = useBreakpoints();
@@ -13,6 +14,11 @@
     const router = useRouter();
 
     watch(active, (val) => {
+        // «Каталог» всегда с сохранёнными фильтрами (возврат с карточки товара)
+        if (val === '/catalog') {
+            router.push({ path: '/catalog', query: filtersStore.toQuery() });
+            return;
+        }
         router.push(val);
     });
 
@@ -20,6 +26,13 @@
         active.value = val;
         mobileMenuVisible.value = false;
     });
+
+    function isMenuActive(to) {
+        if (to === '/catalog') {
+            return route.path.startsWith('/catalog');
+        }
+        return active.value === to;
+    }
 </script>
 
 <template>
@@ -41,7 +54,7 @@
             :id="item.to"
             :key="item.to"
             class="d-none d-sm-flex"
-            :active="active === item.to"
+            :active="isMenuActive(item.to)"
         >
             <div>{{ item.title }} </div>
         </vs-navbar-item>

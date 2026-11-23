@@ -1,9 +1,11 @@
 <script setup>
     import { useCategoriesStore, useFiltersStore, useRouter } from '#imports';
     import debounce from 'lodash/debounce';
+    import { storeToRefs } from 'pinia';
 
     const categoriesStore = useCategoriesStore();
     const filtersStore = useFiltersStore();
+    const { filters } = storeToRefs(filtersStore);
     const shopItems = ref([]);
     const router = useRouter();
     const route = useRoute();
@@ -19,143 +21,134 @@
         { label: 'Сначала дороже', id: 'priceDesc' },
     ];
 
-    const toArray = value => (value == null ? [] : Array.isArray(value) ? value : [value]);
-    function toInt(value) {
-        const number = Number.parseInt(value, 10);
-        return Number.isInteger(number) && number >= 0 ? number : null;
+    // Ссылка с query важнее стора; иначе оставляем стор (возврат с карточки товара)
+    const queryKeys = ['q', 'brand', 'size', 'minPrice', 'maxPrice', 'inStock', 'sort', 'page', 'category', 'subcategory'];
+    if (queryKeys.some(key => route.query[key] != null && route.query[key] !== '')) {
+        filtersStore.applyFromQuery(route.query);
     }
 
-    // Фильтры в адресе: ссылкой можно поделиться, после перезагрузки они на месте
-    const brands = ref(toArray(route.query.brand).map(String));
-    const sizes = ref(toArray(route.query.size).map(Number).filter(Number.isInteger));
-    const minPrice = ref(toInt(route.query.minPrice));
-    const maxPrice = ref(toInt(route.query.maxPrice));
-    const priceInput = reactive({ min: minPrice.value ?? '', max: maxPrice.value ?? '' });
-    const inStock = ref(route.query.inStock === '1');
-    const sort = ref(
-        SORT_OPTIONS.some(option => option.id === route.query.sort) ? route.query.sort : 'default',
-    );
-    // vs-pagination — 1-based; в API уходит page - 1
-    const page = ref(Math.max(1, toInt(route.query.page) || 1));
-    const search = ref('');
+    const priceInput = reactive({
+        min: filters.value.minPrice ?? '',
+        max: filters.value.maxPrice ?? '',
+    });
+    // поле поиска — локальный buffer; в стор/URL пишем с debounce
+    const search = ref(filters.value.search || '');
 
     const activeFiltersCount = computed(
-        () => brands.value.length + sizes.value.length + (minPrice.value != null || maxPrice.value != null ? 1 : 0),
+        () => filters.value.brands.length
+            + filters.value.sizes.length
+            + (filters.value.minPrice != null || filters.value.maxPrice != null ? 1 : 0),
     );
-    const showFilters = ref(activeFiltersCount.value > 0);
+    const showFilters = ref(activeFiltersCount.value > 0 || Boolean(filters.value.search));
 
-    const updateSearch = debounce(() => {
-        filtersStore.filters.search = search.value;
-        page.value = 1;
+    const updateSearch = debounce((value) => {
+        filters.value.search = value;
+        filters.value.page = 1;
     }, 500);
+    watch(search, updateSearch);
 
     const totalItems = ref(0);
     const pageCount = computed(() =>
         Math.max(1, Math.ceil(totalItems.value / PAGE_SIZE) || 1),
     );
 
-    // Категория/поиск — общая область каталога
     const scopeQuery = computed(() => ({
-        ...(filtersStore.filters.search ? { query: filtersStore.filters.search } : null),
-        ...(filtersStore.filters.category ? { categoryId: +filtersStore.filters.category } : null),
-        ...(filtersStore.filters.subcategory ? { subcategoryId: +filtersStore.filters.subcategory } : null),
+        ...(filters.value.search.trim() ? { query: filters.value.search.trim() } : null),
+        ...(filters.value.category ? { categoryId: +filters.value.category } : null),
+        ...(filters.value.subcategory ? { subcategoryId: +filters.value.subcategory } : null),
     }));
-    // Выбранные фильтры без пагинации и сортировки — для списка и для счётчиков фасетов
     const filterQuery = computed(() => ({
         ...scopeQuery.value,
-        ...(brands.value.length ? { brand: brands.value } : null),
-        ...(sizes.value.length ? { productSizeId: sizes.value } : null),
-        ...(minPrice.value != null ? { minPrice: minPrice.value } : null),
-        ...(maxPrice.value != null ? { maxPrice: maxPrice.value } : null),
-        ...(inStock.value ? { inStock: true } : null),
+        ...(filters.value.brands.length ? { brand: filters.value.brands } : null),
+        ...(filters.value.sizes.length ? { productSizeId: filters.value.sizes } : null),
+        ...(filters.value.minPrice != null ? { minPrice: filters.value.minPrice } : null),
+        ...(filters.value.maxPrice != null ? { maxPrice: filters.value.maxPrice } : null),
+        ...(filters.value.inStock ? { inStock: true } : null),
     }));
     const payload = computed(() => ({
-        page: page.value - 1,
+        page: filters.value.page - 1,
         itemsPerPage: PAGE_SIZE,
         ...filterQuery.value,
-        ...(sort.value !== 'default' ? { sort: sort.value } : null),
+        ...(filters.value.sort !== 'default' ? { sort: filters.value.sort } : null),
     }));
 
-    watch(search, updateSearch);
+    function toInt(value) {
+        const number = Number.parseInt(value, 10);
+        return Number.isInteger(number) && number >= 0 ? number : null;
+    }
 
     const applyPrice = debounce(() => {
-        minPrice.value = toInt(priceInput.min);
-        maxPrice.value = toInt(priceInput.max);
+        filters.value.minPrice = toInt(priceInput.min);
+        filters.value.maxPrice = toInt(priceInput.max);
+        filters.value.page = 1;
     }, 600);
     watch(() => [priceInput.min, priceInput.max], applyPrice);
 
     function resetPrice() {
         priceInput.min = '';
         priceInput.max = '';
-        minPrice.value = null;
-        maxPrice.value = null;
+        filters.value.minPrice = null;
+        filters.value.maxPrice = null;
+        filters.value.page = 1;
     }
 
     function resetProductFilters() {
-        brands.value = [];
-        sizes.value = [];
-        resetPrice();
-        inStock.value = false;
+        filtersStore.resetProductFilters();
+        priceInput.min = '';
+        priceInput.max = '';
     }
 
     function toggleSize(id) {
-        sizes.value = sizes.value.includes(id)
-            ? sizes.value.filter(sizeId => sizeId !== id)
-            : [...sizes.value, id];
+        const sizes = filters.value.sizes;
+        filters.value.sizes = sizes.includes(id)
+            ? sizes.filter(sizeId => sizeId !== id)
+            : [...sizes, id];
+        filters.value.page = 1;
     }
 
-    // Другая категория — другой набор брендов и размеров
     watch(
-        () => [filtersStore.filters.category, filtersStore.filters.subcategory],
+        () => [
+            filters.value.brands,
+            filters.value.sizes,
+            filters.value.minPrice,
+            filters.value.maxPrice,
+            filters.value.inStock,
+            filters.value.sort,
+        ],
         () => {
-            resetProductFilters();
-            page.value = 1;
+            filters.value.page = 1;
         },
     );
-    watch(() => filtersStore.filters.search, () => {
-        page.value = 1;
-    });
-    watch([brands, sizes, minPrice, maxPrice, inStock, sort], () => {
-        page.value = 1;
-    });
 
-    watch(page, () => {
+    watch(() => filters.value.page, () => {
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     });
 
     const isProductsLoading = ref(true);
 
     function clearFilters() {
-        filtersStore.filters = {};
         filtersStore.clearFilters();
-        resetProductFilters();
-        sort.value = 'default';
-        page.value = 1;
+        search.value = '';
+        priceInput.min = '';
+        priceInput.max = '';
     }
 
     const breadcrumbs = computed(() => {
         const result = ['Каталог'];
-        if (filtersStore.filters.category) {
-            result.push(
-                categoriesStore.categoriesMap[filtersStore.filters.category],
-            );
+        if (filters.value.category) {
+            result.push(categoriesStore.categoriesMap[filters.value.category]);
         }
-        if (filtersStore.filters.subcategory) {
-            result.push(
-                categoriesStore.subcategoriesMap[
-                    filtersStore.filters.subcategory
-                ],
-            );
+        if (filters.value.subcategory) {
+            result.push(categoriesStore.subcategoriesMap[filters.value.subcategory]);
         }
         return result;
     });
 
     const facets = ref({ brands: [], sizes: [], price: { min: 0, max: 0 } });
     const brandSearch = ref('');
-    // Выбранный бренд/размер остаётся в списке, даже если в пересечении count = 0
     const brandOptions = computed(() => {
         const known = new Set(facets.value.brands.map(brand => brand.name.toLowerCase()));
-        const missing = brands.value
+        const missing = filters.value.brands
             .filter(name => !known.has(name.toLowerCase()))
             .map(name => ({ name, count: 0 }));
         const needle = brandSearch.value.trim().toLowerCase();
@@ -163,11 +156,10 @@
             brand => !needle || brand.name.toLowerCase().includes(needle),
         );
     });
-    // имена размеров кэшируем: при пересечении размер может пропасть из фасетов
     const sizeNameCache = ref({});
     const sizeOptions = computed(() => {
         const known = new Set(facets.value.sizes.map(size => size.id));
-        const missing = sizes.value
+        const missing = filters.value.sizes
             .filter(id => !known.has(id))
             .map(id => ({ id, name: sizeNameCache.value[id] || String(id), count: 0 }));
         return [...facets.value.sizes, ...missing];
@@ -184,9 +176,7 @@
                         ...Object.fromEntries(res.sizes.map(size => [size.id, size.name])),
                     };
                 })
-                .catch(() => {
-                    // панель фильтров необязательна: каталог работает и без неё
-                });
+                .catch(() => {});
         },
         { immediate: true, deep: true },
     );
@@ -196,37 +186,26 @@
         ...Object.fromEntries(facets.value.sizes.map(size => [size.id, size.name])),
     }));
     const priceLabel = computed(() => {
-        if (minPrice.value != null && maxPrice.value != null) {
-            return `${minPrice.value} – ${maxPrice.value} ₽`;
+        if (filters.value.minPrice != null && filters.value.maxPrice != null) {
+            return `${filters.value.minPrice} – ${filters.value.maxPrice} ₽`;
         }
-        return minPrice.value != null ? `от ${minPrice.value} ₽` : `до ${maxPrice.value} ₽`;
+        return filters.value.minPrice != null
+            ? `от ${filters.value.minPrice} ₽`
+            : `до ${filters.value.maxPrice} ₽`;
     });
 
-    // Адрес страницы повторяет выбранные фильтры
+    // URL зеркалит стор, пока мы на /catalog (не на /catalog/:id)
     watch(
-        [
-            payload,
-            () => filtersStore.filters.category,
-            () => filtersStore.filters.subcategory,
-        ],
-        () => {
-            const { category, subcategory } = filtersStore.filters;
-            const query = {
-                ...(category && subcategory ? { category, subcategory } : null),
-                ...(brands.value.length ? { brand: brands.value } : null),
-                ...(sizes.value.length ? { size: sizes.value.map(String) } : null),
-                ...(minPrice.value != null ? { minPrice: String(minPrice.value) } : null),
-                ...(maxPrice.value != null ? { maxPrice: String(maxPrice.value) } : null),
-                ...(inStock.value ? { inStock: '1' } : null),
-                ...(sort.value !== 'default' ? { sort: sort.value } : null),
-                ...(page.value > 1 ? { page: String(page.value) } : null),
-            };
-            router.replace({ path: route.path, query });
+        () => filtersStore.toQuery(),
+        (query) => {
+            if (route.path !== '/catalog') {
+                return;
+            }
+            router.replace({ path: '/catalog', query });
         },
-        { deep: true },
+        { deep: true, immediate: true },
     );
 
-    // Устаревший ответ не должен затирать свежий
     let lastRequest = 0;
     watch(
         payload,
@@ -332,13 +311,13 @@
             </vs-button>
 
             <label class="catalog-toolbar__stock">
-                <vs-switch v-model="inStock" />
+                <vs-switch v-model="filters.inStock" />
                 <span>В наличии</span>
             </label>
 
             <ClientOnly>
                 <vs-select
-                    v-model="sort"
+                    v-model="filters.sort"
                     class="catalog-toolbar__sort"
                     placeholder="Сортировка"
                 >
@@ -380,7 +359,7 @@
                     </template>
                 </vs-input>
                 <vs-checkbox-group
-                    v-model="brands"
+                    v-model="filters.brands"
                     class="catalog-filters__brands"
                 >
                     <vs-checkbox
@@ -407,7 +386,7 @@
                         :key="size.id"
                         type="button"
                         class="catalog-filters__size"
-                        :class="{ 'catalog-filters__size--active': sizes.includes(size.id) }"
+                        :class="{ 'catalog-filters__size--active': filters.sizes.includes(size.id) }"
                         @click="toggleSize(size.id)"
                     >
                         {{ size.name }}
@@ -439,15 +418,26 @@
         </div>
 
         <div
-            v-if="activeFiltersCount > 0"
+            v-if="activeFiltersCount > 0 || search.trim()"
             class="catalog-active mt-3"
         >
             <button
-                v-for="brand in brands"
+                v-if="search.trim()"
+                type="button"
+                class="catalog-active__chip"
+                @click="search = ''; filters.search = ''; filters.page = 1"
+            >
+                «{{ search.trim() }}»
+                <v-icon size="14">
+                    mdi-close
+                </v-icon>
+            </button>
+            <button
+                v-for="brand in filters.brands"
                 :key="`brand-${brand}`"
                 type="button"
                 class="catalog-active__chip"
-                @click="brands = brands.filter(name => name !== brand)"
+                @click="filters.brands = filters.brands.filter(name => name !== brand); filters.page = 1"
             >
                 {{ brand }}
                 <v-icon size="14">
@@ -455,11 +445,11 @@
                 </v-icon>
             </button>
             <button
-                v-for="size in sizes"
+                v-for="size in filters.sizes"
                 :key="`size-${size}`"
                 type="button"
                 class="catalog-active__chip"
-                @click="sizes = sizes.filter(id => id !== size)"
+                @click="filters.sizes = filters.sizes.filter(id => id !== size); filters.page = 1"
             >
                 Размер {{ sizeNames[size] || size }}
                 <v-icon size="14">
@@ -467,7 +457,7 @@
                 </v-icon>
             </button>
             <button
-                v-if="minPrice != null || maxPrice != null"
+                v-if="filters.minPrice != null || filters.maxPrice != null"
                 type="button"
                 class="catalog-active__chip"
                 @click="resetPrice()"
@@ -480,7 +470,7 @@
             <button
                 type="button"
                 class="catalog-active__reset"
-                @click="resetProductFilters()"
+                @click="resetProductFilters(); search = ''; filters.search = ''"
             >
                 Сбросить все
             </button>
@@ -537,7 +527,7 @@
             -->
             <vs-pagination
                 :key="`pagination-${pageCount}`"
-                v-model:current-page="page"
+                v-model:current-page="filters.page"
                 :layout="['prev', 'pager', 'next']"
                 :page-size="PAGE_SIZE"
                 :total="totalItems"
