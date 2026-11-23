@@ -148,7 +148,8 @@
     });
 
     /**
-     * min: [0 … productMax−1], max: [1 … productMax], разница ≥ 1 ₽
+     * min: [0 … productMax−1], max: [1 … productMax].
+     * Конфликт min > max: ушли с max → стираем min; ушли с min → стираем max.
      */
     function clampPriceRange(min, max, side = lastPriceSide) {
         const productMax = catalogPriceMax.value;
@@ -170,21 +171,12 @@
             }
         }
 
-        if (min != null && max != null && max < min + 1) {
-            if (side === 'min') {
-                if (maxCeil != null && min + 1 <= maxCeil) {
-                    max = min + 1;
-                }
-                else {
-                    min = Math.max(minFloor, max - 1);
-                    max = Math.max(max, min + 1);
-                }
-            }
-            else if (max - 1 >= minFloor) {
-                min = max - 1;
+        if (min != null && max != null && min > max) {
+            if (side === 'max') {
+                min = null;
             }
             else {
-                max = min + 1;
+                max = null;
             }
         }
         return { min, max };
@@ -205,12 +197,8 @@
 
         ({ min, max } = clampPriceRange(min, max));
 
-        if (min != null && String(priceInput.min) !== String(min)) {
-            priceInput.min = min;
-        }
-        if (max != null && String(priceInput.max) !== String(max)) {
-            priceInput.max = max;
-        }
+        priceInput.min = min == null ? '' : min;
+        priceInput.max = max == null ? '' : max;
 
         if (filters.value.minPrice === min && filters.value.maxPrice === max) {
             return;
