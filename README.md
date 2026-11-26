@@ -61,15 +61,17 @@ npm run dev                 # http://localhost:3000
 
 ```bash
 cd server
-npm run lint:check
+npm run format              # Prettier (src + test)
+npm run lint:ci             # prettier --check + eslint (то же, что в CI)
 npm test                    # unit-тесты
 npm run test:e2e            # e2e на отдельной БД shelkovitsa_test (создаётся сама)
 TEST_STORAGE_DRIVER=s3 npm run test:e2e   # e2e на S3 (RustFS из docker-compose)
 npm run test:bruno -- --env-var baseUrl=http://localhost:8000     # Bruno API-коллекция на запущенном приложении
 ```
 
-GitHub Actions ([`backend.yml`](.github/workflows/backend.yml)) на каждый PR в `server/`: lint, unit,
-сборка, e2e на локальном диске и на S3, Bruno API-коллекция на засеянном приложении.
+Стиль бэкенда: `.prettierrc` + `eslint-plugin-prettier` (форматирование только через Prettier).
+GitHub Actions ([`backend.yml`](.github/workflows/backend.yml)) на PR в `server/` или `tests/`:
+lint, unit, сборка, e2e (диск + S3), Bruno на засеянном приложении.
 
 ## Деплой
 

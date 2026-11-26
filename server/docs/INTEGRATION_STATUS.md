@@ -41,7 +41,7 @@
 | Unit (`npm test`) | 174 теста, из них ~110 — Excel, справочники, аудит выгрузки, GTIN |
 | E2E (`npm run test:e2e`) | 93 теста на тестовой БД, гоняются и на S3-драйвере (`TEST_STORAGE_DRIVER=s3`) |
 | Bruno (`npm run test:bruno`) | OpenCollection в `tests/bruno/` (цены в копейках, runtime `bru.setVar`) |
-| CI | `.github/workflows/backend.yml`: lint, unit, e2e, Bruno на засеянном приложении |
+| CI | `.github/workflows/backend.yml`: `lint:ci` (prettier+eslint), unit, e2e, Bruno на засеянном приложении |
 
 Для тестов Excel есть хелпер [test/xlsx.ts](../test/xlsx.ts): собирает .xlsx из XML-частей в
 заданном порядке (раскладка Excel, битые и вредоносные файлы).

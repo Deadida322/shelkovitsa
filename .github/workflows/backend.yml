@@ -3,9 +3,19 @@ name: Backend
 on:
   push:
     branches: [main]
-    paths: ['server/**', '.github/workflows/backend.yml', '.nvmrc']
+    paths:
+      - 'server/**'
+      - 'tests/**'
+      - '.github/workflows/backend.yml'
+      - '.nvmrc'
+      - '.editorconfig'
   pull_request:
-    paths: ['server/**', '.github/workflows/backend.yml', '.nvmrc']
+    paths:
+      - 'server/**'
+      - 'tests/**'
+      - '.github/workflows/backend.yml'
+      - '.nvmrc'
+      - '.editorconfig'
 
 jobs:
   test:
@@ -40,7 +50,7 @@ jobs:
       - run: npm ci
 
       - name: Lint
-        run: npm run lint:check
+        run: npm run lint:ci
 
       - name: Unit tests
         run: npm test

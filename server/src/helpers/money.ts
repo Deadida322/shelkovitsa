@@ -28,10 +28,7 @@ export function rublesToKopecks(raw: unknown): number {
 		return kopecks;
 	}
 
-	const normalized = String(raw)
-		.trim()
-		.replace(/\s/g, '')
-		.replace(',', '.');
+	const normalized = String(raw).trim().replace(/\s/g, '').replace(',', '.');
 	if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
 		throw new MoneyParseError(
 			'Цена должна быть числом в рублях с не более чем 2 знаками после запятой'

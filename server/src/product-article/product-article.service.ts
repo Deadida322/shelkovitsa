@@ -260,9 +260,7 @@ export class ProductArticleService {
 
 		const popularIds = popular.map((row) => Number(row.id));
 		const popularSet = new Set(popularIds);
-		const rest = ids
-			.filter((id) => !popularSet.has(id))
-			.sort((a, b) => a - b);
+		const rest = ids.filter((id) => !popularSet.has(id)).sort((a, b) => a - b);
 		return [...popularIds, ...rest].slice(skip, skip + take);
 	}
 
