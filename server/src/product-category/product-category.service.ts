@@ -23,8 +23,8 @@ export class ProductCategoryService {
 		private readonly productArticleRepository: Repository<ProductArticle>
 	) {}
 
-	// Админ видит все категории; покупатель — только подкатегории с опубликованными
-	// артикулами и категории, в которых такие подкатегории остались
+	// Публичный список — только подкатегории с опубликованными артикулами.
+	// Полный список (isAdmin) — для админского GET /api/admin/product-category.
 	async getList(isAdmin: boolean): Promise<ProductCategory[]> {
 		if (isAdmin) {
 			return this.productCategoryRepository.find({

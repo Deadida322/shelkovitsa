@@ -67,7 +67,7 @@
     });
 
     const subcategoryOptions = computed(() => {
-        const category = categoriesStore.categories.find(
+        const category = categoriesStore.adminCategories.find(
             (item) => item.id === filters.categoryId,
         );
         return category?.productSubcategories ?? [];
@@ -349,7 +349,7 @@
     // а в карточке товара нужны все подкатегории
     applyFromRoute();
     onMounted(() => {
-        categoriesStore.getCategories();
+        categoriesStore.getAdminCategories();
         loadBrandOptions();
     });
 
@@ -467,7 +467,7 @@
                 />
                 <v-select
                     v-model="filters.categoryId"
-                    :items="categoriesStore.categories"
+                    :items="categoriesStore.adminCategories"
                     item-title="name"
                     item-value="id"
                     density="compact"

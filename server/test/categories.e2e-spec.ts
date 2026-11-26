@@ -145,8 +145,13 @@ describe('Категории (e2e)', () => {
 			expect(names(res.body)).toEqual(publicView);
 		});
 
-		it('админу — все категории и подкатегории, в том числе пустые', async () => {
+		it('публичный список у админа такой же, как у гостя', async () => {
 			const res = await admin.get('/api/product-category').expect(200);
+			expect(names(res.body)).toEqual(publicView);
+		});
+
+		it('админский список — все категории и подкатегории, в том числе пустые', async () => {
+			const res = await admin.get('/api/admin/product-category').expect(200);
 			expect(names(res.body)).toEqual([
 				['Бюстгальтеры', ['Классические', 'Скрытые', 'Архив']],
 				['Пустая', ['Без товаров']],

@@ -27,7 +27,7 @@ Swagger UI: `http://localhost:8000/api/docs`.
 | GET | `/product-article/popular` | Популярные за месяц (3 шт.) |
 | GET | `/product-article/:id` | Карточка; `productSizeId` — цвета только этого размера |
 | GET | `/product` | Вариант с остатком: `productArticleId`, `productColorId`, `productSizeId` |
-| GET | `/product-category` | Категории с подкатегориями |
+| GET | `/product-category` | Публичные категории (только с опубликованными товарами) |
 | GET | `/product-color`, `/product-size`, `/delivery-type` | Справочники |
 | POST | `/order` | Оформить заказ (гостем или вошедшим); лимит 20/мин |
 | GET | `/order` | Мои заказы: `page`, `itemsPerPage` 🔒 |
@@ -52,6 +52,7 @@ Swagger UI: `http://localhost:8000/api/docs`.
 | PATCH | `/admin/order/:id` | Смена статуса `{ status }` |
 | POST | `/admin/order/:id/telegram-retry` | Повторить Telegram-уведомление |
 | GET | `/admin/order/telegram-failed` | Заказы с неотправленным уведомлением |
+| GET | `/admin/product-category` | Все категории и подкатегории, включая пустые |
 | POST | `/admin/product-category` | Создать категорию `{ name }` |
 | PATCH / DELETE | `/admin/product-category/:id` | Переименовать / удалить пустую (204) |
 | POST | `/admin/product-category/:id/subcategories` | Создать подкатегорию `{ name }` |

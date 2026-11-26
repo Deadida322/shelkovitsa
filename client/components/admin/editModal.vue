@@ -271,7 +271,7 @@
                     item-title="name"
                     item-value="id"
                     :disabled="item.is_deleted"
-                    :items="categoriesStore.categories"
+                    :items="categoriesStore.adminCategories"
                 />
                 <v-select
                     v-model="subcategory"
@@ -279,7 +279,7 @@
                     item-title="name"
                     item-value="id"
                     :disabled="item.is_deleted"
-                    :items="categoriesStore.categories.find(item => item.id === category)?.productSubcategories || []"
+                    :items="categoriesStore.adminCategories.find(item => item.id === category)?.productSubcategories || []"
                     @update:model-value="bindSubcategory"
                 />
                 <v-combobox
