@@ -41,12 +41,26 @@
             + (filters.value.minPrice != null || filters.value.maxPrice != null ? 1 : 0),
     );
     const showFilters = ref(activeFiltersCount.value > 0 || Boolean(filters.value.search));
+    const showCategories = ref(false);
+    const expandedMobileCategory = ref(null);
 
     const updateSearch = debounce((value) => {
         filters.value.search = value;
         filters.value.page = 1;
     }, 500);
     watch(search, updateSearch);
+
+    function toggleMobileCategory(id) {
+        expandedMobileCategory.value = expandedMobileCategory.value === id ? null : id;
+    }
+
+    async function selectMobileSubcategory(category, subcategory) {
+        filtersStore.setCategory(category.id, subcategory.id);
+        showCategories.value = false;
+        expandedMobileCategory.value = null;
+        await navigateTo({ path: '/catalog', query: filtersStore.toQuery() });
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }
 
     const totalItems = ref(0);
     const pageCount = computed(() =>
@@ -347,6 +361,20 @@
         <div class="catalog-toolbar mt-4">
             <vs-button
                 type="flat"
+                class="catalog-toolbar__cats-btn"
+                @click="showCategories = !showCategories"
+            >
+                <v-icon class="mr-1">
+                    mdi-shape-outline
+                </v-icon>
+                Категории
+                <v-icon class="ml-1">
+                    {{ showCategories ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                </v-icon>
+            </vs-button>
+
+            <vs-button
+                type="flat"
                 class="catalog-toolbar__filters-btn"
                 @click="showFilters = !showFilters"
             >
@@ -387,6 +415,45 @@
                     <div class="catalog-toolbar__sort-fallback" />
                 </template>
             </ClientOnly>
+        </div>
+
+        <div
+            v-show="showCategories"
+            class="catalog-mobile-cats mt-3"
+        >
+            <button
+                v-for="item in categoriesStore.categories"
+                :key="item.id"
+                type="button"
+                class="catalog-mobile-cats__group"
+                :class="{ 'catalog-mobile-cats__group--open': expandedMobileCategory === item.id }"
+                @click="toggleMobileCategory(item.id)"
+            >
+                <span>{{ item.name }}</span>
+                <v-icon size="18">
+                    {{ expandedMobileCategory === item.id ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                </v-icon>
+            </button>
+            <template
+                v-for="item in categoriesStore.categories"
+                :key="`mobile-subs-${item.id}`"
+            >
+                <div
+                    v-if="expandedMobileCategory === item.id"
+                    class="catalog-mobile-cats__subs"
+                >
+                    <button
+                        v-for="nest in item.productSubcategories"
+                        :key="nest.id"
+                        type="button"
+                        class="catalog-mobile-cats__chip"
+                        :class="{ 'catalog-mobile-cats__chip--active': String(filters.subcategory) === String(nest.id) }"
+                        @click="selectMobileSubcategory(item, nest)"
+                    >
+                        {{ nest.name }}
+                    </button>
+                </div>
+            </template>
         </div>
 
         <div
@@ -604,6 +671,14 @@
         align-items: center;
         gap: 12px 24px;
 
+        &__cats-btn {
+            display: none;
+
+            @media screen and (max-width: 1000px) {
+                display: inline-flex;
+            }
+        }
+
         &__filters-btn {
             position: relative;
         }
@@ -641,6 +716,61 @@
             height: 40px;
             border-radius: 12px;
             background: rgba(0, 0, 0, 0.04);
+        }
+    }
+
+    .catalog-mobile-cats {
+        display: none;
+        gap: 6px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.2);
+
+        @media screen and (max-width: 1000px) {
+            display: grid;
+        }
+
+        &__group {
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 4px;
+            border: none;
+            background: transparent;
+            font: inherit;
+            font-size: 0.92rem;
+            text-align: left;
+            cursor: pointer;
+
+            &--open {
+                color: $primary;
+                font-weight: 600;
+            }
+        }
+
+        &__subs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 0 0 8px 4px;
+        }
+
+        &__chip {
+            padding: 5px 10px;
+            border: 1px solid rgba(0, 0, 0, 0.14);
+            border-radius: 999px;
+            background: #fff;
+            font: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+
+            &--active {
+                border-color: $primary;
+                color: $primary;
+                background: rgba($primary, 0.06);
+            }
         }
     }
 
