@@ -23,8 +23,17 @@ const toBoolean = (value: unknown) => value === true || value === 'true' || valu
 export const PRODUCT_SORTS = ['default', 'new', 'priceAsc', 'priceDesc'] as const;
 export type ProductSort = (typeof PRODUCT_SORTS)[number];
 
-export const ADMIN_PRODUCT_STATUSES = ['published', 'hidden', 'archive'] as const;
+export const ADMIN_PRODUCT_STATUSES = [
+	'published',
+	'hidden',
+	'active',
+	'archive'
+] as const;
 export type AdminProductStatus = (typeof ADMIN_PRODUCT_STATUSES)[number];
+
+/** with — есть, without — нет; параметр не передан — не фильтровать */
+export const ADMIN_TRI_FILTERS = ['with', 'without'] as const;
+export type AdminTriFilter = (typeof ADMIN_TRI_FILTERS)[number];
 
 export class GetProductArticleListDto extends GetListDto {
 	@Expose()
@@ -105,23 +114,21 @@ export class GetProductArticleListDto extends GetListDto {
 
 	// ——— только админка (в публичном каталоге игнорируются) ———
 
-	/** published — опубликованные, hidden — скрытые, archive — в архиве */
+	/** published / hidden / active (не в архиве) / archive */
 	@Expose()
 	@IsOptional()
 	@IsIn(ADMIN_PRODUCT_STATUSES)
 	status: AdminProductStatus;
 
-	/** Артикулы без единого фото */
+	/** Фото: with — есть хотя бы одно, without — ни одного */
 	@Expose()
 	@IsOptional()
-	@Transform(({ value }) => toBoolean(value))
-	@IsBoolean()
-	noImage: boolean;
+	@IsIn(ADMIN_TRI_FILTERS)
+	image: AdminTriFilter;
 
-	/** Артикулы, у которых нет ни одного варианта в наличии */
+	/** Остаток: with — есть вариант с amount > 0, without — нет */
 	@Expose()
 	@IsOptional()
-	@Transform(({ value }) => toBoolean(value))
-	@IsBoolean()
-	noStock: boolean;
+	@IsIn(ADMIN_TRI_FILTERS)
+	stock: AdminTriFilter;
 }

@@ -39,7 +39,7 @@ Swagger UI: `http://localhost:8000/api/docs`.
 
 | Метод | Путь | Описание |
 |-------|------|----------|
-| GET | `/admin/product-article` | Все артикулы, включая скрытые и архивные (`is_deleted`, `totalAmount` — остаток). Те же фильтры, что в каталоге, плюс `status` (`published` \| `hidden` \| `archive`), `noImage=true`, `noStock=true` |
+| GET | `/admin/product-article` | Все артикулы, включая скрытые и архивные (`is_deleted`, `totalAmount` — остаток). Те же фильтры, что в каталоге, плюс `status` (`published` \| `hidden` \| `active` \| `archive`), `image` / `stock` (`with` \| `without`) |
 | GET | `/admin/product-article/filters` | Бренды и диапазон цен для фильтров списка (без архива) |
 | GET | `/admin/product-article/:id` | Карточка для редактирования |
 | PATCH | `/admin/product-article/:id` | `name`, `description`, `isVisible`, `is_deleted`, `productSubcategoryId`, `productColorIds`, `productSizeIds` |

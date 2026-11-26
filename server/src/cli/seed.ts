@@ -18,7 +18,7 @@ import { isExcludedCategory } from 'src/product-article/supplier-format';
  *
  *   npm run seed                      админ, доставка, 30 артикулов с картинками
  *   npm run seed -- --articles 200    больше товаров
- *   npm run seed -- --no-images       без скачивания картинок (быстро, без сети)
+ *   npm run seed -- --no-images       без скачивания картинок (быстро; без фото не публикуются)
  *   npm run seed -- --file <xlsx>     другая выгрузка поставщика
  *
  * Админ: SEED_ADMIN_MAIL / SEED_ADMIN_PASSWORD (по умолчанию admin@shelkovitsa.local / admin12345)
@@ -66,7 +66,8 @@ async function main() {
 			articlesLimit,
 			downloadImages
 		);
-		await publishReadyArticles(dataSource, downloadImages);
+		// Публикуем только готовые к витрине (с фото) — как assertPublishable в админке
+		await publishReadyArticles(dataSource);
 	} finally {
 		await app.close();
 	}
@@ -140,22 +141,20 @@ async function seedCatalog(
 	}
 }
 
-// Те же условия, что при публикации из админки; без картинок — допускаем пустые фото
-async function publishReadyArticles(dataSource: DataSource, requireImages: boolean) {
-	const query = dataSource
+// Те же условия, что assertPublishable: без фото на витрину не выводим
+async function publishReadyArticles(dataSource: DataSource) {
+	const { affected } = await dataSource
 		.createQueryBuilder()
 		.update(ProductArticle)
 		.set({ isVisible: true })
 		.where('name IS NOT NULL')
 		.andWhere(
 			'EXISTS (SELECT 1 FROM product p WHERE p."productArticleId" = product_article.id AND p.deleted_at IS NULL)'
-		);
-	if (requireImages) {
-		query.andWhere(
+		)
+		.andWhere(
 			'EXISTS (SELECT 1 FROM product_file f WHERE f."productArticleId" = product_article.id)'
-		);
-	}
-	const { affected } = await query.execute();
+		)
+		.execute();
 	console.log(`Опубликовано артикулов: ${affected}`);
 }
 
