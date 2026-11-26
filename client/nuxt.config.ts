@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { stripGoogleFonts } from './build/plugins/strip-vuesax-fonts';
+import { fixVuesaxUnwrapElement } from './build/plugins/fix-vuesax-unwrap-element';
 
 export default defineNuxtConfig({
     app: {
@@ -46,6 +47,7 @@ export default defineNuxtConfig({
         },
         plugins: [
             stripGoogleFonts(),
+            fixVuesaxUnwrapElement(),
         ],
         ssr: {
             noExternal: ['@vueuse/core', 'vuesax-alpha'], // пакеты, которые нужно обрабатывать Rollup

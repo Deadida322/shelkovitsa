@@ -20,8 +20,18 @@
     }
 
     function goToCheckout() {
+        if (!cartStore.cart.length) {
+            return;
+        }
         navigateTo('/deliver');
         opened.value = false;
+    }
+
+    function clearCart() {
+        if (!cartStore.cart.length) {
+            return;
+        }
+        cartStore.clearCart();
     }
 
     function formatPrice(value) {
@@ -111,10 +121,17 @@
             </template>
         </div>
         <div class="s-cart__actions d-flex justify-end pt-4">
-            <vs-button type="flat" @click="cartStore.clearCart">
+            <vs-button
+                type="flat"
+                :disabled="!cartStore.cart.length"
+                @click="clearCart"
+            >
                 Очистить
             </vs-button>
-            <vs-button @click="goToCheckout">
+            <vs-button
+                :disabled="!cartStore.cart.length"
+                @click="goToCheckout"
+            >
                 Заказать
             </vs-button>
         </div>
