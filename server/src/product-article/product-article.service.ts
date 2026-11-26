@@ -45,9 +45,12 @@ import { GetProductArticleListDto, ProductSort } from './dto/GetProductArticleLi
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 
-// Порядок списка; id всегда в конце, чтобы страницы не «плавали» при равной цене
-const LIST_ORDERS: Record<ProductSort, FindOptionsOrder<ProductArticle>> = {
-	default: { id: 'ASC' },
+// Порядок списка; id всегда в конце, чтобы страницы не «плавали» при равной цене.
+// default (= популярность) обрабатывается отдельно в getList.
+const LIST_ORDERS: Record<
+	Exclude<ProductSort, 'default'>,
+	FindOptionsOrder<ProductArticle>
+> = {
 	new: { id: 'DESC' },
 	priceAsc: { price: 'ASC', id: 'ASC' },
 	priceDesc: { price: 'DESC', id: 'ASC' }
@@ -164,14 +167,45 @@ export class ProductArticleService {
 				}))
 			: where;
 
-		const [result, total] = await this.productArticleRepository.findAndCount({
-			...getPaginateWhere(payload),
-			where: whereWithSearch,
-			// в админке нужны и архивные артикулы
-			withDeleted: isAdmin,
-			relations: { productFiles: true },
-			order: LIST_ORDERS[payload.sort ?? 'default']
-		});
+		const sort = payload.sort ?? 'default';
+		const { take, skip } = getPaginateWhere(payload);
+
+		let result: ProductArticle[];
+		let total: number;
+
+		if (sort === 'default') {
+			// По популярности: заказы за месяц desc, без заказов — в конец по id
+			const matched = await this.productArticleRepository.find({
+				where: whereWithSearch,
+				select: ['id'],
+				withDeleted: isAdmin
+			});
+			total = matched.length;
+			const ids = matched.map((row) => row.id);
+			const pageIds = ids.length
+				? await this.orderIdsByPopularity(ids, skip, take)
+				: [];
+			const rows = pageIds.length
+				? await this.productArticleRepository.find({
+						where: { id: In(pageIds) },
+						withDeleted: isAdmin,
+						relations: { productFiles: true }
+					})
+				: [];
+			const byId = new Map(rows.map((row) => [row.id, row]));
+			result = pageIds
+				.map((id) => byId.get(id))
+				.filter((row): row is ProductArticle => row != null);
+		} else {
+			[result, total] = await this.productArticleRepository.findAndCount({
+				take,
+				skip,
+				where: whereWithSearch,
+				withDeleted: isAdmin,
+				relations: { productFiles: true },
+				order: LIST_ORDERS[sort]
+			});
+		}
 
 		const amounts = isAdmin
 			? await this.totalAmounts(result.map((el) => el.id))
@@ -189,6 +223,39 @@ export class ProductArticleService {
 				page: payload.page
 			}
 		);
+	}
+
+	/** id артикулов: сначала с заказами за месяц (desc), затем остальные по id */
+	private async orderIdsByPopularity(
+		ids: number[],
+		skip: number,
+		take: number
+	): Promise<number[]> {
+		if (!ids.length) {
+			return [];
+		}
+		const since = moment().subtract(1, 'months').toDate();
+		const popular: { id: number; orderCount: string }[] =
+			await this.productArticleRepository
+				.createQueryBuilder('product_article')
+				.innerJoin('product_article.products', 'product')
+				.innerJoin('product.orderProducts', 'orderProduct')
+				.innerJoin('orderProduct.order', 'order')
+				.where('product_article.id IN (:...ids)', { ids })
+				.andWhere('order.created_at > :since', { since })
+				.groupBy('product_article.id')
+				.select('product_article.id', 'id')
+				.addSelect('count(order.id)', 'orderCount')
+				.orderBy('count(order.id)', 'DESC')
+				.addOrderBy('product_article.id', 'ASC')
+				.getRawMany();
+
+		const popularIds = popular.map((row) => Number(row.id));
+		const popularSet = new Set(popularIds);
+		const rest = ids
+			.filter((id) => !popularSet.has(id))
+			.sort((a, b) => a - b);
+		return [...popularIds, ...rest].slice(skip, skip + take);
 	}
 
 	/**

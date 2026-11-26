@@ -16,7 +16,7 @@
     // 12 делится на 2 и 3 колонки; API разрешает до 20
     const PAGE_SIZE = 12;
     const SORT_OPTIONS = [
-        { label: 'По умолчанию', id: 'default' },
+        { label: 'По популярности', id: 'default' },
         { label: 'Сначала новые', id: 'new' },
         { label: 'Сначала дешевле', id: 'priceAsc' },
         { label: 'Сначала дороже', id: 'priceDesc' },
@@ -175,6 +175,14 @@
     function onPriceBlockFocusOut(event) {
         if (event.currentTarget.contains(event.relatedTarget)) {
             return;
+        }
+        // side берём с поля, которое реально потеряло фокус (@focus на vs-input иногда не срабатывает)
+        const inputs = event.currentTarget.querySelectorAll('input[type="number"]');
+        if (event.target === inputs[0]) {
+            lastPriceSide = 'min';
+        }
+        else if (event.target === inputs[1]) {
+            lastPriceSide = 'max';
         }
         applyPrice();
     }
@@ -701,6 +709,7 @@
         }
 
         &__count {
+            margin-left: 0.4em;
             color: rgba(0, 0, 0, 0.45);
             font-size: 0.85em;
         }

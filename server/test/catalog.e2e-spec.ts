@@ -248,6 +248,12 @@ describe('Catalog (e2e)', () => {
 				'ART-003',
 				'ART-001'
 			]);
+			// default = по популярности; без заказов порядок стабильный по id
+			expect(articles(await publicList({ sort: 'default' }))).toEqual([
+				'ART-001',
+				'ART-003'
+			]);
+			expect(articles(await publicList({}))).toEqual(['ART-001', 'ART-003']);
 
 			expect(articles(await publicList({ minPrice: 2000 }))).toEqual(['ART-003']);
 			// поиск находит и по бренду, и сочетается с фильтром бренда
