@@ -50,6 +50,33 @@
     }, 500);
     watch(search, updateSearch);
 
+    function findCategoryIdForSelection() {
+        if (filters.value.category != null && filters.value.category !== '') {
+            const byId = categoriesStore.categories.find(
+                item => String(item.id) === String(filters.value.category),
+            );
+            if (byId) {
+                return byId.id;
+            }
+        }
+        if (filters.value.subcategory == null || filters.value.subcategory === '') {
+            return null;
+        }
+        const parent = categoriesStore.categories.find(item =>
+            item.productSubcategories?.some(
+                nest => String(nest.id) === String(filters.value.subcategory),
+            ),
+        );
+        return parent?.id ?? null;
+    }
+
+    function toggleCategoriesPanel() {
+        showCategories.value = !showCategories.value;
+        if (showCategories.value) {
+            expandedMobileCategory.value = findCategoryIdForSelection();
+        }
+    }
+
     function toggleMobileCategory(id) {
         expandedMobileCategory.value = expandedMobileCategory.value === id ? null : id;
     }
@@ -57,7 +84,7 @@
     async function selectMobileSubcategory(category, subcategory) {
         filtersStore.setCategory(category.id, subcategory.id);
         showCategories.value = false;
-        expandedMobileCategory.value = null;
+        expandedMobileCategory.value = category.id;
         await navigateTo({ path: '/catalog', query: filtersStore.toQuery() });
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
@@ -363,7 +390,7 @@
                 <vs-button
                     type="flat"
                     class="catalog-toolbar__cats-btn"
-                    @click="showCategories = !showCategories"
+                    @click="toggleCategoriesPanel"
                 >
                     <v-icon class="mr-1">
                         mdi-shape-outline
@@ -433,16 +460,16 @@
                 <button
                     type="button"
                     class="catalog-mobile-cats__group"
-                    :class="{ 'catalog-mobile-cats__group--open': expandedMobileCategory === item.id }"
+                    :class="{ 'catalog-mobile-cats__group--open': String(expandedMobileCategory) === String(item.id) }"
                     @click="toggleMobileCategory(item.id)"
                 >
                     <span>{{ item.name }}</span>
                     <v-icon size="18">
-                        {{ expandedMobileCategory === item.id ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                        {{ String(expandedMobileCategory) === String(item.id) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
                     </v-icon>
                 </button>
                 <div
-                    v-if="expandedMobileCategory === item.id"
+                    v-if="String(expandedMobileCategory) === String(item.id)"
                     class="catalog-mobile-cats__subs"
                 >
                     <button

@@ -131,6 +131,11 @@
 <style scoped lang="scss">
     .skeleton {
         flex: 1;
+        @media screen and (max-width: 768px) {
+            width: 100%;
+            max-width: 100%;
+            flex: none;
+        }
     }
     .s-shop-carousel {
         margin-top: 40px;
@@ -138,13 +143,30 @@
         gap: 20px;
         @media screen and (max-width: 768px) {
             flex-direction: column;
+            align-items: stretch;
+            width: 100%;
         }
 
         &__item {
             @media screen and (max-width: 768px) {
-                max-width: none;
+                width: 100%;
+                max-width: 100%;
             }
 
+            :deep(.vs-card),
+            :deep(.vs-card-content) {
+                @media screen and (max-width: 768px) {
+                    width: 100%;
+                    max-width: 100%;
+                }
+            }
+
+            :deep(.vs-card__img img) {
+                @media screen and (max-width: 768px) {
+                    width: 100%;
+                    max-width: 100%;
+                }
+            }
         }
     }
 
