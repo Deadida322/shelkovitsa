@@ -3,7 +3,6 @@ import { useCartStore } from '@/stores/cart';
 import { computed, watch } from 'vue';
 import { VsNotification } from 'vuesax-alpha';
 import { useDisplay } from 'vuetify/lib/framework.mjs';
-import sImage from '~/components/sImage.vue';
 import SValidation from '~/components/sValidation.vue';
 import { formatRub, kopecksToRublesInput } from '~/utils/money';
 

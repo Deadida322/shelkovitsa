@@ -2,6 +2,7 @@
 import { useCartStore, useFiltersStore, useMappingStore, useOrderStore } from '#imports';
 import { VsNotification } from 'vuesax-alpha';
 import { formatRub } from '~/utils/money';
+import { normalizeRuPhone } from '~/utils/phone';
 
 const config = useRuntimeConfig();
 const base = config.public.apiBase;
@@ -29,21 +30,45 @@ function handleImageError(event) {
 }
 
 const step = ref(1);
+const submitting = ref(false);
 
 function nextStep() {
     if (step.value < 2) return step.value++;
+    if (submitting.value) return;
+    submitting.value = true;
     $api('/api/order', {
         method: 'POST',
-        body: { ...orderStore.order, orderProducts: cartStore.cart },
-    }).then(() => {
-        VsNotification({
-            title: 'Отправлено!',
-            content: 'Заказ отправлен, ожидайте связи',
-            position: 'bottom-center',
-            border: 'success',
+        body: {
+            ...orderStore.order,
+            tel: normalizeRuPhone(orderStore.order.tel),
+            orderProducts: cartStore.cart,
+        },
+    })
+        .then(() => {
+            VsNotification({
+                title: 'Отправлено!',
+                content: 'Заказ отправлен, ожидайте связи',
+                position: 'bottom-center',
+                border: 'success',
+            });
+            cartStore.clearCart();
+        })
+        .catch((err) => {
+            const message =
+                err?.data?.error?.message ||
+                err?.data?.message ||
+                err?.message ||
+                'Не удалось отправить заказ';
+            VsNotification({
+                title: 'Ошибка',
+                content: Array.isArray(message) ? message.join(', ') : String(message),
+                position: 'bottom-center',
+                border: 'danger',
+            });
+        })
+        .finally(() => {
+            submitting.value = false;
         });
-        cartStore.clearCart();
-    });
 }
 
 // Добавляем SEO улучшения без удаления существующего кода
@@ -124,6 +149,7 @@ useHead({
                         <vs-td>
                             <s-count-input
                                 v-model="tr.amount"
+                                :max="tr.maxAmount || 1"
                                 @update:model-value="onCountDown($event, i)"
                             />
                         </vs-td>
@@ -230,7 +256,7 @@ useHead({
                                     v-model="orderStore.order.region"
                                     required
                                     class="s-input"
-                                    type="email"
+                                    type="text"
                                     placeholder="Регион"
                                     icon="map"
                                 />
@@ -256,7 +282,9 @@ useHead({
                     </v-stepper-window>
                     <div class="d-flex pa-4 justify-end">
                         <vs-button v-if="step !== 2" @click="submit">Далее</vs-button>
-                        <vs-button v-else @click="submit">Отправить</vs-button>
+                        <vs-button v-else :disabled="submitting" @click="submit">
+                            Отправить
+                        </vs-button>
                     </div>
                 </v-stepper>
             </s-validation>

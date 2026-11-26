@@ -20,7 +20,8 @@ export enum OrderStatus {
 	IN_WORK = 'in_work',
 	PAYMENT = 'payment',
 	DELIVERY = 'delivery',
-	CLOSE = 'close'
+	CLOSE = 'close',
+	CANCELLED = 'cancelled'
 }
 
 @Entity()
