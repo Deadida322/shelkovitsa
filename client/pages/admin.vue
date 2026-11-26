@@ -72,7 +72,7 @@
                         :key="n"
                         :value="n"
                     >
-                        <component :is="componentsMap[tab] " />
+                        <component :is="componentsMap[n]" />
                     </v-tabs-window-item>
                 </v-tabs-window>
             </v-card-text>
