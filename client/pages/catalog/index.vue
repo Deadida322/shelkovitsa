@@ -359,85 +359,88 @@
         </div>
 
         <div class="catalog-toolbar mt-4">
-            <vs-button
-                type="flat"
-                class="catalog-toolbar__cats-btn"
-                @click="showCategories = !showCategories"
-            >
-                <v-icon class="mr-1">
-                    mdi-shape-outline
-                </v-icon>
-                Категории
-                <v-icon class="ml-1">
-                    {{ showCategories ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
-                </v-icon>
-            </vs-button>
-
-            <vs-button
-                type="flat"
-                class="catalog-toolbar__filters-btn"
-                @click="showFilters = !showFilters"
-            >
-                <v-icon class="mr-1">
-                    mdi-tune-variant
-                </v-icon>
-                Фильтры
-                <span
-                    v-if="activeFiltersCount"
-                    class="catalog-toolbar__badge"
-                >{{ activeFiltersCount }}</span>
-                <v-icon class="ml-1">
-                    {{ showFilters ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
-                </v-icon>
-            </vs-button>
-
-            <label class="catalog-toolbar__stock">
-                <vs-switch v-model="filters.inStock" />
-                <span>В наличии</span>
-            </label>
-
-            <ClientOnly>
-                <vs-select
-                    v-model="filters.sort"
-                    class="catalog-toolbar__sort"
-                    placeholder="Сортировка"
+            <div class="catalog-toolbar__row catalog-toolbar__row--actions">
+                <vs-button
+                    type="flat"
+                    class="catalog-toolbar__cats-btn"
+                    @click="showCategories = !showCategories"
                 >
-                    <vs-option
-                        v-for="option in SORT_OPTIONS"
-                        :key="option.id"
-                        :label="option.label"
-                        :value="option.id"
+                    <v-icon class="mr-1">
+                        mdi-shape-outline
+                    </v-icon>
+                    Категории
+                    <v-icon class="ml-1">
+                        {{ showCategories ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                    </v-icon>
+                </vs-button>
+
+                <vs-button
+                    type="flat"
+                    class="catalog-toolbar__filters-btn"
+                    @click="showFilters = !showFilters"
+                >
+                    <v-icon class="mr-1">
+                        mdi-tune-variant
+                    </v-icon>
+                    Фильтры
+                    <span
+                        v-if="activeFiltersCount"
+                        class="catalog-toolbar__badge"
+                    >{{ activeFiltersCount }}</span>
+                    <v-icon class="ml-1">
+                        {{ showFilters ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                    </v-icon>
+                </vs-button>
+            </div>
+
+            <div class="catalog-toolbar__row catalog-toolbar__row--meta">
+                <label class="catalog-toolbar__stock">
+                    <vs-switch v-model="filters.inStock" />
+                    <span>В наличии</span>
+                </label>
+
+                <ClientOnly>
+                    <vs-select
+                        v-model="filters.sort"
+                        class="catalog-toolbar__sort"
+                        placeholder="Сортировка"
                     >
-                        {{ option.label }}
-                    </vs-option>
-                </vs-select>
-                <template #fallback>
-                    <div class="catalog-toolbar__sort-fallback" />
-                </template>
-            </ClientOnly>
+                        <vs-option
+                            v-for="option in SORT_OPTIONS"
+                            :key="option.id"
+                            :label="option.label"
+                            :value="option.id"
+                        >
+                            {{ option.label }}
+                        </vs-option>
+                    </vs-select>
+                    <template #fallback>
+                        <div class="catalog-toolbar__sort-fallback" />
+                    </template>
+                </ClientOnly>
+            </div>
         </div>
 
         <div
             v-show="showCategories"
             class="catalog-mobile-cats mt-3"
         >
-            <button
+            <div
                 v-for="item in categoriesStore.categories"
                 :key="item.id"
-                type="button"
-                class="catalog-mobile-cats__group"
-                :class="{ 'catalog-mobile-cats__group--open': expandedMobileCategory === item.id }"
-                @click="toggleMobileCategory(item.id)"
+                class="catalog-mobile-cats__block"
             >
-                <span>{{ item.name }}</span>
-                <v-icon size="18">
-                    {{ expandedMobileCategory === item.id ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
-                </v-icon>
-            </button>
-            <template
-                v-for="item in categoriesStore.categories"
-                :key="`mobile-subs-${item.id}`"
-            >
+                <button
+                    type="button"
+                    class="catalog-mobile-cats__group"
+                    :class="{ 'catalog-mobile-cats__group--open': expandedMobileCategory === item.id }"
+                    @click="toggleMobileCategory(item.id)"
+                >
+                    <span>{{ item.name }}</span>
+                    <v-icon size="18">
+                        {{ expandedMobileCategory === item.id ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                    </v-icon>
+                </button>
                 <div
                     v-if="expandedMobileCategory === item.id"
                     class="catalog-mobile-cats__subs"
@@ -453,7 +456,7 @@
                         {{ nest.name }}
                     </button>
                 </div>
-            </template>
+            </div>
         </div>
 
         <div
@@ -667,9 +670,27 @@
 <style lang="scss">
     .catalog-toolbar {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 12px 24px;
+        flex-direction: column;
+        gap: 12px;
+
+        &__row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 24px;
+
+            &--actions {
+                @media screen and (max-width: 1000px) {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+            }
+
+            &--meta {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
 
         &__cats-btn {
             display: none;
@@ -721,7 +742,7 @@
 
     .catalog-mobile-cats {
         display: none;
-        gap: 6px;
+        gap: 2px;
         padding: 10px 12px;
         border-radius: 12px;
         background: #fff;
@@ -729,6 +750,11 @@
 
         @media screen and (max-width: 1000px) {
             display: grid;
+        }
+
+        &__block {
+            display: grid;
+            gap: 4px;
         }
 
         &__group {
