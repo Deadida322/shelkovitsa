@@ -108,13 +108,16 @@
                 />
             </template>
             <template v-else>
-                <s-shop-item
+                <div
                     v-for="(item, key) in populateItems.slice(0, 3)"
                     :key="key"
-                    :item="item"
                     class="s-shop-carousel__item"
-                    @click="navigateTo(`/catalog/${item.id}`)"
-                />
+                >
+                    <s-shop-item
+                        :item="item"
+                        @click="navigateTo(`/catalog/${item.id}`)"
+                    />
+                </div>
             </template>
         </div>
         <div class="d-flex justify-center mt-4 mb-4">
@@ -130,43 +133,25 @@
 
 <style scoped lang="scss">
     .skeleton {
-        flex: 1;
-        @media screen and (max-width: 768px) {
-            width: 100%;
-            max-width: 100%;
-            flex: none;
-        }
+        width: 100%;
+        min-width: 0;
     }
     .s-shop-carousel {
         margin-top: 40px;
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 20px;
+        width: 100%;
+
         @media screen and (max-width: 768px) {
-            flex-direction: column;
-            align-items: stretch;
-            width: 100%;
+            grid-template-columns: minmax(0, 1fr);
         }
 
         &__item {
-            @media screen and (max-width: 768px) {
-                width: 100%;
-                max-width: 100%;
-            }
-
-            :deep(.vs-card),
-            :deep(.vs-card-content) {
-                @media screen and (max-width: 768px) {
-                    width: 100%;
-                    max-width: 100%;
-                }
-            }
-
-            :deep(.vs-card__img img) {
-                @media screen and (max-width: 768px) {
-                    width: 100%;
-                    max-width: 100%;
-                }
-            }
+            display: flex;
+            min-width: 0;
+            width: 100%;
+            height: 100%;
         }
     }
 
