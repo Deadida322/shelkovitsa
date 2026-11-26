@@ -1,45 +1,37 @@
 import antfu from '@antfu/eslint-config';
+import prettier from 'eslint-plugin-prettier/recommended';
 
-export default antfu({
-    stylistic: {
-        semi: true,
-        indent: 4, // 4 or 'tab'
-        quotes: 'single',
+/**
+ * Стиль — Prettier (.prettierrc). Antfu stylistic выключен, чтобы не конфликтовать.
+ * eslint-plugin-prettier гоняет Prettier как правило ESLint (как на бэке).
+ */
+export default antfu(
+    {
+        stylistic: false,
+        vue: true,
+        typescript: true,
+        // jsonc-плагин ломается на eslint 9.27 + текущем antfu; JSON форматирует Prettier
+        jsonc: false,
+        yaml: false,
+        ignores: [
+            '.nuxt/**',
+            '.output/**',
+            'dist/**',
+            'node_modules/**',
+            'coverage/**',
+            '**/*.json',
+            '**/*.jsonc',
+        ],
     },
-    env: {
-        amd: true,
+    prettier,
+    {
+        rules: {
+            'prettier/prettier': 'error',
+            'no-undef': 'off',
+            // Nuxt/Vue auto-imports
+            'antfu/no-top-level-await': 'off',
+            // Nuxt config / Vite plugins — process.env ок
+            'node/prefer-global/process': 'off',
+        },
     },
-    vue: true,
-    rules: {
-        // Глобальное переопределение
-        'vue/script-indent': ['error', 4, { baseIndent: 1 }],
-        'vue/html-indent': ['error', 4, { baseIndent: 1 }],
-    },
-}, {
-    files: ['**/*.vue'],
-    rules: {
-        'indent': 'off',
-        'style/indent': 'off',
-        '@stylistic/js/indent': 'off',
-        '@stylistic/ts/indent': 'off',
-        '@stylistic/js/style-indent': 'off',
-        '@stylistic/ts/style-indent': 'off',
-        'vue/max-attributes-per-line': ['error', {
-            singleline: {
-                max: 2,
-            },
-            multiline: {
-                max: 1,
-            },
-        }],
-        'vue/script-indent': ['error', 4, {
-            baseIndent: 1,
-        }],
-    },
-}, {
-    files: ['*.ts', '*.mts', '*.cts', '*.tsx', '*.vue', '**/*.js'],
-    rules: {
-        'no-undef': 'off',
-        'indent': ['error', 4],
-    },
-});
+);

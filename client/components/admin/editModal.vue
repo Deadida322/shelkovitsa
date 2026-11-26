@@ -1,67 +1,71 @@
 <script setup>
-    import { useCategoriesStore, useMappingStore } from '#imports';
+import { useCategoriesStore, useMappingStore } from '#imports';
 
-    import { VsNotification } from 'vuesax-alpha';
-    import { VFileUpload } from 'vuetify/labs/VFileUpload';
-    import { kopecksToRublesInput, rublesInputToKopecks } from '~/utils/money';
+import { VsNotification } from 'vuesax-alpha';
+import { VFileUpload } from 'vuetify/labs/VFileUpload';
+import { kopecksToRublesInput, rublesInputToKopecks } from '~/utils/money';
 
-    const props = defineProps({
-        modelValue: {
-            type: Object,
-            default: () => {},
-        },
-        visible: {
-            type: Boolean,
-            default: false,
-        },
-    });
+const props = defineProps({
+    modelValue: {
+        type: Object,
+        default: () => {},
+    },
+    visible: {
+        type: Boolean,
+        default: false,
+    },
+});
 
-    const emit = defineEmits(['update:visible', 'update:model-value', 'updateProduct']);
+const emit = defineEmits(['update:visible', 'update:model-value', 'updateProduct']);
 
-    const { plainColors, plainSizes } = storeToRefs(useMappingStore());
+const { plainColors, plainSizes } = storeToRefs(useMappingStore());
 
-    const categoriesStore = useCategoriesStore();
-    const config = useRuntimeConfig();
-    const { $api } = useNuxtApp();
-    const loading = ref(false);
-    const item = ref({ ...props.modelValue });
-    const category = ref(item.value.productSubcategory?.productCategory.id);
-    const subcategory = ref(item.value.productSubcategory);
-    // UI — рубли; в API уходит копейки
-    const priceInput = ref(kopecksToRublesInput(item.value.price));
+const categoriesStore = useCategoriesStore();
+const config = useRuntimeConfig();
+const { $api } = useNuxtApp();
+const loading = ref(false);
+const item = ref({ ...props.modelValue });
+const category = ref(item.value.productSubcategory?.productCategory.id);
+const subcategory = ref(item.value.productSubcategory);
+// UI — рубли; в API уходит копейки
+const priceInput = ref(kopecksToRublesInput(item.value.price));
 
-    const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
-    const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-    const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
+const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const IMAGE_EXT = /\.(?:jpe?g|png|webp)$/i;
 
-    function isAllowedImage(file) {
-        if (!file) {
-            return false;
-        }
-        if (file.type && IMAGE_TYPES.has(file.type)) {
-            return true;
-        }
-        return IMAGE_EXT.test(file.name || '');
+function isAllowedImage(file) {
+    if (!file) {
+        return false;
     }
+    if (file.type && IMAGE_TYPES.has(file.type)) {
+        return true;
+    }
+    return IMAGE_EXT.test(file.name || '');
+}
 
-    async function updateImage(value) {
-        const image = Array.isArray(value) ? value[0] : value;
-        if (!image) {
-            return;
-        }
-        if (!isAllowedImage(image)) {
-            VsNotification({
-                title: 'Ошибка!',
-                content: 'Можно загружать только JPEG, PNG или WebP',
-                position: 'bottom-center',
-                border: 'danger',
-            });
-            return;
-        }
-        const formData = new FormData();
-        formData.append('image', image, image.name);
-        loading.value = true;
-        await $api(`/api/admin/product-article/${item.value.id}/images`, { method: 'POST', body: formData }).then(() => {
+async function updateImage(value) {
+    const image = Array.isArray(value) ? value[0] : value;
+    if (!image) {
+        return;
+    }
+    if (!isAllowedImage(image)) {
+        VsNotification({
+            title: 'Ошибка!',
+            content: 'Можно загружать только JPEG, PNG или WebP',
+            position: 'bottom-center',
+            border: 'danger',
+        });
+        return;
+    }
+    const formData = new FormData();
+    formData.append('image', image, image.name);
+    loading.value = true;
+    await $api(`/api/admin/product-article/${item.value.id}/images`, {
+        method: 'POST',
+        body: formData,
+    })
+        .then(() => {
             loading.value = false;
             VsNotification({
                 title: 'Отлично!',
@@ -70,7 +74,8 @@
                 border: 'success',
             });
             getProduct();
-        }).catch(() => {
+        })
+        .catch(() => {
             loading.value = false;
             VsNotification({
                 title: 'Ошибка!',
@@ -79,48 +84,48 @@
                 border: 'danger',
             });
         });
+}
+
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения в админке:', event.target.src);
+}
+
+// В PATCH уходят только редактируемые поля
+function mapProduct(product) {
+    return {
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        isVisible: product.isVisible,
+        is_deleted: product.is_deleted,
+        productSizeIds: (product.productSizes || []).map(({ id }) => id),
+        productColorIds: (product.productColors || []).map(({ id }) => id),
     };
+}
 
-    function handleImageError(event) {
-        console.error('Ошибка загрузки изображения в админке:', event.target.src);
+function onPriceBlur() {
+    try {
+        item.value.price = rublesInputToKopecks(priceInput.value);
+        priceInput.value = kopecksToRublesInput(item.value.price);
+        updateProduct();
+    } catch (error) {
+        priceInput.value = kopecksToRublesInput(item.value.price);
+        VsNotification({
+            title: 'Ошибка!',
+            content: error?.message || 'Некорректная цена',
+            position: 'bottom-center',
+            border: 'danger',
+        });
     }
+}
 
-    // В PATCH уходят только редактируемые поля
-    function mapProduct(product) {
-        return {
-            name: product.name,
-            description: product.description,
-            price: product.price,
-            isVisible: product.isVisible,
-            is_deleted: product.is_deleted,
-            productSizeIds: (product.productSizes || []).map(({ id }) => id),
-            productColorIds: (product.productColors || []).map(({ id }) => id),
-        };
-    }
-
-    function onPriceBlur() {
-        try {
-            item.value.price = rublesInputToKopecks(priceInput.value);
-            priceInput.value = kopecksToRublesInput(item.value.price);
-            updateProduct();
-        }
-        catch (error) {
-            priceInput.value = kopecksToRublesInput(item.value.price);
-            VsNotification({
-                title: 'Ошибка!',
-                content: error?.message || 'Некорректная цена',
-                position: 'bottom-center',
-                border: 'danger',
-            });
-        }
-    }
-
-    async function updateProduct({ closeOnSuccess = false } = {}) {
-        const mappedProduct = mapProduct(item.value);
-        await $api(`/api/admin/product-article/${item.value.id}`, {
-            method: 'PATCH',
-            body: mappedProduct,
-        }).then(() => {
+async function updateProduct({ closeOnSuccess = false } = {}) {
+    const mappedProduct = mapProduct(item.value);
+    await $api(`/api/admin/product-article/${item.value.id}`, {
+        method: 'PATCH',
+        body: mappedProduct,
+    })
+        .then(() => {
             loading.value = false;
             VsNotification({
                 title: 'Отлично!',
@@ -135,7 +140,8 @@
                 return;
             }
             getProduct();
-        }).catch(({ response }) => {
+        })
+        .catch(({ response }) => {
             getProduct();
             VsNotification({
                 title: 'Ошибка!',
@@ -144,28 +150,29 @@
                 border: 'danger',
             });
         });
-    };
+}
 
-    function onPublishToggle() {
-        // и публикация, и скрытие — элемент может пропасть из текущего фильтра
-        updateProduct({ closeOnSuccess: true });
+function onPublishToggle() {
+    // и публикация, и скрытие — элемент может пропасть из текущего фильтра
+    updateProduct({ closeOnSuccess: true });
+}
+
+function onArchiveToggle(value) {
+    updateProduct({ closeOnSuccess: value === true });
+}
+
+// Полное удаление — только для товаров, которые ни разу не заказывали (иначе бэк вернёт 400).
+// Первый клик просит подтверждения, второй удаляет
+const confirmDelete = ref(false);
+function deleteProduct() {
+    if (!confirmDelete.value) {
+        confirmDelete.value = true;
+        return;
     }
-
-    function onArchiveToggle(value) {
-        updateProduct({ closeOnSuccess: value === true });
-    }
-
-    // Полное удаление — только для товаров, которые ни разу не заказывали (иначе бэк вернёт 400).
-    // Первый клик просит подтверждения, второй удаляет
-    const confirmDelete = ref(false);
-    function deleteProduct() {
-        if (!confirmDelete.value) {
-            confirmDelete.value = true;
-            return;
-        }
-        confirmDelete.value = false;
-        loading.value = true;
-        $api(`/api/admin/product-article/${item.value.id}`, { method: 'DELETE' }).then(() => {
+    confirmDelete.value = false;
+    loading.value = true;
+    $api(`/api/admin/product-article/${item.value.id}`, { method: 'DELETE' })
+        .then(() => {
             loading.value = false;
             VsNotification({
                 title: 'Отлично!',
@@ -175,7 +182,8 @@
             });
             emit('update:visible', false);
             emit('updateProduct');
-        }).catch(({ response }) => {
+        })
+        .catch(({ response }) => {
             loading.value = false;
             VsNotification({
                 title: 'Ошибка!',
@@ -184,23 +192,24 @@
                 border: 'danger',
             });
         });
-    }
+}
 
-    function deleteImage(productFileId) {
-        $api(`/api/admin/product-article/images/${productFileId}`, { method: 'DELETE' }).then(() => {
-            loading.value = false;
-            VsNotification({
-                title: 'Отлично!',
-                content: 'Изображение было удалено',
-                position: 'bottom-center',
-                border: 'success',
-            });
-            getProduct();
+function deleteImage(productFileId) {
+    $api(`/api/admin/product-article/images/${productFileId}`, { method: 'DELETE' }).then(() => {
+        loading.value = false;
+        VsNotification({
+            title: 'Отлично!',
+            content: 'Изображение было удалено',
+            position: 'bottom-center',
+            border: 'success',
         });
-    }
+        getProduct();
+    });
+}
 
-    function changeLogo(productFileId) {
-        $api(`/api/admin/product-article/images/${productFileId}/logo`, { method: 'PATCH' }).then(() => {
+function changeLogo(productFileId) {
+    $api(`/api/admin/product-article/images/${productFileId}/logo`, { method: 'PATCH' }).then(
+        () => {
             loading.value = false;
             getProduct();
             VsNotification({
@@ -209,48 +218,52 @@
                 position: 'bottom-center',
                 border: 'success',
             });
-        });
-    }
+        },
+    );
+}
 
-    function bindSubcategory(id) {
-        $api(`/api/admin/product-article/${item.value.id}`, { method: 'PATCH', body: {
+function bindSubcategory(id) {
+    $api(`/api/admin/product-article/${item.value.id}`, {
+        method: 'PATCH',
+        body: {
             productSubcategoryId: id,
-        } }).then(() => {
-            loading.value = false;
-            VsNotification({
-                title: 'Отлично!',
-                content: 'Категория обновлена',
-                position: 'bottom-center',
-                border: 'success',
-            });
+        },
+    }).then(() => {
+        loading.value = false;
+        VsNotification({
+            title: 'Отлично!',
+            content: 'Категория обновлена',
+            position: 'bottom-center',
+            border: 'success',
         });
-    }
-
-    async function getProduct() {
-        await $api(`/api/admin/product-article/${item.value.id}`).then((res) => {
-            loading.value = false;
-            item.value = res;
-            category.value = item.value.productSubcategory?.productCategory.id;
-            subcategory.value = item.value.productSubcategory;
-            priceInput.value = kopecksToRublesInput(item.value.price);
-        });
-    }
-
-    const productFiles = computed(() => {
-        const files = item.value?.productFiles ?? [];
-        return [...files].sort(
-            (a, b) => Number(b.isLogo) - Number(a.isLogo) || a.id - b.id,
-        );
     });
+}
 
-    watch(() => props.visible, async (value) => {
-        if (!value)
-            return;
+async function getProduct() {
+    await $api(`/api/admin/product-article/${item.value.id}`).then((res) => {
+        loading.value = false;
+        item.value = res;
+        category.value = item.value.productSubcategory?.productCategory.id;
+        subcategory.value = item.value.productSubcategory;
+        priceInput.value = kopecksToRublesInput(item.value.price);
+    });
+}
+
+const productFiles = computed(() => {
+    const files = item.value?.productFiles ?? [];
+    return [...files].sort((a, b) => Number(b.isLogo) - Number(a.isLogo) || a.id - b.id);
+});
+
+watch(
+    () => props.visible,
+    async (value) => {
+        if (!value) return;
         confirmDelete.value = false;
         item.value = props.modelValue;
         priceInput.value = kopecksToRublesInput(item.value.price);
         getProduct();
-    });
+    },
+);
 </script>
 
 <template>
@@ -264,10 +277,7 @@
                 <v-toolbar-title>Изменить продукт</v-toolbar-title>
                 <v-spacer />
                 <v-toolbar-items>
-                    <v-btn
-                        icon="mdi-close"
-                        @click="emit('update:visible', false)"
-                    />
+                    <v-btn icon="mdi-close" @click="emit('update:visible', false)" />
                 </v-toolbar-items>
             </v-toolbar>
             <v-card-text>
@@ -311,7 +321,10 @@
                     item-title="name"
                     item-value="id"
                     :disabled="item.is_deleted"
-                    :items="categoriesStore.adminCategories.find(item => item.id === category)?.productSubcategories || []"
+                    :items="
+                        categoriesStore.adminCategories.find((item) => item.id === category)
+                            ?.productSubcategories || []
+                    "
                     @update:model-value="bindSubcategory"
                 />
                 <v-combobox
@@ -400,7 +413,9 @@
                     @update:model-value="updateImage"
                 />
                 <v-btn
-                    v-tooltip="'Только для товаров, которые ни разу не заказывали. Заказанный товар можно лишь отправить в архив'"
+                    v-tooltip="
+                        'Только для товаров, которые ни разу не заказывали. Заказанный товар можно лишь отправить в архив'
+                    "
                     class="mt-4"
                     color="red"
                     :variant="confirmDelete ? 'flat' : 'outlined'"
@@ -417,7 +432,7 @@
 
 <style scoped>
 .admin-images-carousel {
-    height: 200px
+    height: 200px;
 }
 
 .logo {

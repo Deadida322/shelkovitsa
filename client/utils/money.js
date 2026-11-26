@@ -27,7 +27,7 @@ export function rublesInputToKopecks(raw) {
         return Math.round(raw * 100);
     }
     const normalized = String(raw).trim().replace(/\s/g, '').replace(',', '.');
-    if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
+    if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) {
         throw new Error('Цена — число в рублях, не больше 2 знаков после запятой');
     }
     const [whole, frac = ''] = normalized.split('.');

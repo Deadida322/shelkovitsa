@@ -1,77 +1,57 @@
 <script setup>
-    import adminCategories from '@/components/admin/categories';
-    import adminOrders from '@/components/admin/orders';
-    import adminProducts from '@/components/admin/products';
+import adminCategories from '@/components/admin/categories';
+import adminOrders from '@/components/admin/orders';
+import adminProducts from '@/components/admin/products';
 
-    definePageMeta({
-        middleware: [
-            'auth',
-        ],
-    });
+definePageMeta({
+    middleware: ['auth'],
+});
 
-    const route = useRoute();
-    const router = useRouter();
-    const tabs = ['products', 'orders', 'categories'];
-    const tab = ref(
-        tabs.includes(route.query.tab) ? route.query.tab : 'products',
-    );
-    const componentsMap = {
-        products: adminProducts,
-        categories: adminCategories,
-        orders: adminOrders,
-    };
+const route = useRoute();
+const router = useRouter();
+const tabs = ['products', 'orders', 'categories'];
+const tab = ref(tabs.includes(route.query.tab) ? route.query.tab : 'products');
+const componentsMap = {
+    products: adminProducts,
+    categories: adminCategories,
+    orders: adminOrders,
+};
 
-    watch(tab, (value) => {
-        if (route.query.tab === value) {
-            return;
-        }
-        router.replace({
-            query: {
-                ...route.query,
-                tab: value === 'products' ? undefined : value,
-            },
-        });
-    });
-
-    watch(
-        () => route.query.tab,
-        (value) => {
-            const next = tabs.includes(value) ? value : 'products';
-            if (tab.value !== next) {
-                tab.value = next;
-            }
+watch(tab, (value) => {
+    if (route.query.tab === value) {
+        return;
+    }
+    router.replace({
+        query: {
+            ...route.query,
+            tab: value === 'products' ? undefined : value,
         },
-    );
+    });
+});
+
+watch(
+    () => route.query.tab,
+    (value) => {
+        const next = tabs.includes(value) ? value : 'products';
+        if (tab.value !== next) {
+            tab.value = next;
+        }
+    },
+);
 </script>
 
 <template>
     <div class="admin-page">
-        <h2 class="text-h6 mt-4">
-            Администрирование продуктов
-        </h2>
+        <h2 class="text-h6 mt-4">Администрирование продуктов</h2>
         <v-card class="v-card mt-4">
-            <v-tabs
-                v-model="tab"
-                align-tabs="start"
-                color="red-accent-4"
-            >
-                <v-tab value="products">
-                    Продукты
-                </v-tab>
-                <v-tab value="categories">
-                    Категории
-                </v-tab>
-                <v-tab value="orders">
-                    Заказы
-                </v-tab>
+            <v-tabs v-model="tab" align-tabs="start" color="red-accent-4">
+                <v-tab value="products">Продукты</v-tab>
+                <v-tab value="categories">Категории</v-tab>
+                <v-tab value="orders">Заказы</v-tab>
             </v-tabs>
             <v-card-text>
                 <v-tabs-window v-model="tab">
-                    <v-tabs-window-item
-                        v-for="n in tabs"
-                        :key="n"
-                        :value="n"
-                    >
+                    <v-tabs-window-item v-for="n in tabs" :key="n" :value="n">
                         <component :is="componentsMap[n]" />
                     </v-tabs-window-item>
                 </v-tabs-window>

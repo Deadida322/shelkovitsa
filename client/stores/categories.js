@@ -16,8 +16,7 @@ export const useCategoriesStore = defineStore('categories', () => {
             const res = await $api('/api/product-category');
             categories.value = Array.isArray(res) ? res : [];
             status.value = 'success';
-        }
-        catch (error) {
+        } catch (error) {
             categories.value = [];
             status.value = 'error';
             throw error;

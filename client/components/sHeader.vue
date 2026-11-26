@@ -1,38 +1,41 @@
 <script setup>
-    import { NuxtLink } from '#components';
-    import { useAuthStore, useFiltersStore } from '#imports';
-    import menu from '~/assets/js/menu';
-    import useBreakpoints from '~/composables/breakpoints';
+import { NuxtLink } from '#components';
+import { useAuthStore, useFiltersStore } from '#imports';
+import menu from '~/assets/js/menu';
+import useBreakpoints from '~/composables/breakpoints';
 
-    const authStore = useAuthStore();
-    const filtersStore = useFiltersStore();
-    const route = useRoute();
-    const active = ref(route.path);
-    const bp = useBreakpoints();
-    const mobileMenuVisible = ref(false);
+const authStore = useAuthStore();
+const filtersStore = useFiltersStore();
+const route = useRoute();
+const active = ref(route.path);
+const bp = useBreakpoints();
+const mobileMenuVisible = ref(false);
 
-    const router = useRouter();
+const router = useRouter();
 
-    watch(active, (val) => {
-        // «Каталог» всегда с сохранёнными фильтрами (возврат с карточки товара)
-        if (val === '/catalog') {
-            router.push({ path: '/catalog', query: filtersStore.toQuery() });
-            return;
-        }
-        router.push(val);
-    });
+watch(active, (val) => {
+    // «Каталог» всегда с сохранёнными фильтрами (возврат с карточки товара)
+    if (val === '/catalog') {
+        router.push({ path: '/catalog', query: filtersStore.toQuery() });
+        return;
+    }
+    router.push(val);
+});
 
-    watch(() => route.path, (val) => {
+watch(
+    () => route.path,
+    (val) => {
         active.value = val;
         mobileMenuVisible.value = false;
-    });
+    },
+);
 
-    function isMenuActive(to) {
-        if (to === '/catalog') {
-            return route.path.startsWith('/catalog');
-        }
-        return active.value === to;
+function isMenuActive(to) {
+    if (to === '/catalog') {
+        return route.path.startsWith('/catalog');
     }
+    return active.value === to;
+}
 </script>
 
 <template>
@@ -44,9 +47,7 @@
     >
         <template #left>
             <NuxtLink to="/">
-                <div class="logo">
-                    SHELKOVITSA
-                </div>
+                <div class="logo">SHELKOVITSA</div>
             </NuxtLink>
         </template>
         <vs-navbar-item
@@ -56,16 +57,12 @@
             class="d-none d-sm-flex"
             :active="isMenuActive(item.to)"
         >
-            <div>{{ item.title }} </div>
+            <div>{{ item.title }}</div>
         </vs-navbar-item>
         <template #right>
             <client-only>
                 <template v-if="authStore.user">
-                    <NuxtLink
-                        v-if="authStore.user.isAdmin"
-                        to="/admin"
-                        class="mr-2"
-                    >
+                    <NuxtLink v-if="authStore.user.isAdmin" to="/admin" class="mr-2">
                         <v-btn
                             variant="tonal"
                             size="small"
@@ -74,11 +71,7 @@
                         />
                     </NuxtLink>
                     <NuxtLink to="/deliver">
-                        <v-btn
-                            variant="tonal"
-                            size="small"
-                            icon="mdi-cart-outline"
-                        />
+                        <v-btn variant="tonal" size="small" icon="mdi-cart-outline" />
                     </NuxtLink>
                     <v-btn
                         class="ml-2 d-none d-sm-flex"
@@ -91,15 +84,11 @@
                 </template>
                 <template v-else-if="!authStore.loading">
                     <NuxtLink to="/signin">
-                        <vs-button class="d-none d-sm-block" type="flat">
-                            Войти
-                        </vs-button>
+                        <vs-button class="d-none d-sm-block" type="flat">Войти</vs-button>
                     </NuxtLink>
 
                     <NuxtLink to="/signup">
-                        <vs-button class="d-none d-sm-block">
-                            Регистрация
-                        </vs-button>
+                        <vs-button class="d-none d-sm-block">Регистрация</vs-button>
                     </NuxtLink>
                 </template>
             </client-only>
@@ -120,10 +109,10 @@
 </template>
 
 <style lang="scss">
-    .logo {
-        color: $primary;
-        font-size: 24px;
-        font-family: "Open Sans";
-        font-weight: 500
-    }
+.logo {
+    color: $primary;
+    font-size: 24px;
+    font-family: 'Open Sans';
+    font-weight: 500;
+}
 </style>

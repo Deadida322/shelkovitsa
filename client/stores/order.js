@@ -7,10 +7,9 @@ export const useOrderStore = defineStore('order', () => {
 
     const { $api } = useNuxtApp();
     const sendOrder = () => {
-        $api('/api/product-category')
-            .then((res) => {
-                categories.value = res;
-            });
+        $api('/api/product-category').then((res) => {
+            categories.value = res;
+        });
     };
     return {
         order,

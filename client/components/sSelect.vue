@@ -1,48 +1,48 @@
 <script setup>
-    import useVuelidate from '@vuelidate/core';
-    import { helpers, required as requiredFunc } from '@vuelidate/validators';
-    import useComponentValue from '~/composables/componentValue';
+import useVuelidate from '@vuelidate/core';
+import { helpers, required as requiredFunc } from '@vuelidate/validators';
+import useComponentValue from '~/composables/componentValue';
 
-    const props = defineProps({
-        modelValue: {
-            required: true,
-            default: '',
-            type: [String, Number],
-        },
-        options: {
-            type: Array,
-            default: () => [],
-        },
-        labelKey: {
-            type: String,
-            default: 'label',
-        },
-        valueKey: {
-            type: String,
-            default: 'id',
-        },
-        required: {
-            type: Boolean,
-            default: false,
-        },
-        customRules: {
-            type: Object,
-            default: () => {},
-        },
-    });
-    const emit = defineEmits(['update:model-value']);
-    const { modelValue, required, customRules } = toRefs(props);
-    const attrs = useAttrs();
+const props = defineProps({
+    modelValue: {
+        required: true,
+        default: '',
+        type: [String, Number],
+    },
+    options: {
+        type: Array,
+        default: () => [],
+    },
+    labelKey: {
+        type: String,
+        default: 'label',
+    },
+    valueKey: {
+        type: String,
+        default: 'id',
+    },
+    required: {
+        type: Boolean,
+        default: false,
+    },
+    customRules: {
+        type: Object,
+        default: () => {},
+    },
+});
+const emit = defineEmits(['update:model-value']);
+const { modelValue, required, customRules } = toRefs(props);
+const attrs = useAttrs();
 
-    const componentValue = useComponentValue({ modelValue, emit });
+const componentValue = useComponentValue({ modelValue, emit });
 
-    const rules = computed(() => ({
-        required: required.value ? helpers.withMessage('Укажите поле', requiredFunc) : true,
-        ...customRules.value,
-    }));
+const rules = computed(() => ({
+    required: required.value ? helpers.withMessage('Укажите поле', requiredFunc) : true,
+    ...customRules.value,
+}));
 
-    const $v = useVuelidate(rules, componentValue);
-    const computedErrors = computed(() => $v.value.$errors?.[0]?.$message);
+const $v = useVuelidate(rules, componentValue);
+const computedErrors = computed(() => $v.value.$errors?.[0]?.$message);
 </script>
 
 <template>
@@ -78,5 +78,8 @@
 </template>
 
 <style lang="scss" scoped>
-.fallback { width: 100%; height: 40px; }
+.fallback {
+    width: 100%;
+    height: 40px;
+}
 </style>

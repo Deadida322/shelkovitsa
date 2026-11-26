@@ -1,55 +1,45 @@
 <script setup>
-    import { useAuthStore } from '@/stores/auth';
-    import { VsNotification } from 'vuesax-alpha';
+import { useAuthStore } from '@/stores/auth';
+import { VsNotification } from 'vuesax-alpha';
 
-    const authStore = useAuthStore();
-    const user = ref({
-        mail: '',
-        password: '',
-    });
+const authStore = useAuthStore();
+const user = ref({
+    mail: '',
+    password: '',
+});
 
-    const isLoading = ref(false);
+const isLoading = ref(false);
 
-    async function onSubmit() {
-        isLoading.value = true;
-        await authStore.login(user.value).catch(({ response }) => {
-            VsNotification({
-                title: 'Ошибка!',
-                content: response?._data?.error?.message,
-                position: 'bottom-center',
-                border: 'danger',
-            });
+async function onSubmit() {
+    isLoading.value = true;
+    await authStore.login(user.value).catch(({ response }) => {
+        VsNotification({
+            title: 'Ошибка!',
+            content: response?._data?.error?.message,
+            position: 'bottom-center',
+            border: 'danger',
         });
-        isLoading.value = false;
-    }
+    });
+    isLoading.value = false;
+}
 </script>
 
 <template>
     <div class="login-page d-flex flex-column align-center">
-        <div class="login-page__header text-h6 text-center mb-12">
-            Авторизация
-        </div>
+        <div class="login-page__header text-h6 text-center mb-12">Авторизация</div>
 
         <vs-alert color="#1A5CFF">
             <template #icon>
-                <v-icon size="40">
-                    mdi-information
-                </v-icon>
+                <v-icon size="40">mdi-information</v-icon>
             </template>
             Вы можете
-            <nuxt-link to="/signin">
-                войти в аккаунт
-            </nuxt-link>
+            <nuxt-link to="/signin">войти в аккаунт</nuxt-link>
             или
-            <nuxt-link to="/signup">
-                зарегистрировать его
-            </nuxt-link>,
-            чтобы получить дополнительные возможности, а также восстановить пароль
+            <nuxt-link to="/signup">зарегистрировать его</nuxt-link>
+            , чтобы получить дополнительные возможности, а также восстановить пароль
         </vs-alert>
         <div class="auth-card">
-            <div class="text-center text-h6 mb-4">
-                Войти в аккаунт
-            </div>
+            <div class="text-center text-h6 mb-4">Войти в аккаунт</div>
             <s-form :loading="isLoading" @submit="onSubmit">
                 <div class="auth-card__form">
                     <s-input
@@ -71,9 +61,7 @@
                 </div>
                 <template #actions-prepend>
                     <div class="actions__links">
-                        <nuxt-link to="/signup">
-                            Ещё нет аккаунта?
-                        </nuxt-link>
+                        <nuxt-link to="/signup">Ещё нет аккаунта?</nuxt-link>
                     </div>
                 </template>
             </s-form>

@@ -69,9 +69,9 @@ TEST_STORAGE_DRIVER=s3 npm run test:e2e   # e2e на S3 (RustFS из docker-comp
 npm run test:bruno -- --env-var baseUrl=http://localhost:8000     # Bruno API-коллекция на запущенном приложении
 ```
 
-Стиль бэкенда: `.prettierrc` + `eslint-plugin-prettier` (форматирование только через Prettier).
-GitHub Actions ([`backend.yml`](.github/workflows/backend.yml)) на PR в `server/` или `tests/`:
-lint, unit, сборка, e2e (диск + S3), Bruno на засеянном приложении.
+Стиль: Prettier + `eslint-plugin-prettier` — бэкенд (`server/.prettierrc`, табы) и фронт
+(`client/.prettierrc`, 4 пробела). CI: [`backend.yml`](.github/workflows/backend.yml) на
+`server/`/`tests/`; [`frontend.yml`](.github/workflows/frontend.yml) — `lint:ci` + unit на `client/`.
 
 ## Деплой
 

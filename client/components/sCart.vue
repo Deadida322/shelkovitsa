@@ -1,39 +1,39 @@
 <script setup>
-    import { useCartStore, useFiltersStore, useMappingStore } from '#imports';
-    import { formatRub } from '~/utils/money';
+import { useCartStore, useFiltersStore, useMappingStore } from '#imports';
+import { formatRub } from '~/utils/money';
 
-    const cartStore = useCartStore();
-    const filtersStore = useFiltersStore();
-    const mapps = useMappingStore();
-    const opened = ref(false);
-    const config = useRuntimeConfig();
-    const base = config.public.apiBase;
-    const toggle = () => opened.value = !opened.value;
+const cartStore = useCartStore();
+const filtersStore = useFiltersStore();
+const mapps = useMappingStore();
+const opened = ref(false);
+const config = useRuntimeConfig();
+const base = config.public.apiBase;
+const toggle = () => (opened.value = !opened.value);
 
-    function onDelete(index) {
-        if (cartStore.cart[index].amount === 0) {
-            cartStore.cart.splice(index, 1);
-        }
+function onDelete(index) {
+    if (cartStore.cart[index].amount === 0) {
+        cartStore.cart.splice(index, 1);
     }
+}
 
-    function handleImageError(event) {
-        console.error('Ошибка загрузки изображения в корзине:', event.target.src);
-    }
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения в корзине:', event.target.src);
+}
 
-    function goToCheckout() {
-        if (!cartStore.cart.length) {
-            return;
-        }
-        navigateTo('/deliver');
-        opened.value = false;
+function goToCheckout() {
+    if (!cartStore.cart.length) {
+        return;
     }
+    navigateTo('/deliver');
+    opened.value = false;
+}
 
-    function clearCart() {
-        if (!cartStore.cart.length) {
-            return;
-        }
-        cartStore.clearCart();
+function clearCart() {
+    if (!cartStore.cart.length) {
+        return;
     }
+    cartStore.clearCart();
+}
 </script>
 
 <template>
@@ -48,18 +48,10 @@
                 <v-icon>mdi-cart-outline</v-icon>
             </v-badge>
             <div class="header__text">
-                <div class="header__title">
-                    ВАША КОРЗИНА
-                </div>
-                <div
-                    class="header__icon aling-self-end"
-                >
-                    <v-icon v-if="opened">
-                        mdi-chevron-down
-                    </v-icon>
-                    <v-icon v-else>
-                        mdi-chevron-up
-                    </v-icon>
+                <div class="header__title">ВАША КОРЗИНА</div>
+                <div class="header__icon aling-self-end">
+                    <v-icon v-if="opened">mdi-chevron-down</v-icon>
+                    <v-icon v-else>mdi-chevron-up</v-icon>
                 </div>
             </div>
         </div>
@@ -90,7 +82,8 @@
                             {{ item.name }}
                         </div>
                         <div class="cart-item__subtitle">
-                            {{ mapps.colors[item.productColorId] }} / {{ mapps.sizes[item.productSizeId] }}
+                            {{ mapps.colors[item.productColorId] }} /
+                            {{ mapps.sizes[item.productSizeId] }}
                         </div>
                     </div>
                     <div class="cart-item__actions text-center">
@@ -109,126 +102,114 @@
             </template>
             <template v-else>
                 Добавьте
-                <nuxt-link
-                    class="link"
-                    :to="{ path: '/catalog', query: filtersStore.toQuery() }"
-                >
+                <nuxt-link class="link" :to="{ path: '/catalog', query: filtersStore.toQuery() }">
                     товары
-                </nuxt-link> в корзину
+                </nuxt-link>
+                в корзину
             </template>
         </div>
         <div class="s-cart__actions d-flex justify-end pt-4">
-            <vs-button
-                type="flat"
-                :disabled="!cartStore.cart.length"
-                @click="clearCart"
-            >
+            <vs-button type="flat" :disabled="!cartStore.cart.length" @click="clearCart">
                 Очистить
             </vs-button>
-            <vs-button
-                :disabled="!cartStore.cart.length"
-                @click="goToCheckout"
-            >
-                Заказать
-            </vs-button>
+            <vs-button :disabled="!cartStore.cart.length" @click="goToCheckout">Заказать</vs-button>
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
-    .link {
-        color: $primary;
-    }
+.link {
+    color: $primary;
+}
 
-    .s-cart {
-        display: flex;
-        position: fixed;
-        z-index: 1000;
-        bottom: 0;
-        right: 20px;
+.s-cart {
+    display: flex;
+    position: fixed;
+    z-index: 1000;
+    bottom: 0;
+    right: 20px;
+    width: 400px;
+    box-shadow: 0px 0px 6px 0px rgba(34, 60, 80, 0.2);
+    background-color: white;
+    border-radius: 12px 12px 0px 0;
+    padding: 20px;
+    flex-direction: column;
+    transition: 0.3s all ease-in;
+    transform: translateY(calc(100% - 60px));
+
+    @media screen and (max-width: 1200px) {
         width: 400px;
-        box-shadow: 0px 0px 6px 0px rgba(34, 60, 80, 0.2);
-        background-color: white;
-        border-radius: 12px 12px 0px 0;
-        padding: 20px;
-        flex-direction: column;
-        transition: .3s all ease-in;
-        transform: translateY(calc(100% - 60px));
-
-        @media screen and (max-width: 1200px) {
-            width: 400px;
-        }
-
-        @media screen and (max-width: 800px) {
-            padding: 14px 12px;
-            transform: translateY(calc(100% - 56px));
-            right: 0;
-            left: 0;
-            width: auto;
-        }
-
-        &_opened {
-            transform: translate(0);
-        }
-
-        &__item {
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-        }
-
-        &__body {
-            padding-top: 20px;
-            max-height: 300px;
-            overflow-y: auto
-        }
     }
 
-    .header {
+    @media screen and (max-width: 800px) {
+        padding: 14px 12px;
+        transform: translateY(calc(100% - 56px));
+        right: 0;
+        left: 0;
+        width: auto;
+    }
+
+    &_opened {
+        transform: translate(0);
+    }
+
+    &__item {
+        margin-bottom: 20px;
         display: flex;
-        gap: 20px;
+        justify-content: flex-start;
+        align-items: center;
+    }
+
+    &__body {
+        padding-top: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+}
+
+.header {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    cursor: pointer;
+
+    &__text {
+        display: flex;
         width: 100%;
-        cursor: pointer;
+        justify-content: space-between;
+    }
+}
 
-        &__text {
-            display: flex;
-            width: 100%;
-            justify-content: space-between;
-        }
+.cart-item {
+    gap: 12px;
 
+    &__image {
+        border-radius: 8px;
     }
 
-    .cart-item {
-        gap: 12px;
-
-        &__image {
-            border-radius: 8px;
-        }
-
-        &__subtitle {
-            margin-top: 4px;
-            color: #6C5151;
-            font-size: 10px;
-        }
-
-        &__text {
-            width: 100%;
-        }
-
-        &__count {
-            display: flex;
-            gap: 4px;
-        }
-
-        &__price {
-            span {
-                color: $primary;
-            }
-        }
+    &__subtitle {
+        margin-top: 4px;
+        color: #6c5151;
+        font-size: 10px;
     }
 
-    ::v-deep(.count__input) {
-        width: 40px !important;
+    &__text {
+        width: 100%;
     }
+
+    &__count {
+        display: flex;
+        gap: 4px;
+    }
+
+    &__price {
+        span {
+            color: $primary;
+        }
+    }
+}
+
+::v-deep(.count__input) {
+    width: 40px !important;
+}
 </style>

@@ -1,25 +1,25 @@
 <script setup>
-    const props = defineProps({
-        modelValue: {
-            type: Number,
-            default: 1,
-        },
-        label: {
-            type: String,
-            default: '',
-        },
-        max: {
-            type: Number,
-            default: 1000,
-        },
-    });
+const props = defineProps({
+    modelValue: {
+        type: Number,
+        default: 1,
+    },
+    label: {
+        type: String,
+        default: '',
+    },
+    max: {
+        type: Number,
+        default: 1000,
+    },
+});
 
-    const emit = defineEmits(['update:model-value']);
+const emit = defineEmits(['update:model-value']);
 
-    const count = computed({
-        get: () => props.modelValue,
-        set: val => emit('update:model-value', val > props.max ? props.max : val),
-    });
+const count = computed({
+    get: () => props.modelValue,
+    set: (val) => emit('update:model-value', val > props.max ? props.max : val),
+});
 </script>
 
 <template>
@@ -32,7 +32,7 @@
                 size="small"
                 class="s-count-input__less"
                 :disabled="count <= 1"
-                @click="count ? count -= 1 : void 0"
+                @click="count ? (count -= 1) : void 0"
             >
                 -
             </vs-button>
@@ -46,7 +46,7 @@
             <vs-button
                 size="small"
                 class="s-count-input__more"
-                @click="count < max ? count += 1 : void 0"
+                @click="count < max ? (count += 1) : void 0"
             >
                 +
             </vs-button>
@@ -82,7 +82,6 @@
         right: 0;
         transform: translateX(35%);
     }
-
 }
 
 .s-count {

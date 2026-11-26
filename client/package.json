@@ -11,12 +11,15 @@
         "generate": "nuxt generate",
         "preview": "nuxt preview",
         "postinstall": "nuxt prepare",
+        "format": "prettier --write \"**/*.{js,mjs,cjs,ts,vue,json}\" --ignore-path .prettierignore",
+        "format:check": "prettier --check \"**/*.{js,mjs,cjs,ts,vue,json}\" --ignore-path .prettierignore",
+        "lint": "eslint . --fix",
+        "lint:check": "eslint .",
+        "lint:ci": "npm run format:check && npm run lint:check",
         "test": "vitest run",
         "test:watch": "vitest"
     },
     "dependencies": {
-        "@antfu/eslint-config": "^3.8.0",
-        "@nuxt/eslint": "^0.6.2",
         "@nuxt/image": "^1.11.0",
         "@nuxtjs/google-fonts": "^3.2.0",
         "@pinia/nuxt": "^0.5.5",
@@ -38,7 +41,12 @@
         "vuetify-nuxt-module": "^0.16.1"
     },
     "devDependencies": {
+        "@antfu/eslint-config": "^3.8.0",
+        "@nuxt/eslint": "^0.6.2",
         "eslint": "^9.27.0",
+        "eslint-config-prettier": "^9.1.2",
+        "eslint-plugin-prettier": "^5.5.7",
+        "prettier": "^3.10.1",
         "sass": "^1.77.8",
         "typescript": "^5.6.3",
         "vitest": "^3.2.7"

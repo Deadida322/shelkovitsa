@@ -1,15 +1,25 @@
 {
     "nuxt.isNuxtApp": false,
-    "eslint.format.enable": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
-        "source.fixAll": "explicit",
-        "source.fixAll.eslint": "explicit",
-        "source.fixAll.stylelint": "explicit"
+        "source.fixAll.eslint": "explicit"
     },
+    "eslint.validate": ["javascript", "typescript", "vue"],
+    "prettier.requireConfig": true,
     "css.validate": false,
     "less.validate": false,
     "scss.validate": false,
     "vue.validate": false,
     "stylelint.config": null,
-    "stylelint.validate": ["css", "scss", "vue"]
+    "stylelint.validate": ["css", "scss", "vue"],
+    "[vue]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    }
 }

@@ -18,8 +18,7 @@ function submit() {
     $v.value.$touch();
     if (!$v.value.$invalid) {
         emit('submit');
-    }
-    else {
+    } else {
         VsNotification({
             title: 'Ошибка!',
             content: 'Проверьте корректность заполнения формы',
@@ -48,10 +47,10 @@ function submit() {
 </template>
 
 <style lang="scss" scoped>
-    .form {
-        &__actions {
-            display: flex;
-            justify-content: space-between;
-        }
+.form {
+    &__actions {
+        display: flex;
+        justify-content: space-between;
     }
+}
 </style>
