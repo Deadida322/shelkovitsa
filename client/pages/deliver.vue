@@ -1,5 +1,5 @@
 <script setup>
-    import { useCartStore, useMappingStore, useOrderStore } from '#imports';
+    import { useCartStore, useFiltersStore, useMappingStore, useOrderStore } from '#imports';
     import { VsNotification } from 'vuesax-alpha';
 
     const config = useRuntimeConfig();
@@ -12,7 +12,12 @@
 
     const orderStore = useOrderStore();
     const cartStore = useCartStore();
+    const filtersStore = useFiltersStore();
     const mappingStore = useMappingStore();
+
+    function goToCatalog() {
+        navigateTo({ path: '/catalog', query: filtersStore.toQuery() });
+    }
 
     function onCountDown(count, index) {
         if (!count)
@@ -151,7 +156,7 @@
             <div
                 v-else
                 class="link"
-                @click="navigateTo('/catalog')"
+                @click="goToCatalog"
             >
                 <vs-alert
                     class="mt-4 alert"
@@ -163,7 +168,7 @@
                         </v-icon>
                     </template>
                     В вашей корзине нет товаров
-                    <nuxt-link to="/catalog">
+                    <nuxt-link :to="{ path: '/catalog', query: filtersStore.toQuery() }">
                         перейти в каталог
                     </nuxt-link>
                 </vs-alert>

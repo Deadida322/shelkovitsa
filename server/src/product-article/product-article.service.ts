@@ -45,9 +45,12 @@ import { GetProductArticleListDto, ProductSort } from './dto/GetProductArticleLi
 import { UpdateProductArticleDto } from './dto/UpdateProductArticleDto';
 import { baseProductWhere } from './product-article.types';
 
-// Порядок списка; id всегда в конце, чтобы страницы не «плавали» при равной цене
-const LIST_ORDERS: Record<ProductSort, FindOptionsOrder<ProductArticle>> = {
-	default: { id: 'ASC' },
+// Порядок списка; id всегда в конце, чтобы страницы не «плавали» при равной цене.
+// default (= популярность) обрабатывается отдельно в getList.
+const LIST_ORDERS: Record<
+	Exclude<ProductSort, 'default'>,
+	FindOptionsOrder<ProductArticle>
+> = {
 	new: { id: 'DESC' },
 	priceAsc: { price: 'ASC', id: 'ASC' },
 	priceDesc: { price: 'DESC', id: 'ASC' }
@@ -127,11 +130,12 @@ export class ProductArticleService {
 			};
 		}
 
-		if (payload.minPrice && payload.maxPrice) {
+		// 0 — валидная цена; нельзя писать `if (minPrice)`, иначе 0 отбрасывается
+		if (payload.minPrice != null && payload.maxPrice != null) {
 			where.price = Between(payload.minPrice, payload.maxPrice);
-		} else if (payload.minPrice) {
+		} else if (payload.minPrice != null) {
 			where.price = MoreThanOrEqual(payload.minPrice);
-		} else if (payload.maxPrice) {
+		} else if (payload.maxPrice != null) {
 			where.price = LessThanOrEqual(payload.maxPrice);
 		}
 
@@ -163,14 +167,45 @@ export class ProductArticleService {
 				}))
 			: where;
 
-		const [result, total] = await this.productArticleRepository.findAndCount({
-			...getPaginateWhere(payload),
-			where: whereWithSearch,
-			// в админке нужны и архивные артикулы
-			withDeleted: isAdmin,
-			relations: { productFiles: true },
-			order: LIST_ORDERS[payload.sort ?? 'default']
-		});
+		const sort = payload.sort ?? 'default';
+		const { take, skip } = getPaginateWhere(payload);
+
+		let result: ProductArticle[];
+		let total: number;
+
+		if (sort === 'default') {
+			// По популярности: заказы за месяц desc, без заказов — в конец по id
+			const matched = await this.productArticleRepository.find({
+				where: whereWithSearch,
+				select: ['id'],
+				withDeleted: isAdmin
+			});
+			total = matched.length;
+			const ids = matched.map((row) => row.id);
+			const pageIds = ids.length
+				? await this.orderIdsByPopularity(ids, skip, take)
+				: [];
+			const rows = pageIds.length
+				? await this.productArticleRepository.find({
+						where: { id: In(pageIds) },
+						withDeleted: isAdmin,
+						relations: { productFiles: true }
+					})
+				: [];
+			const byId = new Map(rows.map((row) => [row.id, row]));
+			result = pageIds
+				.map((id) => byId.get(id))
+				.filter((row): row is ProductArticle => row != null);
+		} else {
+			[result, total] = await this.productArticleRepository.findAndCount({
+				take,
+				skip,
+				where: whereWithSearch,
+				withDeleted: isAdmin,
+				relations: { productFiles: true },
+				order: LIST_ORDERS[sort]
+			});
+		}
 
 		const amounts = isAdmin
 			? await this.totalAmounts(result.map((el) => el.id))
@@ -188,6 +223,39 @@ export class ProductArticleService {
 				page: payload.page
 			}
 		);
+	}
+
+	/** id артикулов: сначала с заказами за месяц (desc), затем остальные по id */
+	private async orderIdsByPopularity(
+		ids: number[],
+		skip: number,
+		take: number
+	): Promise<number[]> {
+		if (!ids.length) {
+			return [];
+		}
+		const since = moment().subtract(1, 'months').toDate();
+		const popular: { id: number; orderCount: string }[] =
+			await this.productArticleRepository
+				.createQueryBuilder('product_article')
+				.innerJoin('product_article.products', 'product')
+				.innerJoin('product.orderProducts', 'orderProduct')
+				.innerJoin('orderProduct.order', 'order')
+				.where('product_article.id IN (:...ids)', { ids })
+				.andWhere('order.created_at > :since', { since })
+				.groupBy('product_article.id')
+				.select('product_article.id', 'id')
+				.addSelect('count(order.id)', 'orderCount')
+				.orderBy('count(order.id)', 'DESC')
+				.addOrderBy('product_article.id', 'ASC')
+				.getRawMany();
+
+		const popularIds = popular.map((row) => Number(row.id));
+		const popularSet = new Set(popularIds);
+		const rest = ids
+			.filter((id) => !popularSet.has(id))
+			.sort((a, b) => a - b);
+		return [...popularIds, ...rest].slice(skip, skip + take);
 	}
 
 	/**
@@ -258,11 +326,21 @@ export class ProductArticleService {
 
 	/**
 	 * Значения для панели фильтров: бренды и размеры в наличии с количеством артикулов,
-	 * диапазон цен. Область — категория/подкатегория/поиск; публично — только
-	 * опубликованные артикулы, в админке — все живые (не в архиве).
+	 * диапазон цен. Счётчики учитывают пересечение выбранных фильтров; для каждого
+	 * типа свой фильтр не применяется (иначе нельзя было бы переключить бренд/размер).
+	 * Публично — только опубликованные, в админке — все живые (не в архиве).
 	 */
 	async getFilters(payload: GetProductArticleFiltersDto, isAdmin: boolean) {
-		const scoped = (qb: SelectQueryBuilder<ProductArticle>, alias = 'a') => {
+		type OmitFacet = 'brand' | 'size' | 'price';
+		const inStockSql = (alias: string, extra = '') =>
+			`EXISTS (SELECT 1 FROM product p WHERE p."productArticleId" = ${alias}.id ` +
+			`AND p.deleted_at IS NULL AND p.amount > 0 ${extra})`;
+
+		const scoped = (
+			qb: SelectQueryBuilder<ProductArticle>,
+			omit?: OmitFacet,
+			alias = 'a'
+		) => {
 			if (!isAdmin) qb.andWhere(`${alias}.isVisible = true`);
 			if (payload.subcategoryId || payload.categoryId) {
 				qb.innerJoin(`${alias}.productSubcategory`, 'sub').innerJoin(
@@ -291,11 +369,38 @@ export class ProductArticleService {
 					{ search: `%${escapeLike(query)}%` }
 				);
 			}
+			// бренд не сужает список брендов — иначе выбранный бренд «запирает» остальные
+			if (omit !== 'brand' && payload.brand?.length) {
+				qb.andWhere(`LOWER(${alias}.brand) IN (:...brandNames)`, {
+					brandNames: payload.brand.map((b) => b.trim().toLowerCase())
+				});
+			}
+			if (omit !== 'size' && payload.productSizeId?.length) {
+				qb.andWhere(inStockSql(alias, 'AND p."productSizeId" IN (:...sizeIds)'), {
+					sizeIds: payload.productSizeId
+				});
+			}
+			if (omit !== 'price') {
+				if (payload.minPrice != null) {
+					qb.andWhere(`${alias}.price >= :minPrice`, {
+						minPrice: payload.minPrice
+					});
+				}
+				if (payload.maxPrice != null) {
+					qb.andWhere(`${alias}.price <= :maxPrice`, {
+						maxPrice: payload.maxPrice
+					});
+				}
+			}
+			if (payload.inStock) {
+				qb.andWhere(inStockSql(alias));
+			}
 			return qb;
 		};
 
 		const brands: { name: string; count: string }[] = await scoped(
-			this.productArticleRepository.createQueryBuilder('a')
+			this.productArticleRepository.createQueryBuilder('a'),
+			'brand'
 		)
 			.andWhere('a.brand IS NOT NULL')
 			.select('a.brand', 'name')
@@ -308,7 +413,8 @@ export class ProductArticleService {
 			this.productArticleRepository
 				.createQueryBuilder('a')
 				.innerJoin('a.products', 'p', 'p.amount > 0 AND p.deleted_at IS NULL')
-				.innerJoin('p.productSize', 'size')
+				.innerJoin('p.productSize', 'size'),
+			'size'
 		)
 			.select('size.id', 'id')
 			.addSelect('size.name', 'name')
@@ -318,7 +424,7 @@ export class ProductArticleService {
 			.getRawMany();
 
 		const price: { min: string | null; max: string | null } | undefined =
-			await scoped(this.productArticleRepository.createQueryBuilder('a'))
+			await scoped(this.productArticleRepository.createQueryBuilder('a'), 'price')
 				.select('MIN(a.price)', 'min')
 				.addSelect('MAX(a.price)', 'max')
 				.getRawOne();

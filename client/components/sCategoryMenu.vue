@@ -11,8 +11,9 @@
         }
     });
     async function navigate(item, nest) {
-        filtersStore.filters = { category: item.id, subcategory: nest.id };
-        await navigateTo({ path: '/catalog', query: { ...filtersStore.filters } });
+        // новая категория сбрасывает бренд/размер/цену; поиск и сортировку тоже
+        filtersStore.setCategory(item.id, nest.id);
+        await navigateTo({ path: '/catalog', query: filtersStore.toQuery() });
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 

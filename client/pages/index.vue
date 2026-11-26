@@ -1,8 +1,10 @@
 <script setup>
+    import { useFiltersStore } from '#imports';
     import advantages from '~/assets/js/advantages';
     import SImage from '~/components/sImage.vue';
 
     const { $api } = useNuxtApp();
+    const filtersStore = useFiltersStore();
     const isLoading = ref(false);
     const populateItems = ref([]);
 
@@ -118,7 +120,7 @@
         <div class="d-flex justify-center mt-4 mb-4">
             <vs-button
                 type="flat"
-                @click="navigateTo('catalog')"
+                @click="navigateTo({ path: '/catalog', query: filtersStore.toQuery() })"
             >
                 Перейти в каталог
             </vs-button>
@@ -129,6 +131,11 @@
 <style scoped lang="scss">
     .skeleton {
         flex: 1;
+        @media screen and (max-width: 768px) {
+            width: 100%;
+            max-width: 100%;
+            flex: none;
+        }
     }
     .s-shop-carousel {
         margin-top: 40px;
@@ -136,13 +143,30 @@
         gap: 20px;
         @media screen and (max-width: 768px) {
             flex-direction: column;
+            align-items: stretch;
+            width: 100%;
         }
 
         &__item {
             @media screen and (max-width: 768px) {
-                max-width: none;
+                width: 100%;
+                max-width: 100%;
             }
 
+            :deep(.vs-card),
+            :deep(.vs-card-content) {
+                @media screen and (max-width: 768px) {
+                    width: 100%;
+                    max-width: 100%;
+                }
+            }
+
+            :deep(.vs-card__img img) {
+                @media screen and (max-width: 768px) {
+                    width: 100%;
+                    max-width: 100%;
+                }
+            }
         }
     }
 
