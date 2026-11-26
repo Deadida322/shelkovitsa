@@ -54,15 +54,6 @@ function updateStatus(status, orderId) {
         });
 }
 
-const statusesMap = {
-    create: 'Создано',
-    in_work: 'В работе',
-    payment: 'Оплата',
-    delivery: 'В доставке',
-    close: 'Завершено',
-    cancelled: 'Отменён',
-};
-
 const statuses = [
     {
         title: 'Создано',

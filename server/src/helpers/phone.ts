@@ -2,9 +2,9 @@
  * Нормализация российского телефона к E.164 (+7XXXXXXXXXX).
  * Принимает маску «+7 (999) 123-45-67», 8…, 7…, 10 цифр.
  */
-export function normalizeRuPhone(raw: unknown): string {
+export function normalizeRuPhone(raw: unknown): string | null | undefined {
 	if (raw === null || raw === undefined) {
-		return raw as string;
+		return raw;
 	}
 	const s = String(raw).trim();
 	if (!s) {
