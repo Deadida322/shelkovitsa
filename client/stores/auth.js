@@ -17,8 +17,7 @@ export const useAuthStore = defineStore('auth', () => {
             user.value = { ...res };
             if (res.isAdmin) {
                 navigateTo({ path: '/admin' });
-            }
-            else {
+            } else {
                 navigateTo({ path: '/deliver' });
                 useCartStore().mergeCartWithBackend();
             }
@@ -28,11 +27,13 @@ export const useAuthStore = defineStore('auth', () => {
     // Кука user — только подсказка для UI; актуальные данные и права берём с сервера
     const getMe = async () => {
         if (user.value && user.value.fio) {
-            await api('/api/auth/me').then((res) => {
-                user.value = { ...res };
-            }).catch(() => {
-                user.value = null;
-            });
+            await api('/api/auth/me')
+                .then((res) => {
+                    user.value = { ...res };
+                })
+                .catch(() => {
+                    user.value = null;
+                });
         }
     };
     const clearUser = () => {

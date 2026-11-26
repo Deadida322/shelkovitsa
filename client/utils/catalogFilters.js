@@ -1,6 +1,6 @@
 const SORT_IDS = new Set(['default', 'new', 'priceAsc', 'priceDesc']);
 
-export const toArray = value => (value == null ? [] : Array.isArray(value) ? value : [value]);
+export const toArray = (value) => (value == null ? [] : Array.isArray(value) ? value : [value]);
 
 export function toInt(value) {
     const number = Number.parseInt(value, 10);
@@ -55,7 +55,9 @@ export function filtersToQuery(filters) {
         page,
     } = filters;
     return {
-        ...(category && subcategory ? { category: String(category), subcategory: String(subcategory) } : null),
+        ...(category && subcategory
+            ? { category: String(category), subcategory: String(subcategory) }
+            : null),
         ...(search.trim() ? { q: search.trim() } : null),
         ...(brands.length ? { brand: brands } : null),
         ...(sizes.length ? { size: sizes.map(String) } : null),

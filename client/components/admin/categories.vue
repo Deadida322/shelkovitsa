@@ -1,33 +1,41 @@
 <script setup>
-    const { $api } = useNuxtApp();
-    const editableCategory = ref({});
-    const editableSubCategory = ref({});
-    const categoriesStore = useCategoriesStore();
-    const { getAdminCategories } = categoriesStore;
-    const { adminCategories: categories } = storeToRefs(categoriesStore);
-    getAdminCategories();
+const { $api } = useNuxtApp();
+const editableCategory = ref({});
+const editableSubCategory = ref({});
+const categoriesStore = useCategoriesStore();
+const { getAdminCategories } = categoriesStore;
+const { adminCategories: categories } = storeToRefs(categoriesStore);
+getAdminCategories();
 
-    const choosen = ref(0);
-    const onSubSave = ref(() => {
-        const { categoryId, name } = editableSubCategory.value;
-        $api(`/api/admin/product-category/${categoryId}/subcategories`, { method: 'POST', body: { name } }).then(() => {
-            editableSubCategory.value = {};
-            getAdminCategories();
-        });
+const choosen = ref(0);
+const onSubSave = ref(() => {
+    const { categoryId, name } = editableSubCategory.value;
+    $api(`/api/admin/product-category/${categoryId}/subcategories`, {
+        method: 'POST',
+        body: { name },
+    }).then(() => {
+        editableSubCategory.value = {};
+        getAdminCategories();
     });
+});
 
-    function onSave() {
-        $api('/api/admin/product-category', { method: 'POST', body: { name: editableCategory.value.name } }).then(() => {
+function onSave() {
+    $api('/api/admin/product-category', {
+        method: 'POST',
+        body: { name: editableCategory.value.name },
+    }).then(() => {
+        editableCategory.value = {};
+        getAdminCategories();
+    });
+}
+
+function onDeleteSubCategory(id) {
+    $api(`/api/admin/product-subcategory/${id}`, { method: 'DELETE' })
+        .then(() => {
             editableCategory.value = {};
             getAdminCategories();
-        });
-    }
-
-    function onDeleteSubCategory(id) {
-        $api(`/api/admin/product-subcategory/${id}`, { method: 'DELETE' }).then(() => {
-            editableCategory.value = {};
-            getAdminCategories();
-        }).catch(({ response }) => {
+        })
+        .catch(({ response }) => {
             VsNotification({
                 title: 'Ошибка!',
                 content: response?._data?.error?.message,
@@ -35,12 +43,14 @@
                 border: 'danger',
             });
         });
-    }
-    function onDeleteCategory(id) {
-        $api(`/api/admin/product-category/${id}`, { method: 'DELETE' }).then(() => {
+}
+function onDeleteCategory(id) {
+    $api(`/api/admin/product-category/${id}`, { method: 'DELETE' })
+        .then(() => {
             editableCategory.value = {};
             getAdminCategories();
-        }).catch(({ response }) => {
+        })
+        .catch(({ response }) => {
             VsNotification({
                 title: 'Ошибка!',
                 content: response?._data?.error?.message,
@@ -48,11 +58,11 @@
                 border: 'danger',
             });
         });
-    }
-    function onSubAdd(category) {
-        editableSubCategory.value.categoryId = category.id;
-        editableSubCategory.value.name = '';
-    }
+}
+function onSubAdd(category) {
+    editableSubCategory.value.categoryId = category.id;
+    editableSubCategory.value.name = '';
+}
 </script>
 
 <template>
@@ -109,11 +119,7 @@
                             </s-validation>
                         </template>
                         <template v-else>
-                            <v-btn
-                                prepend-icon="mdi-plus"
-                                color="red"
-                                @click="onSubAdd(category)"
-                            >
+                            <v-btn prepend-icon="mdi-plus" color="red" @click="onSubAdd(category)">
                                 Подкатегория
                             </v-btn>
                         </template>
@@ -135,11 +141,7 @@
         </v-expansion-panels>
         <div class="mt-4 d-flex justify-center">
             <template v-if="editableCategory.isAdd">
-                <s-validation
-                    v-slot="{ submit }"
-                    class="d-flex flex-column w-100"
-                    @submit="onSave"
-                >
+                <s-validation v-slot="{ submit }" class="d-flex flex-column w-100" @submit="onSave">
                     <s-input
                         v-model="editableCategory.name"
                         placeholder="Категория"
@@ -147,22 +149,13 @@
                         density="compact"
                         variant="solo"
                     />
-                    <v-btn
-                        class="mt-2"
-                        prepend-icon="mdi-ыфму"
-                        color="red"
-                        @click="submit"
-                    >
+                    <v-btn class="mt-2" prepend-icon="mdi-ыфму" color="red" @click="submit">
                         Сохранить
                     </v-btn>
                 </s-validation>
             </template>
             <template v-else>
-                <v-btn
-                    prepend-icon="mdi-plus"
-                    color="red"
-                    @click="editableCategory.isAdd = true"
-                >
+                <v-btn prepend-icon="mdi-plus" color="red" @click="editableCategory.isAdd = true">
                     Категория
                 </v-btn>
             </template>

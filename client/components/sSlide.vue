@@ -5,8 +5,8 @@
 </template>
 
 <style scoped>
-    .s-slide {
-        border-radius: 8px;
-        overflow: hidden;
-    }
+.s-slide {
+    border-radius: 8px;
+    overflow: hidden;
+}
 </style>

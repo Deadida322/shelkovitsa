@@ -1,43 +1,45 @@
 <script setup>
-    import { useCartStore } from '#imports';
-    import { watch } from 'vue';
-    import { useCategoriesStore } from '~/stores/categories';
-    import { useMappingStore } from '~/stores/mapping';
+import { useCartStore } from '#imports';
+import { watch } from 'vue';
+import { useCategoriesStore } from '~/stores/categories';
+import { useMappingStore } from '~/stores/mapping';
 
-    const categoriesStore = useCategoriesStore();
-    const mappingStore = useMappingStore();
-    const cartStore = useCartStore();
+const categoriesStore = useCategoriesStore();
+const mappingStore = useMappingStore();
+const cartStore = useCartStore();
 
-    cartStore.initializeCart();
-    const route = useRoute();
-    const isAdminPage = computed(() => route.path.startsWith('/admin'));
-    watch(
-        () => route.fullPath,
-        (newPath) => {
-            if (newPath === '/deliver' || newPath.startsWith('/admin')) {
-                cartStore.isDisabled = true;
-            }
-            else {
-                cartStore.isDisabled = false;
-            }
-        },
-        {
-            immediate: true,
-        },
-    );
+cartStore.initializeCart();
+const route = useRoute();
+const isAdminPage = computed(() => route.path.startsWith('/admin'));
+watch(
+    () => route.fullPath,
+    (newPath) => {
+        if (newPath === '/deliver' || newPath.startsWith('/admin')) {
+            cartStore.isDisabled = true;
+        } else {
+            cartStore.isDisabled = false;
+        }
+    },
+    {
+        immediate: true,
+    },
+);
 
-    // Оптимизируем загрузку данных с помощью prefetch
-    useAsyncData(async () => {
+// Оптимизируем загрузку данных с помощью prefetch
+useAsyncData(
+    async () => {
         // Загружаем категории и маппинг параллельно
         await Promise.allSettled([
             categoriesStore.getCategories(),
             mappingStore.getColors(),
             mappingStore.getSizes(),
         ]);
-    }, {
+    },
+    {
         server: true,
         lazy: false,
-    });
+    },
+);
 </script>
 
 <template>
@@ -47,10 +49,7 @@
             <div class="shelkovitsa-body__main">
                 <slot />
             </div>
-            <div
-                v-if="!isAdminPage"
-                class="shelkovitsa-body__menu"
-            >
+            <div v-if="!isAdminPage" class="shelkovitsa-body__menu">
                 <ClientOnly>
                     <s-category-menu />
                 </ClientOnly>

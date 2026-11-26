@@ -8,12 +8,15 @@ export function stripGoogleFonts(): Plugin {
         transform(code, id) {
             // Ловим ЛЮБОЙ CSS, содержащий Google Fonts
             if (
-                (id.endsWith('.css') || id.includes('?raw'))
-                && code.includes('fonts.googleapis.com')
+                (id.endsWith('.css') || id.includes('?raw')) &&
+                code.includes('fonts.googleapis.com')
             ) {
-                const cleaned = code.replace(/@import\s+url\([^)]*fonts\.googleapis\.com[^)]*\)[^;]*;?/gi, '');
+                const cleaned = code.replace(
+                    /@import\s+url\([^)]*fonts\.googleapis\.com[^)]*\)[^;]*;?/gi,
+                    '',
+                );
                 if (cleaned !== code) {
-                    console.log('✂️ Удалён Google Fonts из:', id);
+                    console.warn('✂️ Удалён Google Fonts из:', id);
                 }
                 return cleaned;
             }

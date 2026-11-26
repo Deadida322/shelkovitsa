@@ -1,9 +1,5 @@
 import { defineStore } from 'pinia';
-import {
-    emptyFilters,
-    filtersFromQuery,
-    filtersToQuery,
-} from '~/utils/catalogFilters';
+import { emptyFilters, filtersFromQuery, filtersToQuery } from '~/utils/catalogFilters';
 
 /**
  * Состояние фильтров каталога живёт в Pinia, чтобы при уходе на карточку

@@ -1,72 +1,77 @@
 <script setup>
-    import { useCartStore, useFiltersStore, useMappingStore, useOrderStore } from '#imports';
-    import { VsNotification } from 'vuesax-alpha';
-    import { formatRub } from '~/utils/money';
+import { useCartStore, useFiltersStore, useMappingStore, useOrderStore } from '#imports';
+import { VsNotification } from 'vuesax-alpha';
+import { formatRub } from '~/utils/money';
 
-    const config = useRuntimeConfig();
-    const base = config.public.apiBase;
-    const { $api } = useNuxtApp();
-    const deliveryTypes = ref([]);
-    $api(`/api/delivery-type`).then((res) => {
-        deliveryTypes.value = res;
-    });
+const config = useRuntimeConfig();
+const base = config.public.apiBase;
+const { $api } = useNuxtApp();
+const deliveryTypes = ref([]);
+$api(`/api/delivery-type`).then((res) => {
+    deliveryTypes.value = res;
+});
 
-    const orderStore = useOrderStore();
-    const cartStore = useCartStore();
-    const filtersStore = useFiltersStore();
-    const mappingStore = useMappingStore();
+const orderStore = useOrderStore();
+const cartStore = useCartStore();
+const filtersStore = useFiltersStore();
+const mappingStore = useMappingStore();
 
-    function goToCatalog() {
-        navigateTo({ path: '/catalog', query: filtersStore.toQuery() });
-    }
+function goToCatalog() {
+    navigateTo({ path: '/catalog', query: filtersStore.toQuery() });
+}
 
-    function onCountDown(count, index) {
-        if (!count)
-            cartStore.removeItem(index);
-    }
+function onCountDown(count, index) {
+    if (!count) cartStore.removeItem(index);
+}
 
-    function handleImageError(event) {
-        console.error('Ошибка загрузки изображения на странице доставки:', event.target.src);
-    }
+function handleImageError(event) {
+    console.error('Ошибка загрузки изображения на странице доставки:', event.target.src);
+}
 
-    const step = ref(1);
+const step = ref(1);
 
-    function nextStep() {
-        if (step.value < 2)
-            return step.value++;
-        $api('/api/order', { method: 'POST', body: { ...orderStore.order, orderProducts: cartStore.cart } }).then(() => {
-            VsNotification({
-                title: 'Отправлено!',
-                content: 'Заказ отправлен, ожидайте связи',
-                position: 'bottom-center',
-                border: 'success',
-            });
-            cartStore.clearCart();
+function nextStep() {
+    if (step.value < 2) return step.value++;
+    $api('/api/order', {
+        method: 'POST',
+        body: { ...orderStore.order, orderProducts: cartStore.cart },
+    }).then(() => {
+        VsNotification({
+            title: 'Отправлено!',
+            content: 'Заказ отправлен, ожидайте связи',
+            position: 'bottom-center',
+            border: 'success',
         });
-    }
-
-    // Добавляем SEO улучшения без удаления существующего кода
-    useHead({
-        title: 'Корзина и доставка - Шелковица',
-        meta: [
-            {
-                name: 'description',
-                content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.',
-            },
-            {
-                name: 'keywords',
-                content: 'корзина, заказ, доставка, оформление заказа, шелковица, интернет магазин белья',
-            },
-            { property: 'og:title', content: 'Корзина и доставка - Шелковица' },
-            { property: 'og:description', content: 'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.' },
-            { property: 'og:type', content: 'website' },
-            { property: 'og:url', content: 'https://shelkovitsa.ru/deliver' },
-            { name: 'twitter:card', content: 'summary_large_image' },
-        ],
-        link: [
-            { rel: 'canonical', href: 'https://shelkovitsa.ru/deliver' },
-        ],
+        cartStore.clearCart();
     });
+}
+
+// Добавляем SEO улучшения без удаления существующего кода
+useHead({
+    title: 'Корзина и доставка - Шелковица',
+    meta: [
+        {
+            name: 'description',
+            content:
+                'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.',
+        },
+        {
+            name: 'keywords',
+            content:
+                'корзина, заказ, доставка, оформление заказа, шелковица, интернет магазин белья',
+        },
+        { property: 'og:title', content: 'Корзина и доставка - Шелковица' },
+        {
+            property: 'og:description',
+            content:
+                'Корзина товаров интернет-магазина нижнего белья "Шелковица". Оформление заказа и условия доставки.',
+        },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: 'https://shelkovitsa.ru/deliver' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+    ],
+    link: [{ rel: 'canonical', href: 'https://shelkovitsa.ru/deliver' }],
+});
 </script>
 
 <template>
@@ -75,42 +80,23 @@
             <Title>Корзина</Title>
             <Meta name="description" content="Корзина товаров магазина Шелковица" />
         </Head>
-        <h2 class="text-h6 mt-4">
-            Ваша корзина
-        </h2>
+        <h2 class="text-h6 mt-4">Ваша корзина</h2>
 
-        <div
-            class="deliver__table"
-            :class="{ 'pa-4': !cartStore.cart.length }"
-        >
+        <div class="deliver__table" :class="{ 'pa-4': !cartStore.cart.length }">
             <vs-table v-if="cartStore.cart.length">
                 <template #thead>
                     <vs-tr>
                         <vs-th />
-                        <vs-th>
-                            Наименование
-                        </vs-th>
-                        <vs-th>
-                            Цвет
-                        </vs-th>
-                        <vs-th>
-                            Размер
-                        </vs-th>
-                        <vs-th>
-                            Количество
-                        </vs-th>
-                        <vs-th>
-                            Цена
-                        </vs-th>
+                        <vs-th>Наименование</vs-th>
+                        <vs-th>Цвет</vs-th>
+                        <vs-th>Размер</vs-th>
+                        <vs-th>Количество</vs-th>
+                        <vs-th>Цена</vs-th>
                         <vs-th />
                     </vs-tr>
                 </template>
                 <template #tbody>
-                    <vs-tr
-                        v-for="(tr, i) in cartStore.cart"
-                        :key="i"
-                        :data="tr"
-                    >
+                    <vs-tr v-for="(tr, i) in cartStore.cart" :key="i" :data="tr">
                         <vs-td width="70px">
                             <v-img
                                 class="deliver-table__image"
@@ -136,37 +122,26 @@
                             {{ mappingStore.sizes[tr.productSizeId] }}
                         </vs-td>
                         <vs-td>
-                            <s-count-input v-model="tr.amount" @update:model-value="onCountDown($event, i)" />
+                            <s-count-input
+                                v-model="tr.amount"
+                                @update:model-value="onCountDown($event, i)"
+                            />
                         </vs-td>
                         <vs-td width="110px">
                             <span class="price">{{ formatRub(tr.price) }}</span>
                         </vs-td>
                         <vs-td>
-                            <vs-button
-                                circle
-                                icon
-                                floating
-                                @click="cartStore.removeItem(i)"
-                            >
+                            <vs-button circle icon floating @click="cartStore.removeItem(i)">
                                 <i class="mdi-close mdi v-icon" />
                             </vs-button>
                         </vs-td>
                     </vs-tr>
                 </template>
             </vs-table>
-            <div
-                v-else
-                class="link"
-                @click="goToCatalog"
-            >
-                <vs-alert
-                    class="mt-4 alert"
-                    color="success"
-                >
+            <div v-else class="link" @click="goToCatalog">
+                <vs-alert class="mt-4 alert" color="success">
                     <template #icon>
-                        <v-icon size="40">
-                            mdi-cart-outline
-                        </v-icon>
+                        <v-icon size="40">mdi-cart-outline</v-icon>
                     </template>
                     В вашей корзине нет товаров
                     <nuxt-link :to="{ path: '/catalog', query: filtersStore.toQuery() }">
@@ -174,25 +149,23 @@
                     </nuxt-link>
                 </vs-alert>
             </div>
-            <div v-if="cartStore.cart.length" class="deliver-table__actions d-flex justify-end pa-4 align-center price">
-                <div class="text-body1">
-                    Всего: &nbsp;
-                </div>
-                {{ formatRub(cartStore.cart.reduce((sum, item) => sum + item.price * item.amount, 0)) }}
-                <vs-button @click="cartStore.clearCart">
-                    Очистить
-                </vs-button>
+            <div
+                v-if="cartStore.cart.length"
+                class="deliver-table__actions d-flex justify-end pa-4 align-center price"
+            >
+                <div class="text-body1">Всего: &nbsp;</div>
+                {{
+                    formatRub(
+                        cartStore.cart.reduce((sum, item) => sum + item.price * item.amount, 0),
+                    )
+                }}
+                <vs-button @click="cartStore.clearCart">Очистить</vs-button>
             </div>
         </div>
         <template v-if="cartStore.cart.length">
-            <h2 class="text-h6 mt-4">
-                Оформление заказа
-            </h2>
+            <h2 class="text-h6 mt-4">Оформление заказа</h2>
             <s-validation v-slot="{ submit }" @submit="nextStep">
-                <v-stepper
-                    v-model="step"
-                    class="deliver__stepper"
-                >
+                <v-stepper v-model="step" class="deliver__stepper">
                     <v-stepper-header>
                         <v-stepper-item
                             step="Step {{ 0 }}"
@@ -213,9 +186,7 @@
                         />
                     </v-stepper-header>
                     <v-stepper-window>
-                        <v-stepper-window-item
-                            :value="1"
-                        >
+                        <v-stepper-window-item :value="1">
                             <div class="deliver__form">
                                 <s-input
                                     v-model="orderStore.order.mail"
@@ -253,9 +224,7 @@
                                 />
                             </div>
                         </v-stepper-window-item>
-                        <v-stepper-window-item
-                            :value="2"
-                        >
+                        <v-stepper-window-item :value="2">
                             <div class="deliver__form">
                                 <s-input
                                     v-model="orderStore.order.region"
@@ -286,18 +255,8 @@
                         </v-stepper-window-item>
                     </v-stepper-window>
                     <div class="d-flex pa-4 justify-end">
-                        <vs-button
-                            v-if="step !== 2"
-                            @click="submit"
-                        >
-                            Далее
-                        </vs-button>
-                        <vs-button
-                            v-else
-                            @click="submit"
-                        >
-                            Отправить
-                        </vs-button>
+                        <vs-button v-if="step !== 2" @click="submit">Далее</vs-button>
+                        <vs-button v-else @click="submit">Отправить</vs-button>
                     </div>
                 </v-stepper>
             </s-validation>
@@ -306,71 +265,71 @@
 </template>
 
 <style lang="scss" scoped>
-    .link {
-        cursor: pointer;
+.link {
+    cursor: pointer;
+}
+.about-page {
+    &__advantages {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
     }
-    .about-page {
-        &__advantages {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-    }
+}
 
-    .header {
-        &__title {
-            color: $primary;
-        }
-
-        &__image {
-            border-radius: 12px;
-
-            &-container {
-                height: 100%;
-                padding: 20px;
-            }
-        }
-    }
-
-    .deliver {
-        &__table {
-            box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.2);
-            margin-top: 10px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-
-        &__form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        &__stepper {
-            margin-top: 20px;
-            border-radius: 12px;
-            box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.2) !important;
-        }
-    }
-
-    .deliver-table {
-        &__image {
-            border-radius: 12px;
-        }
-    }
-
-    .alert {
-        z-index: -1;
-    }
-
-    .price {
-        text-wrap: nowrap;
+.header {
+    &__title {
         color: $primary;
     }
+
+    &__image {
+        border-radius: 12px;
+
+        &-container {
+            height: 100%;
+            padding: 20px;
+        }
+    }
+}
+
+.deliver {
+    &__table {
+        box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.2);
+        margin-top: 10px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+
+    &__form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    &__stepper {
+        margin-top: 20px;
+        border-radius: 12px;
+        box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.2) !important;
+    }
+}
+
+.deliver-table {
+    &__image {
+        border-radius: 12px;
+    }
+}
+
+.alert {
+    z-index: -1;
+}
+
+.price {
+    text-wrap: nowrap;
+    color: $primary;
+}
 </style>
 
 <style lang="scss">
-    .vs-select {
-        max-width: 100%;
-    }
+.vs-select {
+    max-width: 100%;
+}
 </style>

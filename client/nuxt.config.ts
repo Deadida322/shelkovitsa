@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { stripGoogleFonts } from './build/plugins/strip-vuesax-fonts';
 import { fixVuesaxUnwrapElement } from './build/plugins/fix-vuesax-unwrap-element';
+import { stripGoogleFonts } from './build/plugins/strip-vuesax-fonts';
 
 export default defineNuxtConfig({
     app: {
@@ -14,7 +14,11 @@ export default defineNuxtConfig({
             ],
             meta: [
                 { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-                { name: 'keywords', content: 'нижнее белье, купить белье, женское белье, интернет магазин белья, белье оптом, нижнее белье купить, нижнее белье интернет магазин' },
+                {
+                    name: 'keywords',
+                    content:
+                        'нижнее белье, купить белье, женское белье, интернет магазин белья, белье оптом, нижнее белье купить, нижнее белье интернет магазин',
+                },
                 { name: 'author', content: 'Шелковица' },
                 { name: 'yandex-verification', content: '' },
                 { name: 'google-site-verification', content: '' },
@@ -25,7 +29,14 @@ export default defineNuxtConfig({
             },
         },
     },
-    modules: ['vuetify-nuxt-module', '@nuxt/eslint', '@pinia/nuxt', '@vuesax-alpha/nuxt', '@nuxt/image', '@nuxtjs/google-fonts'],
+    modules: [
+        'vuetify-nuxt-module',
+        '@nuxt/eslint',
+        '@pinia/nuxt',
+        '@vuesax-alpha/nuxt',
+        '@nuxt/image',
+        '@nuxtjs/google-fonts',
+    ],
     devtools: { enabled: false },
     css: ['~/assets/main.scss', 'vuesax-alpha/theme-chalk/index.css'],
     vite: {
@@ -45,10 +56,7 @@ export default defineNuxtConfig({
         build: {
             sourcemap: process.env.NODE_ENV === 'production', // или true/false явно
         },
-        plugins: [
-            stripGoogleFonts(),
-            fixVuesaxUnwrapElement(),
-        ],
+        plugins: [stripGoogleFonts(), fixVuesaxUnwrapElement()],
         ssr: {
             noExternal: ['@vueuse/core', 'vuesax-alpha'], // пакеты, которые нужно обрабатывать Rollup
         },
@@ -129,5 +137,4 @@ export default defineNuxtConfig({
             localeMessages: ['ru'],
         },
     },
-
 });

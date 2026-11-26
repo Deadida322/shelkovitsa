@@ -5,57 +5,53 @@ import { VsNotification } from 'vuesax-alpha';
 const { $api } = useNuxtApp();
 const user = ref({});
 const rePasswordValidation = computed(() => ({
-    rePassword: helpers.withMessage('Пароли должны совпадать', () => user.value.password === user.value.rePassword),
+    rePassword: helpers.withMessage(
+        'Пароли должны совпадать',
+        () => user.value.password === user.value.rePassword,
+    ),
 }));
 
 function onSubmit() {
-    $api('/api/auth/register', { method: 'POST', body: user.value }).then(() => {
-        VsNotification({
-            title: 'Успех!',
-            content: 'Вы зарегистрированы!',
-            position: 'bottom-center',
-            border: 'success',
-            duration: 2000,
+    $api('/api/auth/register', { method: 'POST', body: user.value })
+        .then(() => {
+            VsNotification({
+                title: 'Успех!',
+                content: 'Вы зарегистрированы!',
+                position: 'bottom-center',
+                border: 'success',
+                duration: 2000,
+            });
+            setTimeout(() => {
+                navigateTo('/signin');
+            }, 1000);
+        })
+        .catch(({ response }) => {
+            VsNotification({
+                title: 'Ошибка!',
+                content: response?._data?.error?.message,
+                position: 'bottom-center',
+                border: 'danger',
+            });
         });
-        setTimeout(() => {
-            navigateTo('/signin');
-        }, 1000);
-    }).catch(({ response }) => {
-        VsNotification({
-            title: 'Ошибка!',
-            content: response?._data?.error?.message,
-            position: 'bottom-center',
-            border: 'danger',
-        });
-    });
 }
 </script>
 
 <template>
     <div class="login-page d-flex flex-column align-center">
-        <div class="login-page__header text-h6 text-center mb-12">
-            Регистрация
-        </div>
-        <vs-alert
-            color="#1A5CFF"
-            type="info"
-        >
+        <div class="login-page__header text-h6 text-center mb-12">Регистрация</div>
+        <vs-alert color="#1A5CFF" type="info">
             <template #icon>
-                <v-icon size="40">
-                    mdi-information
-                </v-icon>
+                <v-icon size="40">mdi-information</v-icon>
             </template>
-            Вы можете <nuxt-link to="/signin">
-                войти в аккаунт
-            </nuxt-link> или <nuxt-link to="/signup">
-                зарегистрировать его
-            </nuxt-link>, чтобы получить дополнительные возможности, а также восстановить пароль
+            Вы можете
+            <nuxt-link to="/signin">войти в аккаунт</nuxt-link>
+            или
+            <nuxt-link to="/signup">зарегистрировать его</nuxt-link>
+            , чтобы получить дополнительные возможности, а также восстановить пароль
         </vs-alert>
         <div class="auth-card">
             <s-form button-label="Зарегистрироваться" @submit="onSubmit">
-                <div class="text-center text-h6 mb-4">
-                    Зарегистрировать аккаунт
-                </div>
+                <div class="text-center text-h6 mb-4">Зарегистрировать аккаунт</div>
                 <div class="auth-card__form">
                     <s-input
                         v-model="user.mail"
@@ -96,9 +92,7 @@ function onSubmit() {
                 </div>
                 <template #actions-prepend>
                     <div class="actions__links">
-                        <nuxt-link to="/signin">
-                            Уже есть аккаунт?
-                        </nuxt-link>
+                        <nuxt-link to="/signin">Уже есть аккаунт?</nuxt-link>
                         <!-- <nuxt-link to="/recover">
                             Забыли пароль?
                         </nuxt-link> -->

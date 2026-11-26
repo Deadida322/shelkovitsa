@@ -9,20 +9,25 @@ const loading = ref(false);
 const orders = ref([]);
 function getOrders() {
     loading.value = true;
-    return $api('/api/admin/order', { query: {
-        page: page.value - 1,
-        itemsPerPage: 10,
-    } }).then((res) => {
+    return $api('/api/admin/order', {
+        query: {
+            page: page.value - 1,
+            itemsPerPage: 10,
+        },
+    }).then((res) => {
         orders.value = res.data;
         totalItems.value = res.count;
         loading.value = false;
     });
-};
+}
 
 function updateStatus(status, orderId) {
-    return $api(`/api/admin/order/${orderId}`, { method: 'PATCH', body: {
-        status,
-    } }).then(() => {
+    return $api(`/api/admin/order/${orderId}`, {
+        method: 'PATCH',
+        body: {
+            status,
+        },
+    }).then(() => {
         VsNotification({
             title: 'Отлично!',
             content: 'Статус был обновлён',
@@ -110,9 +115,7 @@ const headers = [
             @update:options="getOrders"
         >
             <template #no-data>
-                <div class="text-center pa-4">
-                    Нет данных
-                </div>
+                <div class="text-center pa-4">Нет данных</div>
             </template>
             <template #expanded-row="{ item, columns }">
                 <tr>
@@ -120,40 +123,35 @@ const headers = [
                         <v-table>
                             <thead>
                                 <tr>
-                                    <th>
-                                        Название
-                                    </th>
-                                    <th>
-                                        Количество
-                                    </th>
-                                    <th>
-                                        Размер
-                                    </th>
-                                    <th>
-                                        Цвет
-                                    </th>
-                                    <th>
-                                        Стоимость
-                                    </th>
+                                    <th>Название</th>
+                                    <th>Количество</th>
+                                    <th>Размер</th>
+                                    <th>Цвет</th>
+                                    <th>Стоимость</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr
-                                    v-for="product in item.orderProducts"
-                                    :key="product.id"
-                                >
+                                <tr v-for="product in item.orderProducts" :key="product.id">
                                     <td>{{ product.product.productArticle.name }}</td>
                                     <td>{{ product.amount }}</td>
                                     <td>{{ product.product.productSize.name }}</td>
                                     <td>{{ product.product.productColor.name }}</td>
-                                    <td>{{ formatRub((product.price ?? product.product.productArticle.price) * product.amount) }}</td>
+                                    <td>
+                                        {{
+                                            formatRub(
+                                                (product.price ??
+                                                    product.product.productArticle.price) *
+                                                    product.amount,
+                                            )
+                                        }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </v-table>
                     </td>
                 </tr>
             </template>
-            <template #item.status="{ item }">
+            <template #[`item.status`]="{ item }">
                 <v-select
                     class="mt-2"
                     variant="solo"
@@ -164,8 +162,8 @@ const headers = [
                     :items="statuses"
                     @update:model-value="updateStatus($event, item.id)"
                 >
-                    <template #item="{ props, item }">
-                        <v-list-item v-bind="props" :subtitle="item.label" />
+                    <template #item="{ props, item: statusItem }">
+                        <v-list-item v-bind="props" :subtitle="statusItem.label" />
                     </template>
                 </v-select>
             </template>

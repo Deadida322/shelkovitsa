@@ -22,13 +22,11 @@ export const useCartStore = defineStore('cart', () => {
                 const { $api } = useNuxtApp();
                 const backendCart = await $api('/api/user/basket');
                 cart.value = Array.isArray(backendCart) ? backendCart : [];
-            }
-            catch (error) {
+            } catch (error) {
                 console.error('Failed to fetch cart from backend:', error);
                 cart.value = [];
             }
-        }
-        else {
+        } else {
             cart.value = Array.isArray(cartCookie.value) ? cartCookie.value : [];
         }
     };
@@ -41,23 +39,20 @@ export const useCartStore = defineStore('cart', () => {
                     method: 'PUT',
                     body: cart.value,
                 });
-            }
-            catch (error) {
+            } catch (error) {
                 console.error('Failed to sync cart with backend:', error);
             }
-        }
-        else {
+        } else {
             cartCookie.value = cart.value;
         }
     };
 
     const updateCart = (item) => {
-        const idx = cart.value.findIndex(cartItem => cartItem.productId === item.productId);
+        const idx = cart.value.findIndex((cartItem) => cartItem.productId === item.productId);
 
         if (idx !== -1) {
             cart.value.splice(idx, 1, { ...item, amount: cart.value[idx].amount + item.amount });
-        }
-        else {
+        } else {
             cart.value.push(item);
         }
 
@@ -83,7 +78,7 @@ export const useCartStore = defineStore('cart', () => {
 
                 cartCookie.value.forEach((cookieItem) => {
                     const existsInBackend = mergedCart.some(
-                        backendItem => backendItem.productId === cookieItem.productId,
+                        (backendItem) => backendItem.productId === cookieItem.productId,
                     );
                     if (!existsInBackend) {
                         mergedCart.push(cookieItem);
@@ -97,8 +92,7 @@ export const useCartStore = defineStore('cart', () => {
                 });
 
                 cartCookie.value = [];
-            }
-            catch (error) {
+            } catch (error) {
                 console.error('Failed to merge cart with backend:', error);
             }
         }

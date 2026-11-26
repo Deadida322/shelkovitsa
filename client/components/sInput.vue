@@ -1,6 +1,11 @@
 <script setup>
 import useVuelidate from '@vuelidate/core';
-import { email as emailFunc, helpers, minLength as minLengthFunc, required as requiredFunc } from '@vuelidate/validators';
+import {
+    email as emailFunc,
+    helpers,
+    minLength as minLengthFunc,
+    required as requiredFunc,
+} from '@vuelidate/validators';
 import useComponentValue from '~/composables/componentValue';
 
 const props = defineProps({
@@ -38,7 +43,9 @@ const componentValue = useComponentValue({ modelValue, emit });
 const rules = computed(() => ({
     required: required.value ? helpers.withMessage('Укажите поле', requiredFunc) : true,
     email: email.value ? helpers.withMessage('Неверный формат почты', emailFunc) : true,
-    minLength: minLength.value ? helpers.withMessage(`Слишком короткое значение`, minLengthFunc(minLength)) : true,
+    minLength: minLength.value
+        ? helpers.withMessage(`Слишком короткое значение`, minLengthFunc(minLength))
+        : true,
     ...customRules.value,
 }));
 

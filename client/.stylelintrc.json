@@ -6,10 +6,7 @@
         "stylelint-config-prettier",
         "prettier"
     ],
-    "plugins": [
-        "stylelint-color-format",
-        "stylelint-z-index-value-constraint"
-    ],
+    "plugins": ["stylelint-color-format", "stylelint-z-index-value-constraint"],
     "rules": {
         "selector-class-pattern": null,
         "color-format/format": {
@@ -20,9 +17,5 @@
             "max": 8
         }
     },
-    "ignoreFiles": [
-        "**/*.js",
-        "**/*.mjs",
-        "**/*.jsx"
-    ]
+    "ignoreFiles": ["**/*.js", "**/*.mjs", "**/*.jsx"]
 }

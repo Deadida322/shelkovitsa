@@ -7,19 +7,17 @@ export const useMappingStore = defineStore('mapping', () => {
     const plainSizes = ref([]);
     const { $api } = useNuxtApp();
     const getColors = () => {
-        $api('/api/product-color')
-            .then((res) => {
-                plainColors.value = res;
-                res.forEach(item => colors.value[item.id] = item.name);
-            });
+        $api('/api/product-color').then((res) => {
+            plainColors.value = res;
+            res.forEach((item) => (colors.value[item.id] = item.name));
+        });
     };
 
     const getSizes = () => {
-        $api('/api/product-size')
-            .then((res) => {
-                plainSizes.value = res;
-                res.forEach(item => sizes.value[item.id] = item.name);
-            });
+        $api('/api/product-size').then((res) => {
+            plainSizes.value = res;
+            res.forEach((item) => (sizes.value[item.id] = item.name));
+        });
     };
 
     return {
