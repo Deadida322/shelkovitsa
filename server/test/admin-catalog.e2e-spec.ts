@@ -307,6 +307,16 @@ describe('Админка каталога (e2e)', () => {
 			[first, second] = await files();
 			expect([first.isLogo, second.isLogo]).toEqual([false, true]);
 
+			// в карточке превью всегда первым, даже если id логотипа больше
+			const detail = await admin
+				.get(`/api/admin/product-article/${catalog.article.id}`)
+				.expect(200);
+			expect(detail.body.productFiles.map((f: { id: number }) => f.id)).toEqual([
+				second.id,
+				first.id
+			]);
+			expect(detail.body.productFiles[0].isLogo).toBe(true);
+
 			await admin
 				.delete(`/api/admin/product-article/images/${second.id}`)
 				.expect(204);
