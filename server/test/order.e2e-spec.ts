@@ -34,16 +34,16 @@ describe('Order (e2e)', () => {
 	});
 
 	it('гость создаёт заказ, цена считается на сервере', async () => {
-		const catalog = await seedCatalog(app, { amount: 5, price: 1500 });
+		const catalog = await seedCatalog(app, { amount: 5, price: 150000 });
 
 		const res = await request(app.getHttpServer())
 			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
 			.expect(201);
 
-		expect(res.body.price).toBe(3000);
+		expect(res.body.price).toBe(300000);
 		expect(res.body.status).toBe('create');
-		expect(res.body.orderProducts[0]).toMatchObject({ amount: 2, price: 1500 });
+		expect(res.body.orderProducts[0]).toMatchObject({ amount: 2, price: 150000 });
 	});
 
 	it('при заказе создаётся запись о Telegram-уведомлении', async () => {
@@ -163,7 +163,7 @@ describe('Order (e2e)', () => {
 
 	it('в админском списке позиции хранят цену на момент заказа', async () => {
 		const admin = await registerAdmin(app);
-		const catalog = await seedCatalog(app, { price: 1000 });
+		const catalog = await seedCatalog(app, { price: 100000 });
 		await request(app.getHttpServer())
 			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
@@ -179,8 +179,8 @@ describe('Order (e2e)', () => {
 			.query({ page: 0, itemsPerPage: 10 })
 			.expect(200);
 		const [order] = res.body.data;
-		expect(order.price).toBe(2000);
-		expect(order.orderProducts[0].price).toBe(1000);
+		expect(order.price).toBe(200000);
+		expect(order.orderProducts[0].price).toBe(100000);
 	});
 
 	it('ответы с заказами не раскрывают пароль и служебные поля пользователя', async () => {

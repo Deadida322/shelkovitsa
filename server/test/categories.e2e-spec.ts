@@ -106,7 +106,7 @@ describe('Категории (e2e)', () => {
 			const article = (code: string, sub: ProductSubcategory, isVisible: boolean) =>
 				manager.save(ProductArticle, {
 					article: code,
-					price: 100,
+					price: 10000,
 					isVisible,
 					productSubcategory: sub
 				});

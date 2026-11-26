@@ -1,5 +1,6 @@
 <script setup>
     import { useCartStore, useFiltersStore, useMappingStore } from '#imports';
+    import { formatRub } from '~/utils/money';
 
     const cartStore = useCartStore();
     const filtersStore = useFiltersStore();
@@ -32,10 +33,6 @@
             return;
         }
         cartStore.clearCart();
-    }
-
-    function formatPrice(value) {
-        return Number(value).toFixed(1);
     }
 </script>
 
@@ -105,7 +102,7 @@
                             />
                         </div>
                         <div class="cart-item__price mt-2">
-                            {{ formatPrice(item.price * item.amount) }} <span>₽</span>
+                            {{ formatRub(item.price * item.amount) }}
                         </div>
                     </div>
                 </div>

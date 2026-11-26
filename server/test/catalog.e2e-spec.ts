@@ -102,7 +102,7 @@ describe('Catalog (e2e)', () => {
 		await seedCatalog(app);
 		const ok = await request(app.getHttpServer())
 			.get('/api/product-article')
-			.query({ page: '0', itemsPerPage: '5', minPrice: '1000' })
+			.query({ page: '0', itemsPerPage: '5', minPrice: '100000' })
 			.expect(200);
 		expect(ok.body.count).toBe(1);
 
@@ -187,7 +187,7 @@ describe('Catalog (e2e)', () => {
 			size80C = await manager().save(ProductSize, { name: '80C' });
 			await addArticle('ART-002', {
 				brand: 'Janira',
-				price: 800,
+				price: 80000,
 				isVisible: false,
 				variants: [
 					[catalog.size, 0],
@@ -196,12 +196,12 @@ describe('Catalog (e2e)', () => {
 			});
 			await addArticle('ART-003', {
 				brand: 'Janira',
-				price: 3000,
+				price: 300000,
 				isVisible: true,
 				withImage: true,
 				variants: [[size80C, 4]]
 			});
-			await addArticle('ART-004', { price: 100, isVisible: true, archived: true });
+			await addArticle('ART-004', { price: 10000, isVisible: true, archived: true });
 		});
 
 		it('бренд: несколько значений, без учёта регистра', async () => {
@@ -255,7 +255,7 @@ describe('Catalog (e2e)', () => {
 			]);
 			expect(articles(await publicList({}))).toEqual(['ART-001', 'ART-003']);
 
-			expect(articles(await publicList({ minPrice: 2000 }))).toEqual(['ART-003']);
+			expect(articles(await publicList({ minPrice: 200000 }))).toEqual(['ART-003']);
 			// поиск находит и по бренду, и сочетается с фильтром бренда
 			expect(articles(await publicList({ query: 'janira' }))).toEqual(['ART-003']);
 			expect(
@@ -358,14 +358,14 @@ describe('Catalog (e2e)', () => {
 				{ id: catalog.size.id, name: '75B', count: 1 },
 				{ id: size80C.id, name: '80C', count: 1 }
 			]);
-			expect(res.body.price).toEqual({ min: 1500, max: 3000 });
+			expect(res.body.price).toEqual({ min: 150000, max: 300000 });
 
 			const narrowed = await request(app.getHttpServer())
 				.get('/api/product-article/filters')
 				.query({ query: 'milavitsa' })
 				.expect(200);
 			expect(narrowed.body.brands).toEqual([{ name: 'Milavitsa', count: 1 }]);
-			expect(narrowed.body.price).toEqual({ min: 1500, max: 1500 });
+			expect(narrowed.body.price).toEqual({ min: 150000, max: 150000 });
 
 			const adminRes = await admin
 				.get('/api/admin/product-article/filters')
@@ -389,7 +389,7 @@ describe('Catalog (e2e)', () => {
 			expect(byMilavitsa.body.sizes).toEqual([
 				{ id: catalog.size.id, name: '75B', count: 1 }
 			]);
-			expect(byMilavitsa.body.price).toEqual({ min: 1500, max: 1500 });
+			expect(byMilavitsa.body.price).toEqual({ min: 150000, max: 150000 });
 			// список брендов не «запирается» выбранным брендом
 			expect(byMilavitsa.body.brands.map((b: { name: string }) => b.name)).toEqual([
 				'Janira',
@@ -427,7 +427,7 @@ describe('Catalog (e2e)', () => {
 				.query({ categoryId: other.id })
 				.expect(200);
 			expect(res.body.brands).toEqual([{ name: 'Janira', count: 1 }]);
-			expect(res.body.price).toEqual({ min: 3000, max: 3000 });
+			expect(res.body.price).toEqual({ min: 300000, max: 300000 });
 
 			const none = await request(app.getHttpServer())
 				.get('/api/product-article/filters')
@@ -444,7 +444,7 @@ describe('Catalog (e2e)', () => {
 		});
 
 		it('minPrice=0 не игнорируется', async () => {
-			expect(articles(await publicList({ minPrice: 0, maxPrice: 1600 }))).toEqual([
+			expect(articles(await publicList({ minPrice: 0, maxPrice: 160000 }))).toEqual([
 				'ART-001'
 			]);
 			expect(articles(await publicList({ maxPrice: 0 }))).toEqual([]);
@@ -536,14 +536,14 @@ describe('Catalog (e2e)', () => {
 				}
 			}
 
-			await article('A1', 'Milavitsa', 1000, [[size75B, 3]]);
-			await article('A2', 'Milavitsa', 2000, [[size80C, 2]]);
-			await article('A3', 'Janira', 1500, [
+			await article('A1', 'Milavitsa', 100000, [[size75B, 3]]);
+			await article('A2', 'Milavitsa', 200000, [[size80C, 2]]);
+			await article('A3', 'Janira', 150000, [
 				[size75B, 1],
 				[size80C, 0]
 			]);
-			await article('A4', 'Janira', 2500, [[size80C, 5]]);
-			await article('A5', 'Sielei', 1800, [[size75B, 0]]);
+			await article('A4', 'Janira', 250000, [[size80C, 5]]);
+			await article('A5', 'Sielei', 180000, [[size75B, 0]]);
 		});
 
 		it('без фильтров: бренды, размеры в наличии, цена; Sielei без остатка есть в брендах', async () => {
@@ -555,7 +555,7 @@ describe('Catalog (e2e)', () => {
 			});
 			// A5 не даёт 75B (amount=0); 75B = A1+A3, 80C = A2+A4
 			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
-			expect(body.price).toEqual({ min: 1000, max: 2500 });
+			expect(body.price).toEqual({ min: 100000, max: 250000 });
 			expect(articles(await list())).toEqual(['A1', 'A2', 'A3', 'A4', 'A5']);
 		});
 
@@ -564,7 +564,7 @@ describe('Catalog (e2e)', () => {
 
 			const body = await filters({ brand: 'Milavitsa' });
 			expect(sizeMap(body)).toEqual({ '75B': 1, '80C': 1 });
-			expect(body.price).toEqual({ min: 1000, max: 2000 });
+			expect(body.price).toEqual({ min: 100000, max: 200000 });
 			// omit brand → счётчики брендов как без brand-фильтра
 			expect(brandMap(body)).toEqual({
 				Janira: 2,
@@ -587,7 +587,7 @@ describe('Catalog (e2e)', () => {
 			const body = await filters({ productSizeId: size75B.id });
 			expect(brandMap(body)).toEqual({ Janira: 1, Milavitsa: 1 });
 			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
-			expect(body.price).toEqual({ min: 1000, max: 1500 });
+			expect(body.price).toEqual({ min: 100000, max: 150000 });
 		});
 
 		it('бренд + размер: AND; пустое пересечение; фасеты не запирают свой тип', async () => {
@@ -609,7 +609,7 @@ describe('Catalog (e2e)', () => {
 			expect(sizeMap(milavitsa75)).toEqual({ '75B': 1, '80C': 1 });
 			// бренды без учёта бренда, но с размером 75B
 			expect(brandMap(milavitsa75)).toEqual({ Janira: 1, Milavitsa: 1 });
-			expect(milavitsa75.price).toEqual({ min: 1000, max: 1000 });
+			expect(milavitsa75.price).toEqual({ min: 100000, max: 100000 });
 		});
 
 		it('несколько брендов/размеров — OR внутри типа', async () => {
@@ -624,18 +624,18 @@ describe('Catalog (e2e)', () => {
 
 			const body = await filters({ brand: ['Milavitsa', 'Janira'] });
 			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
-			expect(body.price).toEqual({ min: 1000, max: 2500 });
+			expect(body.price).toEqual({ min: 100000, max: 250000 });
 		});
 
 		it('цена: список и фасеты согласованы; диапазон цен не сужается сам собой', async () => {
-			expect(articles(await list({ minPrice: 1800, maxPrice: 2200 }))).toEqual([
+			expect(articles(await list({ minPrice: 180000, maxPrice: 220000 }))).toEqual([
 				'A2',
 				'A5'
 			]);
 
-			const body = await filters({ minPrice: 1800, maxPrice: 2200 });
+			const body = await filters({ minPrice: 180000, maxPrice: 220000 });
 			// omit price → полный диапазон каталога
-			expect(body.price).toEqual({ min: 1000, max: 2500 });
+			expect(body.price).toEqual({ min: 100000, max: 250000 });
 			expect(brandMap(body)).toEqual({ Milavitsa: 1, Sielei: 1 });
 			expect(sizeMap(body)).toEqual({ '80C': 1 });
 		});
@@ -650,7 +650,7 @@ describe('Catalog (e2e)', () => {
 			const body = await filters({ inStock: 'true' });
 			expect(brandMap(body)).toEqual({ Janira: 2, Milavitsa: 2 });
 			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
-			expect(body.price).toEqual({ min: 1000, max: 2500 });
+			expect(body.price).toEqual({ min: 100000, max: 250000 });
 		});
 
 		it('query: поиск по артикулу/бренду сужает список и фасеты', async () => {
@@ -660,7 +660,7 @@ describe('Catalog (e2e)', () => {
 			const byBrand = await filters({ query: 'Milavitsa' });
 			expect(brandMap(byBrand)).toEqual({ Milavitsa: 2 });
 			expect(sizeMap(byBrand)).toEqual({ '75B': 1, '80C': 1 });
-			expect(byBrand.price).toEqual({ min: 1000, max: 2000 });
+			expect(byBrand.price).toEqual({ min: 100000, max: 200000 });
 
 			const byCodeAndSize = await filters({
 				query: 'A1',
@@ -701,11 +701,11 @@ describe('Catalog (e2e)', () => {
 		const customer = await registerAgent(app, CUSTOMER);
 		expect((await customer.get('/api/user/basket').expect(200)).body).toEqual([]);
 
-		const basket = [{ productId: 1, amount: 2, id: '7', name: 'Трусы', price: 990 }];
+		const basket = [{ productId: 1, amount: 2, id: '7', name: 'Трусы', price: 99000 }];
 		await customer.put('/api/user/basket').send(basket).expect(200);
 		const saved = (await customer.get('/api/user/basket').expect(200)).body;
 		expect(saved).toEqual([
-			{ productId: 1, amount: 2, id: 7, name: 'Трусы', price: 990 }
+			{ productId: 1, amount: 2, id: 7, name: 'Трусы', price: 99000 }
 		]);
 
 		await customer

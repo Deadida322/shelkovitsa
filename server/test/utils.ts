@@ -91,7 +91,8 @@ export async function seedCatalog(
 	const article = await manager.save(ProductArticle, {
 		article: 'ART-001',
 		name: 'Бюстгальтер тестовый',
-		price: options.price ?? 1500,
+		// цена в копейках (1500 ₽ по умолчанию)
+		price: options.price ?? 150_000,
 		isVisible: true,
 		productSubcategory: subcategory
 	});

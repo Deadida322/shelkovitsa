@@ -5,6 +5,7 @@
     import { useDisplay } from 'vuetify/lib/framework.mjs';
     import sImage from '~/components/sImage.vue';
     import SValidation from '~/components/sValidation.vue';
+    import { formatRub, kopecksToRublesInput } from '~/utils/money';
 
     const route = useRoute();
     const config = useRuntimeConfig();
@@ -81,7 +82,7 @@
                 { property: 'og:url', content: `https://shelkovitsa.ru/catalog/${route.params.id}` },
                 { property: 'og:image', content: logo.value || '/main.webp' },
                 { name: 'twitter:card', content: 'summary_large_image' },
-                { name: 'product:price:amount', content: shopItem.value.price?.toString() || '0' },
+                { name: 'product:price:amount', content: shopItem.value.price != null ? kopecksToRublesInput(shopItem.value.price) : '0' },
                 { name: 'product:price:currency', content: 'RUB' },
             ],
             link: [
@@ -260,7 +261,7 @@
                                 disabled
                                 type="flat"
                             >
-                                {{ shopItem.price }} ₽
+                                {{ formatRub(shopItem.price) }}
                             </vs-button>
                             <vs-button @click="submit">
                                 Добавить в корзину  <v-icon class="ml-1">

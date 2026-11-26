@@ -3,6 +3,7 @@
 
     import { VsNotification } from 'vuesax-alpha';
     import { VFileUpload } from 'vuetify/labs/VFileUpload';
+    import { kopecksToRublesInput, rublesInputToKopecks } from '~/utils/money';
 
     const props = defineProps({
         modelValue: {
@@ -26,6 +27,8 @@
     const item = ref({ ...props.modelValue });
     const category = ref(item.value.productSubcategory?.productCategory.id);
     const subcategory = ref(item.value.productSubcategory);
+    // UI — рубли; в API уходит копейки
+    const priceInput = ref(kopecksToRublesInput(item.value.price));
 
     const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
     const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -87,11 +90,29 @@
         return {
             name: product.name,
             description: product.description,
+            price: product.price,
             isVisible: product.isVisible,
             is_deleted: product.is_deleted,
             productSizeIds: (product.productSizes || []).map(({ id }) => id),
             productColorIds: (product.productColors || []).map(({ id }) => id),
         };
+    }
+
+    function onPriceBlur() {
+        try {
+            item.value.price = rublesInputToKopecks(priceInput.value);
+            priceInput.value = kopecksToRublesInput(item.value.price);
+            updateProduct();
+        }
+        catch (error) {
+            priceInput.value = kopecksToRublesInput(item.value.price);
+            VsNotification({
+                title: 'Ошибка!',
+                content: error?.message || 'Некорректная цена',
+                position: 'bottom-center',
+                border: 'danger',
+            });
+        }
     }
 
     async function updateProduct({ closeOnSuccess = false } = {}) {
@@ -211,6 +232,7 @@
             item.value = res;
             category.value = item.value.productSubcategory?.productCategory.id;
             subcategory.value = item.value.productSubcategory;
+            priceInput.value = kopecksToRublesInput(item.value.price);
         });
     }
 
@@ -226,6 +248,7 @@
             return;
         confirmDelete.value = false;
         item.value = props.modelValue;
+        priceInput.value = kopecksToRublesInput(item.value.price);
         getProduct();
     });
 </script>
@@ -264,6 +287,15 @@
                     rows="4"
                     max-rows="12"
                     @blur="updateProduct"
+                />
+                <v-text-field
+                    v-model="priceInput"
+                    hide-details="auto"
+                    label="Цена, ₽"
+                    type="text"
+                    inputmode="decimal"
+                    :disabled="item.is_deleted"
+                    @blur="onPriceBlur"
                 />
                 <v-select
                     v-model="category"

@@ -1,5 +1,6 @@
 <script setup>
 import { VsNotification } from 'vuesax-alpha';
+import { formatRub } from '~/utils/money';
 
 const { $api } = useNuxtApp();
 const page = ref(1);
@@ -145,7 +146,7 @@ const headers = [
                                     <td>{{ product.amount }}</td>
                                     <td>{{ product.product.productSize.name }}</td>
                                     <td>{{ product.product.productColor.name }}</td>
-                                    <td>{{ (product.price ?? product.product.productArticle.price) * product.amount }}</td>
+                                    <td>{{ formatRub((product.price ?? product.product.productArticle.price) * product.amount) }}</td>
                                 </tr>
                             </tbody>
                         </v-table>

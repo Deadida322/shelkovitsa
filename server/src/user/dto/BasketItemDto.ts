@@ -1,7 +1,6 @@
 import { Expose, Type } from 'class-transformer';
 import {
 	IsInt,
-	IsNumber,
 	IsOptional,
 	IsPositive,
 	IsString,
@@ -43,9 +42,11 @@ export class BasketItemDto {
 	@MaxLength(500)
 	name?: string;
 
+	/** Цена позиции в копейках (только для отображения корзины) */
 	@Expose()
 	@IsOptional()
-	@IsNumber()
+	@IsInt()
+	@IsPositive()
 	price?: number;
 
 	@Expose()

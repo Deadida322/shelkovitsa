@@ -10,6 +10,7 @@ import {
 	TelegramMessageStatus,
 	TelegramOrderMessage
 } from 'src/db/entities/TelegramOrderMessage';
+import { formatKopecks } from 'src/helpers/money';
 import { orderRelations } from 'src/order/order.relations';
 
 // Уведомления о заказах в Telegram: отправка, учёт статуса, повторные попытки
@@ -107,7 +108,7 @@ export class OrderNotificationService implements OnApplicationShutdown {
 
 			const html = [
 				`<u>Новый заказ #${newOrder.id}:</u>\n`,
-				`<strong>Сумма:</strong> ${newOrder.price}\n`,
+				`<strong>Сумма:</strong> ${formatKopecks(newOrder.price)} ₽\n`,
 				`<strong>Кол-во позиций:</strong> ${newOrder.orderProducts?.length || 0}\n`
 			];
 

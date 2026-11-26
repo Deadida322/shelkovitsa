@@ -1,6 +1,7 @@
 <script setup>
     import { useCartStore, useFiltersStore, useMappingStore, useOrderStore } from '#imports';
     import { VsNotification } from 'vuesax-alpha';
+    import { formatRub } from '~/utils/money';
 
     const config = useRuntimeConfig();
     const base = config.public.apiBase;
@@ -138,7 +139,7 @@
                             <s-count-input v-model="tr.amount" @update:model-value="onCountDown($event, i)" />
                         </vs-td>
                         <vs-td width="110px">
-                            <span class="price">{{ tr.price }} ₽</span>
+                            <span class="price">{{ formatRub(tr.price) }}</span>
                         </vs-td>
                         <vs-td>
                             <vs-button
@@ -177,7 +178,7 @@
                 <div class="text-body1">
                     Всего: &nbsp;
                 </div>
-                {{ cartStore.cart.reduce((a, item) => a += item.price * item.amount, 0) }} ₽
+                {{ formatRub(cartStore.cart.reduce((sum, item) => sum + item.price * item.amount, 0)) }}
                 <vs-button @click="cartStore.clearCart">
                     Очистить
                 </vs-button>
