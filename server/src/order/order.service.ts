@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
-import { Order } from 'src/db/entities/Order';
+import { Order, OrderStatus } from 'src/db/entities/Order';
 import {
 	TelegramMessageStatus,
 	TelegramOrderMessage
@@ -170,13 +170,35 @@ export class OrderService {
 	}
 
 	async changeOrderStatus(id: number, payload: ChangeOrderStatusDto) {
-		const order = await this.orderRepository.findOne({
-			where: { id }
+		return this.dataSource.transaction(async (manager) => {
+			const order = await manager
+				.createQueryBuilder(Order, 'order')
+				.setLock('pessimistic_write')
+				.where('order.id = :id', { id })
+				.getOne();
+			if (!order) {
+				throw new NotFoundException('Заказ не найден');
+			}
+			if (order.status === OrderStatus.CANCELLED) {
+				throw new BadRequestException('Отменённый заказ нельзя изменить');
+			}
+
+			if (payload.status === OrderStatus.CANCELLED) {
+				const orderProducts = await manager.find(OrderProduct, {
+					where: { order: { id } }
+				});
+				for (const op of orderProducts) {
+					await manager.increment(
+						Product,
+						{ id: op.product.id },
+						'amount',
+						op.amount
+					);
+				}
+			}
+
+			order.status = payload.status;
+			return manager.save(order);
 		});
-		if (!order) {
-			throw new NotFoundException('Заказ не найден');
-		}
-		order.status = payload.status;
-		return this.orderRepository.save(order);
 	}
 }

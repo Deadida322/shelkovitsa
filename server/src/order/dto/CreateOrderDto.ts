@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import {
 	ArrayNotEmpty,
 	IsArray,
@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import 'reflect-metadata';
+import { normalizeRuPhone } from 'src/helpers/phone';
 import { CreateOrderProductDto } from './CreateOrderProductDto';
 
 export class CreateOrderDto {
@@ -36,6 +37,7 @@ export class CreateOrderDto {
 
 	@ApiProperty({ description: 'Телефон заказчика', example: '+79991234567' })
 	@Expose()
+	@Transform(({ value }) => normalizeRuPhone(value))
 	@IsPhoneNumber()
 	@IsNotEmpty({
 		message: 'Поле не может быть пустым'

@@ -27,14 +27,31 @@ function updateStatus(status, orderId) {
         body: {
             status,
         },
-    }).then(() => {
-        VsNotification({
-            title: 'Отлично!',
-            content: 'Статус был обновлён',
-            position: 'bottom-center',
-            border: 'success',
+    })
+        .then(() => {
+            const order = orders.value.find((o) => o.id === orderId);
+            if (order) order.status = status;
+            VsNotification({
+                title: 'Отлично!',
+                content: 'Статус был обновлён',
+                position: 'bottom-center',
+                border: 'success',
+            });
+        })
+        .catch((err) => {
+            const message =
+                err?.data?.error?.message ||
+                err?.data?.message ||
+                err?.message ||
+                'Не удалось обновить статус';
+            VsNotification({
+                title: 'Ошибка',
+                content: Array.isArray(message) ? message.join(', ') : String(message),
+                position: 'bottom-center',
+                border: 'danger',
+            });
+            return getOrders();
         });
-    });
 }
 
 const statusesMap = {
@@ -43,6 +60,7 @@ const statusesMap = {
     payment: 'Оплата',
     delivery: 'В доставке',
     close: 'Завершено',
+    cancelled: 'Отменён',
 };
 
 const statuses = [
@@ -66,6 +84,10 @@ const statuses = [
         title: 'Завершено',
         value: 'close',
     },
+    {
+        title: 'Отменён',
+        value: 'cancelled',
+    },
 ];
 
 const headers = [
@@ -78,8 +100,20 @@ const headers = [
         value: 'fio',
     },
     {
+        title: 'Телефон',
+        value: 'tel',
+    },
+    {
         title: 'Почта',
         value: 'mail',
+    },
+    {
+        title: 'Сумма',
+        value: 'price',
+    },
+    {
+        title: 'Комментарий',
+        value: 'description',
     },
     {
         title: 'Регион',
@@ -151,6 +185,15 @@ const headers = [
                     </td>
                 </tr>
             </template>
+            <template #[`item.tel`]="{ item }">
+                {{ item.tel }}
+            </template>
+            <template #[`item.price`]="{ item }">
+                {{ formatRub(item.price) }}
+            </template>
+            <template #[`item.description`]="{ item }">
+                {{ item.description || '—' }}
+            </template>
             <template #[`item.status`]="{ item }">
                 <v-select
                     class="mt-2"
@@ -158,8 +201,9 @@ const headers = [
                     density="compact"
                     item-title="title"
                     item-value="value"
-                    :value="statusesMap[item.status]"
+                    :model-value="item.status"
                     :items="statuses"
+                    :disabled="item.status === 'cancelled'"
                     @update:model-value="updateStatus($event, item.id)"
                 >
                     <template #item="{ props, item: statusItem }">

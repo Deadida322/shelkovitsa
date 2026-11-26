@@ -46,6 +46,29 @@ describe('Order (e2e)', () => {
 		expect(res.body.orderProducts[0]).toMatchObject({ amount: 2, price: 150000 });
 	});
 
+	it('телефон с маской нормализуется в E.164', async () => {
+		const catalog = await seedCatalog(app);
+		const res = await request(app.getHttpServer())
+			.post('/api/order')
+			.send({
+				...orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]),
+				tel: '+7 (999) 123-45-67'
+			})
+			.expect(201);
+		expect(res.body.tel).toBe('+79991234567');
+	});
+
+	it('кривой телефон — 422', async () => {
+		const catalog = await seedCatalog(app);
+		await request(app.getHttpServer())
+			.post('/api/order')
+			.send({
+				...orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]),
+				tel: '12345'
+			})
+			.expect(422);
+	});
+
 	it('при заказе создаётся запись о Telegram-уведомлении', async () => {
 		const catalog = await seedCatalog(app);
 		const res = await request(app.getHttpServer())
@@ -228,6 +251,29 @@ describe('Order (e2e)', () => {
 			.send({ status: 'in_work' })
 			.expect(200);
 		expect(res.body.status).toBe('in_work');
+	});
+
+	it('отмена заказа возвращает остаток на склад', async () => {
+		const admin = await registerAdmin(app);
+		const catalog = await seedCatalog(app, { amount: 5 });
+		const order = await request(app.getHttpServer())
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
+			.expect(201);
+		expect(await productAmount(catalog.product.id)).toBe(3);
+
+		const res = await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'cancelled' })
+			.expect(200);
+		expect(res.body.status).toBe('cancelled');
+		expect(await productAmount(catalog.product.id)).toBe(5);
+
+		await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'cancelled' })
+			.expect(400);
+		expect(await productAmount(catalog.product.id)).toBe(5);
 	});
 
 	it('ошибка вне HttpException отдаётся в едином формате без подробностей', async () => {
