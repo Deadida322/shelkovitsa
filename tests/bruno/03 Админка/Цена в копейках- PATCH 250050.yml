@@ -1,0 +1,33 @@
+info:
+  name: "Цена в копейках: PATCH 250050"
+  type: http
+  seq: 5
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "price": 250050
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('цена сохранена в копейках', () => {
+            const a = res.getBody();
+            expect(a.price).to.eql(250050);
+            expect(a.price).to.be.a('number');
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

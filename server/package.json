@@ -25,7 +25,7 @@
 		"db:reset": "node dist/cli/db-reset.js",
 		"seed": "node dist/cli/seed.js",
 		"dev:setup": "npm run build && npm run db:reset && npm run seed",
-		"test:postman": "npx -y newman@6 run ../tests/Shelkovitsa_API.postman_collection.json --working-dir ../tests",
+		"test:bruno": "node ../tests/run-bruno.mjs",
 		"storage:init": "node dist/cli/storage-init.js",
 		"audit:marketplace": "node dist/cli/marketplace-readiness.js"
 	},

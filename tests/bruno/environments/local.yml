@@ -1,0 +1,10 @@
+name: local
+variables:
+  - name: baseUrl
+    value: http://localhost:8000
+  - name: adminMail
+    value: admin@shelkovitsa.local
+  - name: adminPassword
+    value: admin12345
+  - name: customerPassword
+    value: bruno-pass-1

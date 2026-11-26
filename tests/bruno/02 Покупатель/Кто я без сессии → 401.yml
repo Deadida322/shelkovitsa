@@ -1,0 +1,24 @@
+info:
+  name: Кто я без сессии → 401
+  type: http
+  seq: 6
+http:
+  method: GET
+  url: "{{baseUrl}}/api/auth/me"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 401', () => expect(res.getStatus()).to.equal(401));
+        test('ошибка в едином формате', () => {
+            const { error } = res.getBody();
+            expect(error.statusCode).to.eql(401);
+            expect(error).to.have.property('message');
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

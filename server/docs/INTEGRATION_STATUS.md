@@ -40,8 +40,8 @@
 |---|---|
 | Unit (`npm test`) | 174 теста, из них ~110 — Excel, справочники, аудит выгрузки, GTIN |
 | E2E (`npm run test:e2e`) | 93 теста на тестовой БД, гоняются и на S3-драйвере (`TEST_STORAGE_DRIVER=s3`) |
-| Postman (`npm run test:postman`) | 66 запросов, 133 проверки, коллекция `tests/Shelkovitsa_API.postman_collection.json` |
-| CI | `.github/workflows/backend.yml`: lint, unit, e2e, newman на засеянном приложении |
+| Bruno (`npm run test:bruno`) | OpenCollection в `tests/bruno/` (цены в копейках, runtime `bru.setVar`) |
+| CI | `.github/workflows/backend.yml`: lint, unit, e2e, Bruno на засеянном приложении |
 
 Для тестов Excel есть хелпер [test/xlsx.ts](../test/xlsx.ts): собирает .xlsx из XML-частей в
 заданном порядке (раскладка Excel, битые и вредоносные файлы).
@@ -252,5 +252,5 @@ npm test                                            # unit
 npm run test:e2e                                    # e2e, нужна БД shelkovitsa_test
 TEST_STORAGE_DRIVER=s3 npm run test:e2e             # e2e на S3 (RustFS из docker-compose)
 npm run seed -- --no-images --articles 300          # 300 артикулов из реальной выгрузки
-npm run test:postman -- --env-var baseUrl=http://localhost:8000
+npm run test:bruno -- --env-var baseUrl=http://localhost:8000
 ```

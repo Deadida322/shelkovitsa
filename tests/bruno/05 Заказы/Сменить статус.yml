@@ -1,0 +1,29 @@
+info:
+  name: Сменить статус
+  type: http
+  seq: 10
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/order/{{orderId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "status": "in_work"
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('in_work', () => expect(res.getBody().status).to.eql('in_work'));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

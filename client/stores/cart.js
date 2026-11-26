@@ -4,14 +4,19 @@ import { defineStore } from 'pinia';
 
 export const useCartStore = defineStore('cart', () => {
     const auth = useAuthStore();
-    const cartCookie = useCookie('cart', {
+    // cart_v2: цены в копейках; старая cookie `cart` с рублями сбрасываем
+    const cartCookie = useCookie('cart_v2', {
         default: () => [],
     });
+    const legacyCartCookie = useCookie('cart');
 
     const cart = ref([]);
     const isDisabled = ref(false);
     // $api берём внутри методов: store может создаться из api-плагина до provide
     const initializeCart = async () => {
+        if (legacyCartCookie.value != null) {
+            legacyCartCookie.value = null;
+        }
         if (auth.user) {
             try {
                 const { $api } = useNuxtApp();

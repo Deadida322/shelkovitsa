@@ -1,0 +1,27 @@
+info:
+  name: Цена 0 → 422
+  type: http
+  seq: 6
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "price": 0
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: test('статус 422', () => expect(res.getStatus()).to.equal(422));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

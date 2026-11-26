@@ -1,0 +1,45 @@
+info:
+  name: Заказ покупателем
+  type: http
+  seq: 5
+http:
+  method: POST
+  url: "{{baseUrl}}/api/order"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "fio": "Покупатель Bruno",
+        "mail": "{{customerMail}}",
+        "tel": "+79991234567",
+        "region": "Москва",
+        "address": "ул. Тестовая, д. 2",
+        "description": "Позвоните перед доставкой",
+        "deliveryTypeId": {{deliveryTypeId}},
+        "orderProducts": [
+          {
+            "productId": {{productId}},
+            "amount": 1
+          }
+        ]
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 201', () => expect(res.getStatus()).to.equal(201));
+        test('цена заказа в копейках', () => {
+            const o = res.getBody();
+            expect(o.price).to.eql(199000);
+            expect(o.orderProducts[0].price).to.eql(199000);
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

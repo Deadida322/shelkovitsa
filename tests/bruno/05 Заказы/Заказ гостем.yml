@@ -1,0 +1,48 @@
+info:
+  name: Заказ гостем
+  type: http
+  seq: 1
+http:
+  method: POST
+  url: "{{baseUrl}}/api/order"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "fio": "Гость Bruno",
+        "mail": "guest@test.ru",
+        "tel": "+79991234567",
+        "region": "Москва",
+        "address": "ул. Тестовая, д. 1",
+        "deliveryTypeId": {{deliveryTypeId}},
+        "orderProducts": [
+          {
+            "productId": {{productId}},
+            "amount": 1,
+            "price": 1
+          }
+        ]
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 201', () => expect(res.getStatus()).to.equal(201));
+        test('сервер игнорирует price из тела, snapshot 199000 коп.', () => {
+            const o = res.getBody();
+            expect(o.status).to.eql('create');
+            expect(o.price).to.eql(199000);
+            expect(o.orderProducts[0]).to.include({ amount: 1, price: 199000 });
+            expect(o.price).to.be.a('number');
+            bru.setVar('orderId', o.id);
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,0 +1,20 @@
+info:
+  name: Цвета
+  type: http
+  seq: 3
+http:
+  method: GET
+  url: "{{baseUrl}}/api/product-color"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('есть цвета', () => expect(res.getBody()).to.be.an('array').that.is.not.empty);
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

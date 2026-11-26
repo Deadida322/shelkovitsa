@@ -1,0 +1,29 @@
+info:
+  name: Переименовать категорию
+  type: http
+  seq: 17
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/product-category/{{categoryId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{categoryName}} (переименована)"
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('новое имя', () => expect(res.getBody().name).to.include('переименована'));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

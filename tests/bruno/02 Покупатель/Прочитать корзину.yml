@@ -1,0 +1,23 @@
+info:
+  name: Прочитать корзину
+  type: http
+  seq: 10
+http:
+  method: GET
+  url: "{{baseUrl}}/api/user/basket"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('корзина сохранилась, id приведён к числу', () => {
+            const [item] = res.getBody();
+            expect(item).to.include({ productId: 1, amount: 2, id: 1, price: 99000 });
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

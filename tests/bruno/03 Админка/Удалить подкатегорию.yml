@@ -1,0 +1,18 @@
+info:
+  name: Удалить подкатегорию
+  type: http
+  seq: 20
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/admin/product-subcategory/{{subcategoryId}}"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: test('статус 204', () => expect(res.getStatus()).to.equal(204));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

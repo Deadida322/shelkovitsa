@@ -1,0 +1,21 @@
+info:
+  name: Повторить уведомление
+  type: http
+  seq: 14
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/order/{{orderId}}/telegram-retry"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 201', () => expect(res.getStatus()).to.equal(201));
+        test('ответ с флагом success', () => expect(res.getBody()).to.have.property('success'));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+docs: "При TELEGRAM_ENABLED=false вернёт success: false с причиной"

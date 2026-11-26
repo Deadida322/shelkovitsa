@@ -1,0 +1,31 @@
+info:
+  name: Создать категорию
+  type: http
+  seq: 15
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/product-category"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "{{categoryName}}"
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: before-request
+      code: bru.setVar('categoryName', `Bruno ${Date.now()}`);
+    - type: after-response
+      code: |-
+        test('статус 201', () => expect(res.getStatus()).to.equal(201));
+        bru.setVar('categoryId', res.getBody().id);
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

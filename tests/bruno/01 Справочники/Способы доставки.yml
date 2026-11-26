@@ -1,0 +1,21 @@
+info:
+  name: Способы доставки
+  type: http
+  seq: 5
+http:
+  method: GET
+  url: "{{baseUrl}}/api/delivery-type"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('есть хотя бы один способ', () => expect(res.getBody()).to.not.be.empty);
+        bru.setVar('deliveryTypeId', res.getBody()[0].id);
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

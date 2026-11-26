@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import 'reflect-metadata';
 import { ProductFileDto } from './ProductFileDto';
 import { ProductSizeDto } from '../../product-size/dto/ProductSizeDto';
@@ -24,7 +24,9 @@ export class FullProductArticleDto {
 	@Expose()
 	article!: string;
 
+	/** Цена в копейках */
 	@Expose()
+	@Transform(({ value }) => (value == null ? value : Number(value)))
 	price!: number;
 
 	@Expose()

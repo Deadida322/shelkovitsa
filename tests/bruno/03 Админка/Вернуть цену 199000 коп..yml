@@ -1,0 +1,29 @@
+info:
+  name: Вернуть цену 199000 коп.
+  type: http
+  seq: 8
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "price": 199000
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('цена снова 1990 ₽', () => expect(res.getBody().price).to.eql(199000));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

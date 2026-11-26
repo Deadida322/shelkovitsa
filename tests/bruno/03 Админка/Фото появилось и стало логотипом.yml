@@ -1,0 +1,26 @@
+info:
+  name: Фото появилось и стало логотипом
+  type: http
+  seq: 12
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('одно фото, логотип', () => {
+            const { productFiles, name } = res.getBody();
+            expect(productFiles).to.have.length(1);
+            expect(productFiles[0].isLogo).to.eql(true);
+            expect(name).to.not.eql('не должно сохраниться');
+            bru.setVar('fileId', productFiles[0].id);
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

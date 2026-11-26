@@ -1,4 +1,4 @@
-import { Expose, Type } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import 'reflect-metadata';
 
 export class FilterBrandDto {
@@ -23,10 +23,14 @@ export class FilterSizeDto {
 }
 
 export class FilterPriceDto {
+	/** Копейки */
 	@Expose()
+	@Transform(({ value }) => (value == null ? value : Number(value)))
 	min!: number;
 
+	/** Копейки */
 	@Expose()
+	@Transform(({ value }) => (value == null ? value : Number(value)))
 	max!: number;
 }
 

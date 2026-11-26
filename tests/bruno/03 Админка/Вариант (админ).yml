@@ -1,0 +1,31 @@
+info:
+  name: Вариант (админ)
+  type: http
+  seq: 14
+http:
+  method: GET
+  url: >-
+    {{baseUrl}}/api/admin/product?productArticleId={{articleId}}&productColorId={{colorId}}&productSizeId={{sizeId}}
+  params:
+    - name: productArticleId
+      value: "{{articleId}}"
+      type: query
+    - name: productColorId
+      value: "{{colorId}}"
+      type: query
+    - name: productSizeId
+      value: "{{sizeId}}"
+      type: query
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('остаток из импорта', () => expect(res.getBody().amount).to.be.oneOf([3, 5]));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

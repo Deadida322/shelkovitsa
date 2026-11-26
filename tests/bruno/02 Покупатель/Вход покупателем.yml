@@ -1,0 +1,38 @@
+info:
+  name: Вход покупателем
+  type: http
+  seq: 8
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/login"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "mail": "{{customerMail}}",
+        "password": "{{customerPassword}}"
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 201', () => expect(res.getStatus()).to.equal(201));
+        test('кука access_token httpOnly', () => {
+            const cookie = res.headerList.all().filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value).join(';');
+            expect(cookie).to.include('access_token=');
+            expect(cookie.toLowerCase()).to.include('httponly');
+        });
+        test('isAdmin = false', () => expect(res.getBody().isAdmin).to.eql(false));
+        test('нет служебных полей пользователя', () => {
+            expect(JSON.stringify(res.getBody())).to.not.match(/password|\$2[aby]\$|basket|"role"/);
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
