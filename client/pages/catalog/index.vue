@@ -755,15 +755,22 @@
         }
 
         &__sort {
-            min-width: 200px;
+            min-width: 160px;
             max-width: 240px;
+            flex: 1 1 160px;
+
+            @media screen and (max-width: 1000px) {
+                min-width: 0;
+                max-width: none;
+            }
         }
 
         &__sort-fallback {
-            min-width: 200px;
+            min-width: 160px;
             height: 40px;
             border-radius: 12px;
             background: rgba(0, 0, 0, 0.04);
+            flex: 1 1 160px;
         }
     }
 
