@@ -201,7 +201,11 @@ describe('Catalog (e2e)', () => {
 				withImage: true,
 				variants: [[size80C, 4]]
 			});
-			await addArticle('ART-004', { price: 10000, isVisible: true, archived: true });
+			await addArticle('ART-004', {
+				price: 10000,
+				isVisible: true,
+				archived: true
+			});
 		});
 
 		it('бренд: несколько значений, без учёта регистра', async () => {
@@ -444,9 +448,9 @@ describe('Catalog (e2e)', () => {
 		});
 
 		it('minPrice=0 не игнорируется', async () => {
-			expect(articles(await publicList({ minPrice: 0, maxPrice: 160000 }))).toEqual([
-				'ART-001'
-			]);
+			expect(articles(await publicList({ minPrice: 0, maxPrice: 160000 }))).toEqual(
+				['ART-001']
+			);
 			expect(articles(await publicList({ maxPrice: 0 }))).toEqual([]);
 		});
 	});
@@ -666,9 +670,9 @@ describe('Catalog (e2e)', () => {
 				query: 'A1',
 				productSizeId: size80C.id
 			});
-			expect(articles(await list({ query: 'A1', productSizeId: size80C.id }))).toEqual(
-				[]
-			);
+			expect(
+				articles(await list({ query: 'A1', productSizeId: size80C.id }))
+			).toEqual([]);
 			expect(brandMap(byCodeAndSize)).toEqual({});
 			expect(sizeMap(byCodeAndSize)).toEqual({ '75B': 1 });
 		});
@@ -701,7 +705,9 @@ describe('Catalog (e2e)', () => {
 		const customer = await registerAgent(app, CUSTOMER);
 		expect((await customer.get('/api/user/basket').expect(200)).body).toEqual([]);
 
-		const basket = [{ productId: 1, amount: 2, id: '7', name: 'Трусы', price: 99000 }];
+		const basket = [
+			{ productId: 1, amount: 2, id: '7', name: 'Трусы', price: 99000 }
+		];
 		await customer.put('/api/user/basket').send(basket).expect(200);
 		const saved = (await customer.get('/api/user/basket').expect(200)).body;
 		expect(saved).toEqual([

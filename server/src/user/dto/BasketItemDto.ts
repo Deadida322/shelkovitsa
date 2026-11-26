@@ -1,11 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import {
-	IsInt,
-	IsOptional,
-	IsPositive,
-	IsString,
-	MaxLength
-} from 'class-validator';
+import { IsInt, IsOptional, IsPositive, IsString, MaxLength } from 'class-validator';
 
 // Позиция корзины в том виде, в каком её хранит фронт (вместе с полями для отображения)
 export class BasketItemDto {

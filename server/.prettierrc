@@ -3,10 +3,9 @@
 	"printWidth": 90,
 	"proseWrap": "always",
 	"tabWidth": 4,
-	"requireConfig": true,
 	"useTabs": true,
 	"trailingComma": "none",
 	"bracketSpacing": true,
 	"semi": true,
-	"endOfLine": "auto"
+	"endOfLine": "lf"
 }
