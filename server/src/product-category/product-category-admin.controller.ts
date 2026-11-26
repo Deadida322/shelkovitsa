@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	Delete,
+	Get,
 	HttpCode,
 	Param,
 	ParseIntPipe,
@@ -9,10 +10,11 @@ import {
 	Post,
 	SerializeOptions
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import { CreateProductCategoryDto } from './dto/CreateProductCategoryDto';
 import { CreateProductSubcategoryDto } from './dto/CreateProductSubcategoryDto';
+import { ListProductCategoryDto } from './dto/ListProductCategoryDto';
 import { ProductCategoryDto } from './dto/ProductCategoryDto';
 import { ProductSubcategoryDto } from './dto/ProductSubcategoryDto';
 import { UpdateProductSubcategoryDto } from './dto/UpdateProductSubcategoryDto';
@@ -24,6 +26,14 @@ import { ProductCategoryService } from './product-category.service';
 @Controller('admin')
 export class ProductCategoryAdminController {
 	constructor(private readonly productCategoryService: ProductCategoryService) {}
+
+	@Get('product-category')
+	@SerializeOptions({ type: ListProductCategoryDto })
+	@ApiOperation({ summary: 'Все категории и подкатегории, включая пустые' })
+	@ApiResponse({ status: 200, type: [ListProductCategoryDto] })
+	async getList() {
+		return this.productCategoryService.getList(true);
+	}
 
 	@SerializeOptions({ type: ProductCategoryDto })
 	@Post('product-category')

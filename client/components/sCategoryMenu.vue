@@ -17,17 +17,24 @@
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }
 
-    const isCategoriesLoading = computed(() => {
-        return categoriesStore.categories.length === 0;
-    });
+    // idle/pending — ещё не знаем, пустой сайт или грузится; success/error + [] — прячем меню
+    const isCategoriesLoading = computed(() =>
+        categoriesStore.status === 'pending' || categoriesStore.status === 'idle',
+    );
+    const hasCategories = computed(() => categoriesStore.categories.length > 0);
 </script>
 
 <template>
-    <vs-sidebar v-model="category" open>
+    <vs-sidebar
+        v-if="isCategoriesLoading || hasCategories"
+        v-model="category"
+        open
+    >
         <template #logo>
             Женское бельё
         </template>
-        <template v-if="!isCategoriesLoading">
+        <SCategoryMenuSkeleton v-if="isCategoriesLoading" />
+        <template v-else>
             <vs-sidebar-group
                 v-for="item in categoriesStore.categories"
                 :id="String(item.name)"
@@ -49,7 +56,6 @@
                 </vs-sidebar-item>
             </vs-sidebar-group>
         </template>
-        <SCategoryMenuSkeleton v-else />
     </vs-sidebar>
 </template>
 

@@ -3,30 +3,30 @@
     const editableCategory = ref({});
     const editableSubCategory = ref({});
     const categoriesStore = useCategoriesStore();
-    const { getCategories } = categoriesStore;
-    const { categories } = storeToRefs(categoriesStore);
-    getCategories();
+    const { getAdminCategories } = categoriesStore;
+    const { adminCategories: categories } = storeToRefs(categoriesStore);
+    getAdminCategories();
 
     const choosen = ref(0);
     const onSubSave = ref(() => {
         const { categoryId, name } = editableSubCategory.value;
         $api(`/api/admin/product-category/${categoryId}/subcategories`, { method: 'POST', body: { name } }).then(() => {
             editableSubCategory.value = {};
-            getCategories();
+            getAdminCategories();
         });
     });
 
     function onSave() {
         $api('/api/admin/product-category', { method: 'POST', body: { name: editableCategory.value.name } }).then(() => {
             editableCategory.value = {};
-            getCategories();
+            getAdminCategories();
         });
     }
 
     function onDeleteSubCategory(id) {
         $api(`/api/admin/product-subcategory/${id}`, { method: 'DELETE' }).then(() => {
             editableCategory.value = {};
-            getCategories();
+            getAdminCategories();
         }).catch(({ response }) => {
             VsNotification({
                 title: 'Ошибка!',
@@ -39,7 +39,7 @@
     function onDeleteCategory(id) {
         $api(`/api/admin/product-category/${id}`, { method: 'DELETE' }).then(() => {
             editableCategory.value = {};
-            getCategories();
+            getAdminCategories();
         }).catch(({ response }) => {
             VsNotification({
                 title: 'Ошибка!',
