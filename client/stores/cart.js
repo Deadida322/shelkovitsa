@@ -10,10 +10,11 @@ export const useCartStore = defineStore('cart', () => {
 
     const cart = ref([]);
     const isDisabled = ref(false);
-    const { $api } = useNuxtApp();
+    // $api берём внутри методов: store может создаться из api-плагина до provide
     const initializeCart = async () => {
         if (auth.user) {
             try {
+                const { $api } = useNuxtApp();
                 const backendCart = await $api('/api/user/basket');
                 cart.value = Array.isArray(backendCart) ? backendCart : [];
             }

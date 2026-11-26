@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { stripGoogleFonts } from './build/plugins/strip-vuesax-fonts';
+import { fixVuesaxUnwrapElement } from './build/plugins/fix-vuesax-unwrap-element';
 
 export default defineNuxtConfig({
     app: {
@@ -46,6 +47,7 @@ export default defineNuxtConfig({
         },
         plugins: [
             stripGoogleFonts(),
+            fixVuesaxUnwrapElement(),
         ],
         ssr: {
             noExternal: ['@vueuse/core', 'vuesax-alpha'], // пакеты, которые нужно обрабатывать Rollup
@@ -99,6 +101,8 @@ export default defineNuxtConfig({
     },
     experimental: {
         payloadExtraction: true,
+        // CSS в отдельные файлы вместо ~400KB inline в HTML (лучше FCP/LCP)
+        inlineSSRStyles: false,
     },
     image: {
         quality: 80,
@@ -107,11 +111,14 @@ export default defineNuxtConfig({
     },
     googleFonts: {
         families: {
-            'Open Sans': [400, 500, 600], // нужные веса
+            'Open Sans': [400, 500, 600],
         },
-        display: 'swap', // обязательно для хорошей оценки Core Web Vitals
-        download: true, // 🔑 ключевая опция — скачивает шрифты локально
-        inject: true, // автоматически добавляет @font-face в CSS
+        // только нужные алфавиты — без greek/math/symbols
+        subsets: ['latin', 'cyrillic'],
+        display: 'swap',
+        download: true,
+        inject: true,
+        preload: true,
     },
     vuetify: {
         vuetifyOptions: {

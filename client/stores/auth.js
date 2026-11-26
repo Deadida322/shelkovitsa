@@ -5,7 +5,8 @@ import { readonly } from 'vue';
 export const useAuthStore = defineStore('auth', () => {
     const user = useCookie('user');
     const config = useRuntimeConfig();
-    const cart = useCartStore();
+    // cart не трогаем в setup: api-плагин создаёт auth до provide $api,
+    // а cart при init ходил бы в useNuxtApp().$api
     const api = $fetch.create({
         baseURL: config.public.apiBase,
         credentials: 'include',
@@ -19,7 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
             }
             else {
                 navigateTo({ path: '/deliver' });
-                cart.mergeCartWithBackend();
+                useCartStore().mergeCartWithBackend();
             }
         });
     };
@@ -42,7 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
     const logout = async () => {
         await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
         user.value = null;
-        cart.initializeCart();
+        useCartStore().initializeCart();
         await navigateTo('/');
     };
 

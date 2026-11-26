@@ -13,7 +13,6 @@ export function stripGoogleFonts(): Plugin {
             ) {
                 const cleaned = code.replace(/@import\s+url\([^)]*fonts\.googleapis\.com[^)]*\)[^;]*;?/gi, '');
                 if (cleaned !== code) {
-                    debugger;
                     console.log('✂️ Удалён Google Fonts из:', id);
                 }
                 return cleaned;
