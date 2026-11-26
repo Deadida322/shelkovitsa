@@ -1,0 +1,31 @@
+info:
+  name: itemsPerPage > 20 → 422
+  type: http
+  seq: 9
+http:
+  method: GET
+  url: "{{baseUrl}}/api/product-article?page=0&itemsPerPage=500"
+  params:
+    - name: page
+      value: "0"
+      type: query
+    - name: itemsPerPage
+      value: "500"
+      type: query
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 422', () => expect(res.getStatus()).to.equal(422));
+        test('ошибка в едином формате', () => {
+            const { error } = res.getBody();
+            expect(error.statusCode).to.eql(422);
+            expect(error).to.have.property('message');
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,0 +1,25 @@
+info:
+  name: Загрузить фото
+  type: http
+  seq: 10
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}/images"
+  body:
+    type: multipart-form
+    data:
+      - name: image
+        type: file
+        value:
+          - ../fixtures/pixel.png
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: test('статус 201', () => expect(res.getStatus()).to.equal(201));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

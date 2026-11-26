@@ -61,6 +61,28 @@ describe('Админка каталога (e2e)', () => {
 		await app.close();
 	});
 
+	describe('цена (копейки)', () => {
+		it('PATCH сохраняет целые копейки и отдаёт number', async () => {
+			const res = await update({ price: 250050 }).expect(200);
+			expect(res.body.price).toBe(250050);
+			expect(typeof res.body.price).toBe('number');
+
+			const article = await manager().findOneBy(ProductArticle, {
+				id: catalog.article.id
+			});
+			expect(Number(article.price)).toBe(250050);
+		});
+
+		it('price <= 0 и дробь — 422, значение не меняется', async () => {
+			await update({ price: 0 }).expect(422);
+			await update({ price: 19.9 }).expect(422);
+			const article = await manager().findOneBy(ProductArticle, {
+				id: catalog.article.id
+			});
+			expect(Number(article.price)).toBe(catalog.article.price);
+		});
+	});
+
 	describe('публикация', () => {
 		it('без фото опубликовать нельзя, и ничего не сохраняется', async () => {
 			const res = await update({ name: 'Новое имя', isVisible: true }).expect(400);

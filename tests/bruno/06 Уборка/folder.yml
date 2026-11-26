@@ -1,0 +1,6 @@
+info:
+  name: 06 Уборка
+  type: folder
+  seq: 7
+request:
+  auth: inherit

@@ -1,0 +1,38 @@
+info:
+  name: Невалидная регистрация → 422
+  type: http
+  seq: 3
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/register"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "mail": "not-an-email"
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 422', () => expect(res.getStatus()).to.equal(422));
+        test('ошибка в едином формате', () => {
+            const { error } = res.getBody();
+            expect(error.statusCode).to.eql(422);
+            expect(error).to.have.property('message');
+        });
+        test('список ошибок по полям', () => {
+            const { message } = res.getBody().error;
+            expect(message).to.be.an('array');
+            expect(message[0]).to.have.keys('property', 'message');
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

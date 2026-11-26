@@ -1,0 +1,49 @@
+opencollection: 1.0.0
+info:
+  name: Shelkovitsa API
+  version: "1"
+request:
+  variables:
+    - name: baseUrl
+      value: http://localhost:8000
+    - name: adminMail
+      value: admin@shelkovitsa.local
+    - name: adminPassword
+      value: admin12345
+    - name: customerMail
+      value: ""
+    - name: customerPassword
+      value: bruno-pass-1
+    - name: deliveryTypeId
+      value: ""
+    - name: articleId
+      value: ""
+    - name: colorId
+      value: ""
+    - name: sizeId
+      value: ""
+    - name: productId
+      value: ""
+    - name: fileId
+      value: ""
+    - name: categoryId
+      value: ""
+    - name: subcategoryId
+      value: ""
+    - name: orderId
+      value: ""
+docs:
+  content: |-
+    Сквозной сценарий API: справочники → покупатель → админка → витрина → заказы → уборка.
+    Авторизация — кука `access_token` (cookie jar Bruno).
+    Цены в API — **копейки** (Excel — рубли): импорт 1990 ₽ → 199000.
+    Файлы: `../fixtures` относительно корня коллекции.
+    Динамические id/mail — runtime `bru.setVar` (не пишутся на диск).
+    Нужен бэкенд с админом (adminMail / adminPassword) и доставкой — `npm run dev:setup` в server/.
+  type: text/markdown
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git

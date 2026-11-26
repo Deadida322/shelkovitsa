@@ -1,0 +1,18 @@
+info:
+  name: Сбросить сессию
+  type: http
+  seq: 1
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/logout"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: test('статус 201', () => expect(res.getStatus()).to.equal(201));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

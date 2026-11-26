@@ -1,0 +1,28 @@
+info:
+  name: Карточка артикула (админ)
+  type: http
+  seq: 4
+http:
+  method: GET
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        test('варианты из импорта: 1 цвет × 2 размера', () => {
+            const a = res.getBody();
+            expect(a.price).to.eql(199000);
+            expect(a.price).to.be.a('number');
+            expect(a.productColors).to.have.length(1);
+            expect(a.productSizes).to.have.length(2);
+            bru.setVar('colorId', a.productColors[0].id);
+            bru.setVar('sizeId', a.productSizes[0].id);
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

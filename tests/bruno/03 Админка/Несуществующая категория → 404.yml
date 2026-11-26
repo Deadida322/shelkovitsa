@@ -1,0 +1,33 @@
+info:
+  name: Несуществующая категория → 404
+  type: http
+  seq: 22
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/product-category/999999"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "нет"
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 404', () => expect(res.getStatus()).to.equal(404));
+        test('ошибка в едином формате', () => {
+            const { error } = res.getBody();
+            expect(error.statusCode).to.eql(404);
+            expect(error).to.have.property('message');
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

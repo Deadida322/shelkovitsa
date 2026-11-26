@@ -1,0 +1,27 @@
+info:
+  name: Снять с публикации
+  type: http
+  seq: 1
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "isVisible": false
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: test('статус 200', () => expect(res.getStatus()).to.equal(200));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

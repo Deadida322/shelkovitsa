@@ -1,0 +1,36 @@
+info:
+  name: Невалидная корзина → 400
+  type: http
+  seq: 11
+http:
+  method: PUT
+  url: "{{baseUrl}}/api/user/basket"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      [
+        {
+          "productId": "x",
+          "amount": -1
+        }
+      ]
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 400', () => expect(res.getStatus()).to.equal(400));
+        test('ошибка в едином формате', () => {
+            const { error } = res.getBody();
+            expect(error.statusCode).to.eql(400);
+            expect(error).to.have.property('message');
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

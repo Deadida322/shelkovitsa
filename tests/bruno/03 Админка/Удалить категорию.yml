@@ -1,0 +1,18 @@
+info:
+  name: Удалить категорию
+  type: http
+  seq: 21
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/admin/product-category/{{categoryId}}"
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: test('статус 204', () => expect(res.getStatus()).to.equal(204));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

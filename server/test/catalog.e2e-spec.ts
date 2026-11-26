@@ -707,6 +707,7 @@ describe('Catalog (e2e)', () => {
 		expect(saved).toEqual([
 			{ productId: 1, amount: 2, id: 7, name: 'Трусы', price: 99000 }
 		]);
+		expect(typeof saved[0].price).toBe('number');
 
 		await customer
 			.put('/api/user/basket')

@@ -1,0 +1,38 @@
+info:
+  name: Публикация без фото → 400, ничего не сохраняется
+  type: http
+  seq: 9
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "isVisible": true,
+        "name": "не должно сохраниться"
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: >-
+        test('статус 400', () => expect(res.getStatus()).to.equal(400));
+
+        test('ошибка в едином формате', () => {
+            const { error } = res.getBody();
+            expect(error.statusCode).to.eql(400);
+            expect(error).to.have.property('message');
+        });
+
+        test('причина — нет фото', () => expect(res.getBody().error.message).to.include('отсутствуют
+        файлы'));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

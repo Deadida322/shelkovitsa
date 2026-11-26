@@ -1,0 +1,6 @@
+info:
+  name: 05 Заказы
+  type: folder
+  seq: 6
+request:
+  auth: inherit

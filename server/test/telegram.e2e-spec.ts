@@ -74,6 +74,9 @@ describe('Telegram-уведомления (e2e)', () => {
 			expect.stringContaining(`Новый заказ #${orderId}`),
 			{ parse_mode: 'HTML' }
 		);
+		// 2 × 100000 коп. = 2000,00 ₽ (не «200000»)
+		expect(sendMessage.mock.calls[0][1]).toContain('2000,00');
+		expect(sendMessage.mock.calls[0][1]).not.toMatch(/Сумма:<\/strong> 200000/);
 		const message = await messageOf(orderId);
 		expect(message.status).toBe(TelegramMessageStatus.SENT);
 		expect(message.telegramMessageId).toBe(42);

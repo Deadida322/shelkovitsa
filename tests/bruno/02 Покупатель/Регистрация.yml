@@ -1,0 +1,41 @@
+info:
+  name: Регистрация
+  type: http
+  seq: 1
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/register"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "mail": "{{customerMail}}",
+        "fio": "Покупатель Bruno",
+        "password": "{{customerPassword}}",
+        "rePassword": "{{customerPassword}}"
+      }
+  auth: inherit
+runtime:
+  scripts:
+    - type: before-request
+      code: bru.setVar('customerMail', `bruno+${Date.now()}@test.ru`);
+    - type: after-response
+      code: |-
+        test('статус 201', () => expect(res.getStatus()).to.equal(201));
+        test('ответ — пользователь без пароля', () => {
+            const user = res.getBody();
+            expect(user.mail).to.eql(bru.getVar('customerMail'));
+            expect(user.isAdmin).to.eql(false);
+        });
+        test('нет служебных полей пользователя', () => {
+            expect(JSON.stringify(res.getBody())).to.not.match(/password|\$2[aby]\$|basket|"role"/);
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

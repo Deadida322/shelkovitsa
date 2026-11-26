@@ -18,7 +18,7 @@
 | [`server/data/`](server/data/) | справочники `colors.xlsx` и `sizes.xlsx`: цвет/размер поставщика → цвет/размер на сайте |
 | [`client/`](client/) | витрина и админка на Nuxt 3 |
 | [`deploy/`](deploy/) | скрипты установки сервера и деплоя — [README](deploy/README.md) |
-| [`tests/`](tests/) | Postman-коллекция API и фикстуры — [README](tests/README.md) |
+| [`tests/`](tests/) | Bruno-коллекция API и фикстуры — [README](tests/README.md) |
 | [`temp-dev/`](temp-dev/) | реальные выгрузки поставщика для разработки (их берут `npm run seed` и `audit:marketplace`) |
 | [`docs/customer/`](docs/customer/) | памятка заказчику по подготовке к Яндекс Доставке и Маркету (md, pdf) |
 
@@ -65,11 +65,11 @@ npm run lint:check
 npm test                    # unit-тесты
 npm run test:e2e            # e2e на отдельной БД shelkovitsa_test (создаётся сама)
 TEST_STORAGE_DRIVER=s3 npm run test:e2e   # e2e на S3 (RustFS из docker-compose)
-npm run test:postman -- --env-var baseUrl=http://localhost:8000   # Postman на запущенном приложении
+npm run test:bruno -- --env-var baseUrl=http://localhost:8000     # Bruno API-коллекция на запущенном приложении
 ```
 
 GitHub Actions ([`backend.yml`](.github/workflows/backend.yml)) на каждый PR в `server/`: lint, unit,
-сборка, e2e на локальном диске и на S3, Postman (newman) на засеянном приложении.
+сборка, e2e на локальном диске и на S3, Bruno API-коллекция на засеянном приложении.
 
 ## Деплой
 

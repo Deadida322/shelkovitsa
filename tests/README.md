@@ -1,41 +1,48 @@
-# Postman-коллекция Shelkovitsa API
+# Bruno-коллекция Shelkovitsa API
 
-[`Shelkovitsa_API.postman_collection.json`](Shelkovitsa_API.postman_collection.json) — сквозной
-сценарий по API (66 запросов, 133 проверки). Запросы идут по порядку и передают друг другу данные
-через переменные коллекции; авторизация — кука `access_token`, её держит cookie jar Postman/newman.
+[`bruno/`](bruno/) — сквозной сценарий по API (OpenCollection YAML). Запросы идут по
+порядку и передают данные через runtime-переменные (`bru.setVar`); авторизация —
+кука `access_token` (cookie jar Bruno CLI).
+
+Цены в API — **копейки** (Excel/UI — рубли): импорт `1990` ₽ → `199000`, фильтры
+`minPrice`/`maxPrice` и PATCH admin `price` тоже в копейках.
 
 | Папка | Что проверяет |
 |-------|---------------|
 | 00 Сервис | `/api/health` |
-| 01 Справочники | категории, цвета, размеры, доставка, преимущества |
+| 01 Справочники | категории, цвета, размеры, доставка |
 | 02 Покупатель | регистрация, вход/выход, `me`, корзина, 401/403/422 |
-| 03 Админка | импорт Excel, фото (в т.ч. отказ для не-картинки), логотип, публикация (и отказ без фото), вариант, категории |
-| 04 Витрина (гость) | поиск, фильтр по цене, карточка, вариант, популярное, 400/404/422 |
-| 05 Заказы | заказ гостем и покупателем, «мои заказы», админский список, статусы, Telegram |
-| 06 Уборка | снять товар с публикации, удалить фото — повторный прогон даёт тот же результат |
+| 03 Админка | импорт Excel, цена в копейках, фото, публикация, вариант, категории |
+| 04 Витрина (гость) | поиск, фильтр/фасеты цены, карточка, вариант, популярное, 400/404/422 |
+| 05 Заказы | заказ гостем (игнор client `price`) и покупателем, статусы, Telegram |
+| 06 Уборка | снять с публикации, удалить фото — повторный прогон идемпотентен |
 
-Файлы для загрузки лежат в [`fixtures/`](fixtures/): `import.xlsx` (тестовый артикул
-`PM-TEST-001`, категория «Postman» создаётся импортом), `pixel.png`, `not-an-image.png`.
+Файлы для загрузки: [`fixtures/`](fixtures/) (`import.xlsx` → артикул `PM-TEST-001`,
+`pixel.png`, `not-an-image.png`). В коллекции пути `../fixtures/...`.
 
-## Что нужно на стороне бэкенда
+## Бэкенд
 
-Админ и хотя бы один способ доставки — проще всего `npm run dev:setup` в `server/`
-(админ `admin@shelkovitsa.local` / `admin12345`). Для повторных прогонов подряд удобно
-выключить лимит входов: `THROTTLE_ENABLED=false`.
+Админ и способ доставки — `npm run dev:setup` в `server/`
+(`admin@shelkovitsa.local` / `admin12345`). Для повторных прогонов:
+`THROTTLE_ENABLED=false`.
 
 ## Запуск
 
-**newman** (из `server/`, бэкенд на `http://localhost:8000`):
+Из `server/` (бэкенд на `http://localhost:8000`):
 
 ```bash
-npm run test:postman
-# другой адрес или админ:
-npm run test:postman -- --env-var baseUrl=http://localhost:8001 --env-var adminPassword=...
+npm run test:bruno
+# другой адрес или пароль:
+npm run test:bruno -- --env-var baseUrl=http://localhost:8001 --env-var adminPassword=...
 ```
 
-**Postman**: Import → файл коллекции → Run collection. Переменные `baseUrl`, `adminMail`,
-`adminPassword` — на вкладке Variables коллекции; для запросов с файлами укажите рабочую
-папку `tests/` (Settings → Working directory).
+Или из папки коллекции:
 
-В CI коллекция прогоняется после e2e-тестов на отдельной БД с сидом
-(`.github/workflows/backend.yml`).
+```bash
+cd tests/bruno
+npx -y @usebruno/cli@4.4.0 run --env local
+```
+
+В Bruno Desktop: Open Collection → `tests/bruno`, окружение `local`.
+
+В CI коллекция гоняется после e2e на отдельной БД (`.github/workflows/backend.yml`).

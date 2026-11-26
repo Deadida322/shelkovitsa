@@ -1,0 +1,31 @@
+info:
+  name: Загрузить не-картинку → 422
+  type: http
+  seq: 11
+http:
+  method: POST
+  url: "{{baseUrl}}/api/admin/product-article/{{articleId}}/images"
+  body:
+    type: multipart-form
+    data:
+      - name: image
+        type: file
+        value:
+          - ../fixtures/not-an-image.png
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 422', () => expect(res.getStatus()).to.equal(422));
+        test('ошибка в едином формате', () => {
+            const { error } = res.getBody();
+            expect(error.statusCode).to.eql(422);
+            expect(error).to.have.property('message');
+        });
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

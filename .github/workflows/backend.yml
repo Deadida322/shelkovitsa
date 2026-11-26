@@ -69,14 +69,14 @@ jobs:
           TEST_DB_USER: postgres
           TEST_DB_PASSWORD: postgres
 
-      - name: Postman (newman) against seeded app
+      - name: Bruno API collection against seeded app
         env:
           NODE_ENV: test
           DB_HOST: localhost
           DB_PORT: 5432
           DB_USER: postgres
           DB_PASSWORD: postgres
-          DB_NAME: shelkovitsa_postman
+          DB_NAME: shelkovitsa_bruno
           JWT_SECRET: ci-secret
           JWT_EXPIRES_IN: 1 day
           TEMP_PATH: temp/src
@@ -84,10 +84,11 @@ jobs:
           TELEGRAM_ENABLED: 'false'
           THROTTLE_ENABLED: 'false'
           PGPASSWORD: postgres
+          PORT: 8000
         run: |
-          psql -h localhost -U postgres -c "CREATE DATABASE shelkovitsa_postman"
+          psql -h localhost -U postgres -c "CREATE DATABASE shelkovitsa_bruno"
           npm run db:reset -- --force
           npm run seed -- --no-images --articles 3
           node dist/main.js > /tmp/app.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:8000/api/health && break; sleep 2; done
-          npm run test:postman -- --env-var baseUrl=http://localhost:8000 || (cat /tmp/app.log; exit 1)
+          npm run test:bruno -- --env-var baseUrl=http://localhost:8000 || (cat /tmp/app.log; exit 1)

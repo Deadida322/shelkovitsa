@@ -1,0 +1,5 @@
+# Bruno local/runtime noise
+results/
+*.html
+.env
+.env.*

@@ -1,0 +1,35 @@
+info:
+  name: Фильтр по цене
+  type: http
+  seq: 2
+http:
+  method: GET
+  url: "{{baseUrl}}/api/product-article?page=0&itemsPerPage=20&query=PM-TEST-001&minPrice=199001"
+  params:
+    - name: page
+      value: "0"
+      type: query
+    - name: itemsPerPage
+      value: "20"
+      type: query
+    - name: query
+      value: PM-TEST-001
+      type: query
+    - name: minPrice
+      value: "199001"
+      type: query
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: >-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+
+        test('дороже 1990.01 ₽ (копейки) — не находится', () =>
+        expect(res.getBody().count).to.eql(0));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

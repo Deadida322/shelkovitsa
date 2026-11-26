@@ -1,0 +1,6 @@
+info:
+  name: 03 Админка
+  type: folder
+  seq: 4
+request:
+  auth: inherit

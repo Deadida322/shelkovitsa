@@ -1,0 +1,32 @@
+info:
+  name: Вариант с остатком
+  type: http
+  seq: 7
+http:
+  method: GET
+  url: >-
+    {{baseUrl}}/api/product?productArticleId={{articleId}}&productColorId={{colorId}}&productSizeId={{sizeId}}
+  params:
+    - name: productArticleId
+      value: "{{articleId}}"
+      type: query
+    - name: productColorId
+      value: "{{colorId}}"
+      type: query
+    - name: productSizeId
+      value: "{{sizeId}}"
+      type: query
+  auth: inherit
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test('статус 200', () => expect(res.getStatus()).to.equal(200));
+        bru.setVar('productId', res.getBody().id);
+        test('остаток > 0', () => expect(res.getBody().amount).to.be.above(0));
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
