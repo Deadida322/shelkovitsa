@@ -60,6 +60,11 @@
 </template>
 
 <style lang="scss">
+.shelkovitsa-main {
+    overflow-x: clip;
+    max-width: 100%;
+}
+
 .shelkovitsa-body {
     min-height: calc(100vh - 400px);
     margin-top: 100px;
@@ -67,6 +72,8 @@
     display: flex;
     gap: 40px;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 
     @media screen and (max-width: 1200px) {
         padding: 0 8px;

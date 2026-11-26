@@ -128,10 +128,16 @@
         margin-top: 0 !important;
         padding-top: 60px !important;
         z-index: 1100 !important;
+        // закрытое меню не должно раздувать горизонтальный scroll
+        &:not(.is-open) {
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
         &.vs-sidebar.is-open {
             position: fixed !important;
             border-radius: 0 10px 10px 0 !important;
             margin-top: 0 !important;
+            visibility: visible !important;
         }
     }
 </style>

@@ -146,11 +146,11 @@
         }
 
         @media screen and (max-width: 800px) {
-            padding: 12px;
-            transform: translateY(calc(100% - 44px));
+            padding: 14px 12px;
+            transform: translateY(calc(100% - 56px));
             right: 0;
             left: 0;
-            width: 100%;
+            width: auto;
         }
 
         &_opened {
