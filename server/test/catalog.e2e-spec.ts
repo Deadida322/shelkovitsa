@@ -280,13 +280,13 @@ describe('Catalog (e2e)', () => {
 		it('админские параметры в публичном каталоге игнорируются', async () => {
 			const body = await publicList({
 				status: 'archive',
-				noImage: 'true',
-				noStock: 'true'
+				image: 'without',
+				stock: 'without'
 			});
 			expect(articles(body)).toEqual(['ART-001', 'ART-003']);
 		});
 
-		it('админка: статус публикации, архив, без фото, без остатка', async () => {
+		it('админка: статус публикации, архив, фото и остаток', async () => {
 			expect(articles(await adminList({}))).toEqual([
 				'ART-001',
 				'ART-002',
@@ -298,14 +298,28 @@ describe('Catalog (e2e)', () => {
 				'ART-003'
 			]);
 			expect(articles(await adminList({ status: 'hidden' }))).toEqual(['ART-002']);
+			expect(articles(await adminList({ status: 'active' }))).toEqual([
+				'ART-001',
+				'ART-002',
+				'ART-003'
+			]);
 			expect(articles(await adminList({ status: 'archive' }))).toEqual(['ART-004']);
 
-			expect(articles(await adminList({ noImage: 'true' }))).toEqual([
+			expect(articles(await adminList({ image: 'without' }))).toEqual([
 				'ART-002',
 				'ART-004'
 			]);
+			expect(articles(await adminList({ image: 'with' }))).toEqual([
+				'ART-001',
+				'ART-003'
+			]);
 			// у ART-002 есть остаток 2 в 80C; у ART-004 вариантов нет вовсе
-			expect(articles(await adminList({ noStock: 'true' }))).toEqual(['ART-004']);
+			expect(articles(await adminList({ stock: 'without' }))).toEqual(['ART-004']);
+			expect(articles(await adminList({ stock: 'with' }))).toEqual([
+				'ART-001',
+				'ART-002',
+				'ART-003'
+			]);
 			expect(
 				articles(
 					await adminList({ status: 'hidden', brand: 'janira', query: '002' })

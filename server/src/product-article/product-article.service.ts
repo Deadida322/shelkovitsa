@@ -102,9 +102,15 @@ export class ProductArticleService {
 			? products.filter((p) => p.productSize.id === payload.productSizeId)
 			: products;
 
+		// превью (isLogo) всегда первым — и в админке, и на карточке
+		const productFiles = [...(article.productFiles ?? [])].sort(
+			(a, b) => Number(b.isLogo) - Number(a.isLogo) || a.id - b.id
+		);
+
 		// сериализация — FullProductArticleDto / FullProductArticleAdminDto в контроллере
 		return {
 			...article,
+			productFiles,
 			productColors: filterDuplicateObjectById(
 				productsOfSize.map((p) => p.productColor)
 			),
@@ -153,7 +159,9 @@ export class ProductArticleService {
 		if (isAdmin) {
 			if (payload.status === 'archive') {
 				where.deleted_at = Not(IsNull());
-			} else if (payload.status) {
+			} else if (payload.status === 'active') {
+				where.deleted_at = IsNull();
+			} else if (payload.status === 'published' || payload.status === 'hidden') {
 				where.deleted_at = IsNull();
 				where.isVisible = payload.status === 'published';
 			}
@@ -290,15 +298,21 @@ export class ProductArticleService {
 			});
 		}
 
-		if (payload.inStock) {
+		if (isAdmin && payload.stock === 'with') {
+			conditions.push({ sql: (id) => `EXISTS (${inStock(id)})`, params: {} });
+		} else if (isAdmin && payload.stock === 'without') {
+			conditions.push({ sql: (id) => `NOT EXISTS (${inStock(id)})`, params: {} });
+		} else if (payload.inStock) {
 			conditions.push({ sql: (id) => `EXISTS (${inStock(id)})`, params: {} });
 		}
 
-		if (isAdmin && payload.noStock) {
-			conditions.push({ sql: (id) => `NOT EXISTS (${inStock(id)})`, params: {} });
-		}
-
-		if (isAdmin && payload.noImage) {
+		if (isAdmin && payload.image === 'with') {
+			conditions.push({
+				sql: (id) =>
+					`EXISTS (SELECT 1 FROM product_file f WHERE f."productArticleId" = ${id})`,
+				params: {}
+			});
+		} else if (isAdmin && payload.image === 'without') {
 			conditions.push({
 				sql: (id) =>
 					`NOT EXISTS (SELECT 1 FROM product_file f WHERE f."productArticleId" = ${id})`,

@@ -27,7 +27,34 @@
     const category = ref(item.value.productSubcategory?.productCategory.id);
     const subcategory = ref(item.value.productSubcategory);
 
-    async function updateImage(image) {
+    const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp';
+    const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
+
+    function isAllowedImage(file) {
+        if (!file) {
+            return false;
+        }
+        if (file.type && IMAGE_TYPES.has(file.type)) {
+            return true;
+        }
+        return IMAGE_EXT.test(file.name || '');
+    }
+
+    async function updateImage(value) {
+        const image = Array.isArray(value) ? value[0] : value;
+        if (!image) {
+            return;
+        }
+        if (!isAllowedImage(image)) {
+            VsNotification({
+                title: 'Ошибка!',
+                content: 'Можно загружать только JPEG, PNG или WebP',
+                position: 'bottom-center',
+                border: 'danger',
+            });
+            return;
+        }
         const formData = new FormData();
         formData.append('image', image, image.name);
         loading.value = true;
@@ -41,6 +68,7 @@
             });
             getProduct();
         }).catch(() => {
+            loading.value = false;
             VsNotification({
                 title: 'Ошибка!',
                 content: 'Ошибка загрузки фото',
@@ -66,7 +94,7 @@
         };
     }
 
-    async function updateProduct() {
+    async function updateProduct({ closeOnSuccess = false } = {}) {
         const mappedProduct = mapProduct(item.value);
         await $api(`/api/admin/product-article/${item.value.id}`, {
             method: 'PATCH',
@@ -79,8 +107,13 @@
                 position: 'bottom-center',
                 border: 'success',
             });
-            getProduct();
             emit('updateProduct');
+            // После публикации/архива строка часто пропадает из текущего фильтра — модалку закрываем
+            if (closeOnSuccess) {
+                emit('update:visible', false);
+                return;
+            }
+            getProduct();
         }).catch(({ response }) => {
             getProduct();
             VsNotification({
@@ -91,6 +124,15 @@
             });
         });
     };
+
+    function onPublishToggle() {
+        // и публикация, и скрытие — элемент может пропасть из текущего фильтра
+        updateProduct({ closeOnSuccess: true });
+    }
+
+    function onArchiveToggle(value) {
+        updateProduct({ closeOnSuccess: value === true });
+    }
 
     // Полное удаление — только для товаров, которые ни разу не заказывали (иначе бэк вернёт 400).
     // Первый клик просит подтверждения, второй удаляет
@@ -172,6 +214,13 @@
         });
     }
 
+    const productFiles = computed(() => {
+        const files = item.value?.productFiles ?? [];
+        return [...files].sort(
+            (a, b) => Number(b.isLogo) - Number(a.isLogo) || a.id - b.id,
+        );
+    });
+
     watch(() => props.visible, async (value) => {
         if (!value)
             return;
@@ -206,11 +255,14 @@
                     :disabled="item.is_deleted"
                     @blur="updateProduct"
                 />
-                <v-text-field
+                <v-textarea
                     v-model="item.description"
                     hide-details="auto"
                     label="Описание"
                     :disabled="item.is_deleted"
+                    auto-grow
+                    rows="4"
+                    max-rows="12"
                     @blur="updateProduct"
                 />
                 <v-select
@@ -256,23 +308,24 @@
                     :disabled="item.is_deleted"
                     hide-details
                     color="red"
-                    @update:model-value="updateProduct"
+                    @update:model-value="onPublishToggle"
                 />
                 <v-switch
                     v-model="item.is_deleted"
                     label="Продукт удалён?"
                     hide-details
                     color="red"
-                    @update:model-value="updateProduct"
+                    @update:model-value="onArchiveToggle"
                 />
 
                 <s-carousel
+                    v-if="productFiles.length"
                     class="admin-images-carousel mt-4"
                     :items-per-page="1.8"
                 >
                     <s-slide
-                        v-for="(file, key) in item.productFiles"
-                        :key="key"
+                        v-for="file in productFiles"
+                        :key="file.id"
                         :class="{
                             logo: file.isLogo,
                         }"
@@ -306,9 +359,11 @@
                     </s-slide>
                 </s-carousel>
                 <VFileUpload
+                    class="mt-4"
                     title="Добавить фото"
                     density="compact"
                     variant="comfortable"
+                    :accept="IMAGE_ACCEPT"
                     :disabled="item.is_deleted"
                     @update:model-value="updateImage"
                 />

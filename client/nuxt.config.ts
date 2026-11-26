@@ -113,5 +113,14 @@ export default defineNuxtConfig({
         download: true, // 🔑 ключевая опция — скачивает шрифты локально
         inject: true, // автоматически добавляет @font-face в CSS
     },
+    vuetify: {
+        vuetifyOptions: {
+            locale: {
+                locale: 'ru',
+                fallback: 'en',
+            },
+            localeMessages: ['ru'],
+        },
+    },
 
 });

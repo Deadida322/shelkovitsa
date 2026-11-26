@@ -10,10 +10,11 @@
 
     cartStore.initializeCart();
     const route = useRoute();
+    const isAdminPage = computed(() => route.path.startsWith('/admin'));
     watch(
         () => route.fullPath,
         (newPath) => {
-            if (newPath === '/deliver') {
+            if (newPath === '/deliver' || newPath.startsWith('/admin')) {
                 cartStore.isDisabled = true;
             }
             else {
@@ -46,7 +47,10 @@
             <div class="shelkovitsa-body__main">
                 <slot />
             </div>
-            <div class="shelkovitsa-body__menu">
+            <div
+                v-if="!isAdminPage"
+                class="shelkovitsa-body__menu"
+            >
                 <ClientOnly>
                     <s-category-menu />
                 </ClientOnly>

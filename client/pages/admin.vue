@@ -9,13 +9,39 @@
         ],
     });
 
-    const tab = ref('products');
+    const route = useRoute();
+    const router = useRouter();
     const tabs = ['products', 'orders', 'categories'];
+    const tab = ref(
+        tabs.includes(route.query.tab) ? route.query.tab : 'products',
+    );
     const componentsMap = {
         products: adminProducts,
         categories: adminCategories,
         orders: adminOrders,
     };
+
+    watch(tab, (value) => {
+        if (route.query.tab === value) {
+            return;
+        }
+        router.replace({
+            query: {
+                ...route.query,
+                tab: value === 'products' ? undefined : value,
+            },
+        });
+    });
+
+    watch(
+        () => route.query.tab,
+        (value) => {
+            const next = tabs.includes(value) ? value : 'products';
+            if (tab.value !== next) {
+                tab.value = next;
+            }
+        },
+    );
 </script>
 
 <template>
