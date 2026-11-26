@@ -80,50 +80,39 @@ describe('filtersFromQuery / filtersToQuery', () => {
 describe('clampPriceRange', () => {
     const productMax = 5166;
 
-    it('клампит min к [0, productMax−1] и max к [1, productMax]', () => {
+    it('клампит к [0, productMax]', () => {
         expect(clampPriceRange(-10, 99999, { productMax })).toEqual({
             min: 0,
             max: 5166,
         });
-        expect(clampPriceRange(6000, 1, { productMax, side: 'min' })).toEqual({
-            min: 5165,
-            max: null,
+    });
+
+    it('при min > max меняет значения местами', () => {
+        expect(clampPriceRange(1200, 900, { productMax })).toEqual({
+            min: 900,
+            max: 1200,
+        });
+        expect(clampPriceRange(700, 200, {})).toEqual({
+            min: 200,
+            max: 700,
         });
     });
 
-    it('уход с max при min > max стирает min', () => {
-        expect(clampPriceRange(700, 200, { productMax, side: 'max' })).toEqual({
-            min: null,
-            max: 200,
-        });
-    });
-
-    it('уход с min при min > max стирает max', () => {
-        expect(clampPriceRange(700, 200, { productMax, side: 'min' })).toEqual({
-            min: 700,
-            max: null,
-        });
-    });
-
-    it('равные min и max не считаются конфликтом', () => {
-        expect(clampPriceRange(500, 500, { productMax, side: 'max' })).toEqual({
+    it('равные min и max оставляем', () => {
+        expect(clampPriceRange(500, 500, { productMax })).toEqual({
             min: 500,
             max: 500,
         });
     });
 
-    it('без productMax только конфликтная логика', () => {
-        expect(clampPriceRange(900, 100, { side: 'max' })).toEqual({
-            min: null,
-            max: 100,
+    it('одно поле не трогает другое', () => {
+        expect(clampPriceRange(50, null, { productMax })).toEqual({
+            min: 50,
+            max: null,
         });
-        expect(clampPriceRange(50, null, {})).toEqual({ min: 50, max: null });
-    });
-
-    it('max ниже 1 поднимается до 1', () => {
         expect(clampPriceRange(null, 0, { productMax })).toEqual({
             min: null,
-            max: 1,
+            max: 0,
         });
     });
 });

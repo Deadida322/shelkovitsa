@@ -68,35 +68,25 @@ export function filtersToQuery(filters) {
 }
 
 /**
- * Границы полей: min ∈ [0, productMax−1], max ∈ [1, productMax].
- * Если min > max: side === 'max' → стереть min; иначе стереть max.
+ * Границы: min ≥ 0, max ≤ productMax (если известен).
+ * Если оба заданы и min > max — просто меняем местами (без «стираний»).
  */
-export function clampPriceRange(min, max, { productMax = null, side = 'max' } = {}) {
-    const minFloor = 0;
-    const minCeil = productMax != null ? Math.max(0, productMax - 1) : null;
-    const maxFloor = 1;
-    const maxCeil = productMax;
-
+export function clampPriceRange(min, max, { productMax = null } = {}) {
     if (min != null) {
-        min = Math.max(minFloor, min);
-        if (minCeil != null) {
-            min = Math.min(min, minCeil);
+        min = Math.max(0, min);
+        if (productMax != null) {
+            min = Math.min(min, productMax);
         }
     }
     if (max != null) {
-        max = Math.max(maxFloor, max);
-        if (maxCeil != null) {
-            max = Math.min(max, maxCeil);
+        max = Math.max(0, max);
+        if (productMax != null) {
+            max = Math.min(max, productMax);
         }
     }
 
     if (min != null && max != null && min > max) {
-        if (side === 'max') {
-            min = null;
-        }
-        else {
-            max = null;
-        }
+        return { min: max, max: min };
     }
     return { min, max };
 }

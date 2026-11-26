@@ -73,8 +73,6 @@
         ...(filters.value.sort !== 'default' ? { sort: filters.value.sort } : null),
     }));
 
-    const lastPriceSide = 'max';
-
     function resetPrice() {
         priceInput.min = '';
         priceInput.max = '';
@@ -143,7 +141,7 @@
         return raw != null && raw > 0 ? Math.ceil(raw) : null;
     });
 
-    /** Применяем фильтр только когда ушли из блока цены */
+    /** Применяем фильтр только когда ушли из блока цены; min > max → swap */
     function applyPrice() {
         const emptyMin = priceInput.min === '' || priceInput.min == null;
         const emptyMax = priceInput.max === '' || priceInput.max == null;
@@ -158,7 +156,6 @@
 
         ({ min, max } = clampPriceRange(min, max, {
             productMax: catalogPriceMax.value,
-            side: lastPriceSide,
         }));
 
         priceInput.min = min == null ? '' : min;
@@ -175,14 +172,6 @@
     function onPriceBlockFocusOut(event) {
         if (event.currentTarget.contains(event.relatedTarget)) {
             return;
-        }
-        // side берём с поля, которое реально потеряло фокус (@focus на vs-input иногда не срабатывает)
-        const inputs = event.currentTarget.querySelectorAll('input[type="number"]');
-        if (event.target === inputs[0]) {
-            lastPriceSide = 'min';
-        }
-        else if (event.target === inputs[1]) {
-            lastPriceSide = 'max';
         }
         applyPrice();
     }
@@ -230,7 +219,7 @@
                         const { min, max } = clampPriceRange(
                             filters.value.minPrice,
                             filters.value.maxPrice,
-                            { productMax: catalogPriceMax.value, side: lastPriceSide },
+                            { productMax: catalogPriceMax.value },
                         );
                         if (min !== filters.value.minPrice || max !== filters.value.maxPrice) {
                             filters.value.minPrice = min;
@@ -473,19 +462,17 @@
                         class="s-input catalog-filters__price-input"
                         type="number"
                         :min="0"
-                        :max="catalogPriceMax != null ? catalogPriceMax - 1 : undefined"
+                        :max="catalogPriceMax ?? undefined"
                         :placeholder="facets.price.max ? `от ${Math.floor(facets.price.min)}` : 'от'"
-                        @focus="lastPriceSide = 'min'"
                     />
                     <span>–</span>
                     <vs-input
                         v-model="priceInput.max"
                         class="s-input catalog-filters__price-input"
                         type="number"
-                        :min="1"
+                        :min="0"
                         :max="catalogPriceMax ?? undefined"
                         :placeholder="facets.price.max ? `до ${Math.ceil(facets.price.max)}` : 'до'"
-                        @focus="lastPriceSide = 'max'"
                     />
                 </div>
             </div>
