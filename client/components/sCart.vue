@@ -148,12 +148,9 @@
         @media screen and (max-width: 800px) {
             padding: 12px;
             transform: translateY(calc(100% - 44px));
-            right: 10px;
-        }
-
-        @media screen and (max-width: 600px) {
-            width: 98%;
-            right: 1%
+            right: 0;
+            left: 0;
+            width: 100%;
         }
 
         &_opened {
