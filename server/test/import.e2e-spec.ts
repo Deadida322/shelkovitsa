@@ -109,7 +109,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			where: { article: 'A-1' }
 		});
 		expect(article.isVisible).toBe(false);
-		expect(Number(article.price)).toBe(1500);
+		expect(Number(article.price)).toBe(150000);
 
 		const products = await manager().find(Product, {
 			where: { productArticle: { id: article.id } }
@@ -443,7 +443,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 				['XL-2', 3, '42']
 			]);
 			const xl2 = await manager().findOneBy(ProductArticle, { article: 'XL-2' });
-			expect(Number(xl2.price)).toBe(1014.3);
+			expect(Number(xl2.price)).toBe(101430);
 		});
 
 		it('импортируется только первый лист книги', async () => {
@@ -573,7 +573,7 @@ describe('Импорт каталога из Excel (e2e)', () => {
 			});
 			expect(first.name).toBe('1025612 Брюки пижамные Airy');
 			expect(first.composition).toBe('56% VI+ 32% PA + 12% EA');
-			expect(Number(first.price)).toBe(3579.03);
+			expect(Number(first.price)).toBe(357903);
 			expect(first.productSubcategory.name).toBe('Брюки');
 			expect(first.productSubcategory.productCategory.name).toBe(
 				'Верхний трикотаж'

@@ -15,6 +15,7 @@ import {
 } from 'src/helpers/excelHelper';
 import { downloadImage } from 'src/helpers/imageDownloadHelper';
 import { FILE_STORAGE, FileStorage } from 'src/storage/storage.types';
+import { rublesToKopecks } from 'src/helpers/money';
 import { capitalizeFirstLetter } from 'src/helpers/stringHelper';
 import { ParseProductArticleDto } from './dto/ParseProductArticleDto';
 import {
@@ -164,7 +165,8 @@ export class ProductImportService {
 			},
 			size: normalizeSupplierSize(rowValues[COLUMNS.size]),
 			amount: parseAmount(rowValues[COLUMNS.amount]),
-			price: Number(rowValues[COLUMNS.price]),
+			// Excel — рубли (дробь); в БД/API — копейки
+			price: rublesToKopecks(rowValues[COLUMNS.price]),
 			country: optional(COLUMNS.country),
 			description: optional(COLUMNS.description),
 			brand: normalizeBrand(optional(COLUMNS.brand)),
@@ -182,7 +184,7 @@ export class ProductImportService {
 	private findMissingFields(product: ParseProductArticleDto): string[] {
 		const missing: string[] = [];
 		if (!product.article) missing.push('article');
-		if (product.price === null || Number.isNaN(product.price)) missing.push('price');
+		if (product.price == null || !(product.price > 0)) missing.push('price');
 		if (product.amount === null || Number.isNaN(product.amount))
 			missing.push('amount');
 		if (!product.color.name) missing.push('color.name');

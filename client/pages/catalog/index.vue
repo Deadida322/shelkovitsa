@@ -3,6 +3,7 @@
     import debounce from 'lodash/debounce';
     import { storeToRefs } from 'pinia';
     import { clampPriceRange, toInt } from '~/utils/catalogFilters';
+    import { rublesFilterToKopecks } from '~/utils/money';
 
     const categoriesStore = useCategoriesStore();
     const filtersStore = useFiltersStore();
@@ -103,8 +104,12 @@
         ...scopeQuery.value,
         ...(filters.value.brands.length ? { brand: filters.value.brands } : null),
         ...(filters.value.sizes.length ? { productSizeId: filters.value.sizes } : null),
-        ...(filters.value.minPrice != null ? { minPrice: filters.value.minPrice } : null),
-        ...(filters.value.maxPrice != null ? { maxPrice: filters.value.maxPrice } : null),
+        ...(filters.value.minPrice != null
+            ? { minPrice: rublesFilterToKopecks(filters.value.minPrice) }
+            : null),
+        ...(filters.value.maxPrice != null
+            ? { maxPrice: rublesFilterToKopecks(filters.value.maxPrice) }
+            : null),
         ...(filters.value.inStock ? { inStock: true } : null),
     }));
     const payload = computed(() => ({
@@ -177,9 +182,10 @@
     const facets = ref({ brands: [], sizes: [], price: { min: 0, max: 0 } });
 
     /** Макс. цена самого дорогого товара в текущей выдаче фасетов */
+    // фасеты с API — копейки; фильтр в URL/UI — рубли
     const catalogPriceMax = computed(() => {
         const raw = facets.value.price?.max;
-        return raw != null && raw > 0 ? Math.ceil(raw) : null;
+        return raw != null && raw > 0 ? Math.ceil(raw / 100) : null;
     });
 
     /** Применяем фильтр только когда ушли из блока цены; min > max → swap */
@@ -560,7 +566,7 @@
                         type="number"
                         :min="0"
                         :max="catalogPriceMax ?? undefined"
-                        :placeholder="facets.price.max ? `от ${Math.floor(facets.price.min)}` : 'от'"
+                        :placeholder="facets.price.max ? `от ${Math.floor(facets.price.min / 100)}` : 'от'"
                     />
                     <span>–</span>
                     <vs-input
@@ -569,7 +575,7 @@
                         type="number"
                         :min="0"
                         :max="catalogPriceMax ?? undefined"
-                        :placeholder="facets.price.max ? `до ${Math.ceil(facets.price.max)}` : 'до'"
+                        :placeholder="facets.price.max ? `до ${Math.ceil(facets.price.max / 100)}` : 'до'"
                     />
                 </div>
             </div>

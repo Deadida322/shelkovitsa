@@ -243,7 +243,7 @@ describe('Админка каталога (e2e)', () => {
 			// артикул снова можно завести с тем же кодом (импортом)
 			await manager().save(ProductArticle, {
 				article: catalog.article.article,
-				price: 100,
+				price: 10000,
 				productSubcategory: catalog.article.productSubcategory
 			});
 		});

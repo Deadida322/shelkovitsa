@@ -1,4 +1,6 @@
 <script setup>
+    import { formatRub } from '~/utils/money';
+
     const props = defineProps({
         item: {
             type: Object,
@@ -46,7 +48,7 @@
                 variant="flat"
                 label
             >
-                {{ item.price }} ₽
+                {{ formatRub(item.price) }}
             </v-chip>
         </template>
     </vs-card>

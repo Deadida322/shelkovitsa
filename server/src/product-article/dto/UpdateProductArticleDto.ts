@@ -5,7 +5,8 @@ import {
 	IsOptional,
 	IsString,
 	IsArray,
-	ArrayUnique
+	ArrayUnique,
+	Min
 } from 'class-validator';
 
 import 'reflect-metadata';
@@ -16,6 +17,13 @@ export class UpdateProductArticleDto {
 	@IsInt()
 	@Expose()
 	productSubcategoryId?: number;
+
+	/** Цена в копейках (> 0) */
+	@IsOptional()
+	@IsInt()
+	@Min(1, { message: 'Цена должна быть больше 0' })
+	@Expose()
+	price?: number;
 
 	@IsOptional()
 	@IsString()

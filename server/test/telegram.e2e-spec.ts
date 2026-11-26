@@ -22,7 +22,7 @@ describe('Telegram-уведомления (e2e)', () => {
 			.manager.findOne(TelegramOrderMessage, { where: { order: { id: orderId } } });
 
 	const createOrder = async () => {
-		const catalog = await seedCatalog(app, { price: 1000 });
+		const catalog = await seedCatalog(app, { price: 100000 });
 		const res = await request(app.getHttpServer())
 			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))

@@ -136,7 +136,7 @@ export class ProductArticleService {
 			};
 		}
 
-		// 0 — валидная цена; нельзя писать `if (minPrice)`, иначе 0 отбрасывается
+		// null/undefined нельзя отличать через truthy — 0 допустим как граница фильтра
 		if (payload.minPrice != null && payload.maxPrice != null) {
 			where.price = Between(payload.minPrice, payload.maxPrice);
 		} else if (payload.minPrice != null) {
@@ -590,6 +590,7 @@ export class ProductArticleService {
 			if (payload.name !== undefined) fields.name = payload.name;
 			if (payload.description !== undefined)
 				fields.description = payload.description;
+			if (payload.price !== undefined) fields.price = payload.price;
 			if (payload.isVisible !== undefined) fields.isVisible = payload.isVisible;
 			if (payload.productSubcategoryId !== undefined) {
 				const productSubcategory = await manager.findOne(ProductSubcategory, {

@@ -1,5 +1,6 @@
 <script setup>
     import debounce from 'lodash/debounce';
+    import { formatRub } from '~/utils/money';
     import EditModal from './editModal.vue';
 
     const { $api } = useNuxtApp();
@@ -416,6 +417,7 @@
                 hide-details
                 label="Загрузить эксель"
                 variant="solo-filled"
+                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                 @update:model-value="updateXlsx"
             />
             <v-checkbox
@@ -577,7 +579,7 @@
                 {{ item.brand || '—' }}
             </template>
             <template #item.price="{ item }">
-                {{ item.price }} ₽
+                {{ formatRub(item.price) }}
             </template>
             <template #item.totalAmount="{ item }">
                 {{ item.totalAmount ?? 0 }}
