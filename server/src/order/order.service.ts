@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { Brackets, DataSource, In, Repository } from 'typeorm';
 import { Order, OrderStatus } from 'src/db/entities/Order';
 import {
 	TelegramMessageStatus,
@@ -20,7 +20,11 @@ import {
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
 import { CreateOrderDto } from './dto/CreateOrderDto';
 import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
+import { GetAdminOrderListDto } from './dto/GetAdminOrderListDto';
+import { canTransition } from './order-status.transitions';
 import { orderRelations } from './order.relations';
+
+const escapeLike = (value: string) => value.replace(/[\\%_]/g, '\\$&');
 
 @Injectable()
 export class OrderService {
@@ -158,13 +162,58 @@ export class OrderService {
 		return getPaginateResult(result, total, getListDto);
 	}
 
-	async getAdminOrderList(getListDto: GetListDto): Promise<IPaginateResult<Order>> {
-		const [result, total] = await this.orderRepository.findAndCount({
+	async getAdminOrderList(
+		getListDto: GetAdminOrderListDto
+	): Promise<IPaginateResult<Order>> {
+		const qb = this.orderRepository
+			.createQueryBuilder('order')
+			.leftJoin('order.deliveryType', 'deliveryType');
+
+		const query = getListDto.query?.trim();
+		if (query) {
+			qb.andWhere(
+				new Brackets((where) => {
+					where
+						.orWhere('order.fio ILIKE :search')
+						.orWhere('order.mail ILIKE :search')
+						.orWhere('order.tel ILIKE :search');
+				}),
+				{ search: `%${escapeLike(query)}%` }
+			);
+		}
+
+		if (getListDto.status) {
+			qb.andWhere('order.status = :status', { status: getListDto.status });
+		}
+
+		if (getListDto.deliveryTypeId != null) {
+			qb.andWhere('deliveryType.id = :deliveryTypeId', {
+				deliveryTypeId: getListDto.deliveryTypeId
+			});
+		}
+
+		const total = await qb.clone().getCount();
+
+		const pageOrders = await qb
+			.orderBy('order.created_at', 'DESC')
+			.skip(getListDto.itemsPerPage * getListDto.page)
+			.take(getListDto.itemsPerPage)
+			.getMany();
+
+		if (pageOrders.length === 0) {
+			return getPaginateResult([], total, getListDto);
+		}
+
+		const ids = pageOrders.map((order) => order.id);
+		const loaded = await this.orderRepository.find({
+			where: { id: In(ids) },
 			relations: orderRelations,
-			withDeleted: true,
-			order: { created_at: 'DESC' },
-			...getPaginateWhere(getListDto)
+			withDeleted: true
 		});
+		const byId = new Map(loaded.map((order) => [order.id, order]));
+		const result = ids
+			.map((id) => byId.get(id))
+			.filter((order): order is Order => Boolean(order));
 
 		return getPaginateResult(result, total, getListDto);
 	}
@@ -179,8 +228,10 @@ export class OrderService {
 			if (!order) {
 				throw new NotFoundException('Заказ не найден');
 			}
-			if (order.status === OrderStatus.CANCELLED) {
-				throw new BadRequestException('Отменённый заказ нельзя изменить');
+			if (!canTransition(order.status, payload.status)) {
+				throw new BadRequestException(
+					`Нельзя сменить статус с «${order.status}» на «${payload.status}»`
+				);
 			}
 
 			if (payload.status === OrderStatus.CANCELLED) {
@@ -194,6 +245,39 @@ export class OrderService {
 						'amount',
 						op.amount
 					);
+				}
+			} else if (order.status === OrderStatus.CANCELLED) {
+				const orderProducts = await manager.find(OrderProduct, {
+					where: { order: { id } }
+				});
+				const productIds = [...new Set(orderProducts.map((op) => op.product.id))];
+				if (productIds.length > 0) {
+					const lockedProducts = await manager
+						.createQueryBuilder(Product, 'product')
+						.setLock('pessimistic_write')
+						.where('product.id IN (:...productIds)', { productIds })
+						.getMany();
+					const amountById = new Map(
+						lockedProducts.map((p) => [p.id, p.amount])
+					);
+
+					for (const op of orderProducts) {
+						const available = amountById.get(op.product.id) ?? 0;
+						if (op.amount > available) {
+							throw new BadRequestException(
+								`Недостаточное кол-во на складе для восстановления заказа`
+							);
+						}
+					}
+
+					for (const op of orderProducts) {
+						await manager.decrement(
+							Product,
+							{ id: op.product.id },
+							'amount',
+							op.amount
+						);
+					}
 				}
 			}
 
