@@ -273,3 +273,101 @@ sudo env GIT_REPO='https://github.com/ваш-орг/shelkovitsa.git' GIT_BRANCH=
 `install-server.sh` ставит **[nvm](https://github.com/nvm-sh/nvm)** в `/root/.nvm`, затем **`nvm install`** по версии **`NODE_VERSION`** (по умолчанию **24.22.1**, как в `.nvmrc`). В `/usr/local/bin` создаются ссылки на `node` / `npm` / `npx`, их использует **`deploy.sh`** и systemd.
 
 Переопределение версий — через переменные в таблице выше и примеры для `install-server.sh`.
+
+## Почта на тестовом стенде
+
+Основной канал уведомлений о заказах и сброса пароля — **SMTP** (Nodemailer). Telegram на стенде лучше **выключить**, чтобы не дублировать и не зависеть от бота.
+
+### Обязательные переменные в `server/.env`
+
+| Переменная | Назначение |
+|------------|------------|
+| `SMTP_HOST` | Хост SMTP-провайдера |
+| `SMTP_PORT` | Обычно `587` (STARTTLS) или `465` (SSL; при 465 может понадобиться `secure` — сейчас транспорт без `secure: true`, предпочтителен 587) |
+| `SMTP_USER` / `SMTP_PASS` | Логин и пароль / app-password провайдера |
+| `MAIL_FROM` | Адрес отправителя (должен быть разрешён у провайдера) |
+| `MAIL_ORDER_TO` | Куда слать письма о **новых заказах** (ваш ящик для проверки) |
+| `MAIL_APP_URL` | Публичный URL витрины (ссылки в письме сброса пароля), например `https://test.shelkovitsa.ru` |
+| `TELEGRAM_ENABLED` | На стенде: `false` |
+
+Без `SMTP_HOST` письма уходят только в mock-транспорт процесса (удобно для unit/e2e, **не** для проверки на стенде).
+
+Полный список — [`server/docs/ENV_VARIABLES.md`](../server/docs/ENV_VARIABLES.md), шаблон — [`server/.env.example`](../server/.env.example).
+
+### Примеры провайдеров (учётки не выдумывать — взять свои)
+
+**Яндекс** (ящик + пароль приложения):
+
+```env
+SMTP_HOST=smtp.yandex.ru
+SMTP_PORT=587
+SMTP_USER=ваш@yandex.ru
+SMTP_PASS=пароль-приложения
+MAIL_FROM="Шелковица <ваш@yandex.ru>"
+MAIL_ORDER_TO=ваш@yandex.ru
+MAIL_APP_URL=https://test.shelkovitsa.ru
+TELEGRAM_ENABLED=false
+```
+
+**Mail.ru**:
+
+```env
+SMTP_HOST=smtp.mail.ru
+SMTP_PORT=587
+SMTP_USER=ваш@mail.ru
+SMTP_PASS=пароль-приложения
+MAIL_FROM="Шелковица <ваш@mail.ru>"
+MAIL_ORDER_TO=ваш@mail.ru
+MAIL_APP_URL=https://test.shelkovitsa.ru
+TELEGRAM_ENABLED=false
+```
+
+**Brevo** (Sendinblue) — SMTP-ключ из кабинета:
+
+```env
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USER=ваш-login-из-кабинета
+SMTP_PASS=ваш-smtp-key
+MAIL_FROM="Шелковица <verified-sender@ваш-домен>"
+MAIL_ORDER_TO=ваш@mail.ru
+MAIL_APP_URL=https://test.shelkovitsa.ru
+TELEGRAM_ENABLED=false
+```
+
+`MAIL_FROM` должен совпадать с разрешённым отправителем у провайдера (иначе письмо отклонят).
+
+### Миграции
+
+После обновления кода со сбросом пароля нужна таблица `password_reset_token`:
+
+```bash
+cd /var/www/shelkovitsa/server
+sudo -u www-data npm run migrate:apply
+# или полный деплой: sudo ./deploy.sh  (миграции входят в скрипт)
+```
+
+Перезапустите бэкенд, чтобы подхватил `.env`:
+
+```bash
+sudo systemctl restart shelkovitsa-backend
+```
+
+### Как проверить
+
+1. Оформите тестовый заказ на витрине (или `POST /api/order`).
+2. В ящике **`MAIL_ORDER_TO`** должно появиться письмо «Новый заказ #…»; клиенту на email из заказа — «Заказ #… принят».
+3. Сброс пароля: на витрине «Забыли пароль» / `POST /api/auth/forgot` с существующим email → письмо со ссылкой `{MAIL_APP_URL}/recover?token=…`.
+4. Если писем нет: логи `journalctl -u shelkovitsa-backend -n 100`, проверка `SMTP_*` / блокировок провайдера, что `TELEGRAM_ENABLED=false` не мешает почте (почта независима).
+
+### Локальная разработка (Mailpit)
+
+На машине разработчика удобнее [Mailpit](https://github.com/axllent/mailpit): письма не уходят наружу.
+
+```bash
+docker compose up -d mailpit
+# UI: http://localhost:8025  SMTP: localhost:1025
+# API сообщений: http://localhost:8025/api/v1/messages
+```
+
+В `server/.env`: `SMTP_HOST=127.0.0.1` (на Windows Docker `localhost`/IPv6 часто рвёт SMTP), `SMTP_PORT=1025`, `SMTP_USER`/`SMTP_PASS` можно оставить пустыми, `MAIL_ORDER_TO=orders@example.com` (нужен валидный email для `@IsEmail`), `MAIL_APP_URL=http://localhost:3000`.
