@@ -3,10 +3,10 @@ import debounce from 'lodash/debounce';
 import { VsNotification } from 'vuesax-alpha';
 import { formatRub } from '~/utils/money';
 import {
-    ORDER_STATUSES,
-    ORDER_STATUS_VALUES,
     getSelectableStatuses,
     isTerminalStatus,
+    ORDER_STATUS_VALUES,
+    ORDER_STATUSES,
 } from '~/utils/orderStatus';
 
 const { $api } = useNuxtApp();
