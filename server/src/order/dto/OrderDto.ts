@@ -43,6 +43,9 @@ export class OrderDto {
 	status: OrderStatus;
 
 	@Expose()
+	created_at!: Date;
+
+	@Expose()
 	@Type(() => TelegramOrderMessageDto)
 	telegramMessage?: TelegramOrderMessageDto;
 }

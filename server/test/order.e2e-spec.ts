@@ -173,7 +173,7 @@ describe('Order (e2e)', () => {
 		const customer = await registerAgent(app, CUSTOMER);
 		const catalog = await seedCatalog(app);
 
-		await customer
+		const created = await customer
 			.post('/api/order')
 			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
 			.expect(201);
@@ -183,6 +183,15 @@ describe('Order (e2e)', () => {
 			.query({ page: 0, itemsPerPage: 10 })
 			.expect(200);
 		expect(res.body.count).toBe(1);
+		expect(res.body.data).toHaveLength(1);
+		const [order] = res.body.data;
+		expect(order.id).toBe(created.body.id);
+		expect(order.status).toBe('create');
+		expect(order.price).toBe(created.body.price);
+		expect(order.created_at).toBeTruthy();
+		expect(Array.isArray(order.orderProducts)).toBe(true);
+		expect(order.orderProducts.length).toBeGreaterThan(0);
+		expect(order.orderProducts[0].product?.productArticle?.name).toBeTruthy();
 	});
 
 	it('в админском списке позиции хранят цену на момент заказа', async () => {
