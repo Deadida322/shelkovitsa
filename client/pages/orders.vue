@@ -173,7 +173,8 @@ useHead({
                         <thead>
                             <tr>
                                 <th>Товар</th>
-                                <th>Кол-во</th>
+                                <!-- неразрывный дефис: «Кол-во» не ломается на две строки на мобилке -->
+                                <th>Кол&#8209;во</th>
                                 <th>Размер</th>
                                 <th>Цвет</th>
                                 <th>Сумма</th>
@@ -389,22 +390,34 @@ useHead({
     }
 
     &__items {
+        :deep(th),
+        :deep(td) {
+            &.orders-page__sum,
+            &:nth-child(2),
+            &:nth-child(5) {
+                white-space: nowrap;
+            }
+        }
+
         @media screen and (max-width: 700px) {
             :deep(table) {
-                min-width: 520px;
+                min-width: 560px;
                 table-layout: fixed;
+
+                th {
+                    white-space: nowrap;
+                }
 
                 // Товар — больше места под название
                 th:nth-child(1),
                 td:nth-child(1) {
-                    width: 42%;
+                    width: 40%;
                 }
 
-                // Кол-во — без переноса заголовка
+                // Кол-во
                 th:nth-child(2),
                 td:nth-child(2) {
-                    width: 14%;
-                    white-space: nowrap;
+                    width: 16%;
                 }
 
                 // Размер / Цвет — уже
@@ -415,9 +428,11 @@ useHead({
                     width: 12%;
                 }
 
+                // Сумма — целиком «1014,30 ₽»
                 th:nth-child(5),
                 td:nth-child(5) {
                     width: 20%;
+                    white-space: nowrap;
                 }
             }
         }
