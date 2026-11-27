@@ -276,12 +276,19 @@ useHead({
         cursor: pointer;
 
         @media screen and (max-width: 700px) {
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            grid-template-areas:
+                'chevron meta price'
+                'chevron status status';
         }
     }
 
     &__meta {
         min-width: 0;
+
+        @media screen and (max-width: 700px) {
+            grid-area: meta;
+        }
     }
 
     &__id {
@@ -298,7 +305,7 @@ useHead({
         font-size: 14px;
 
         @media screen and (max-width: 700px) {
-            grid-column: 1;
+            grid-area: status;
         }
     }
 
@@ -306,10 +313,20 @@ useHead({
         font-weight: 600;
         white-space: nowrap;
         color: $primary;
+
+        @media screen and (max-width: 700px) {
+            grid-area: price;
+        }
     }
 
     &__chevron {
         justify-self: end;
+
+        @media screen and (max-width: 700px) {
+            grid-area: chevron;
+            justify-self: start;
+            align-self: center;
+        }
     }
 
     &__details {
@@ -326,7 +343,35 @@ useHead({
     &__items {
         @media screen and (max-width: 700px) {
             :deep(table) {
-                min-width: 480px;
+                min-width: 520px;
+                table-layout: fixed;
+
+                // Товар — больше места под название
+                th:nth-child(1),
+                td:nth-child(1) {
+                    width: 42%;
+                }
+
+                // Кол-во — без переноса заголовка
+                th:nth-child(2),
+                td:nth-child(2) {
+                    width: 14%;
+                    white-space: nowrap;
+                }
+
+                // Размер / Цвет — уже
+                th:nth-child(3),
+                td:nth-child(3),
+                th:nth-child(4),
+                td:nth-child(4) {
+                    width: 12%;
+                }
+
+                th:nth-child(5),
+                td:nth-child(5) {
+                    width: 20%;
+                    white-space: nowrap;
+                }
             }
         }
     }
