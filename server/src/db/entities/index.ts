@@ -9,6 +9,7 @@ import { ProductColor } from './ProductColor';
 import { ProductFile } from './ProductFile';
 import { ProductSize } from './ProductSize';
 import { ProductSubcategory } from './ProductSubcategory';
+import { PasswordResetToken } from './PasswordResetToken';
 import { TelegramOrderMessage } from './TelegramOrderMessage';
 import { User } from './User';
 
@@ -19,6 +20,7 @@ export const entities = [
 	DeliveryType,
 	Order,
 	OrderProduct,
+	PasswordResetToken,
 	Product,
 	ProductArticle,
 	ProductCategory,

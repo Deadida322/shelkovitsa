@@ -62,6 +62,7 @@ async function onSubmit() {
                 <template #actions-prepend>
                     <div class="actions__links">
                         <nuxt-link to="/signup">Ещё нет аккаунта?</nuxt-link>
+                        <nuxt-link to="/recover">Забыли пароль?</nuxt-link>
                     </div>
                 </template>
             </s-form>

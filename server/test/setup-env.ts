@@ -17,7 +17,10 @@ const testEnv: Record<string, string> = {
 	TELEGRAM_ENABLED: 'false',
 	TELEGRAM_TOKEN: '',
 	CHAT_TG_ID: '',
-	ADMIN_TG_ID: ''
+	ADMIN_TG_ID: '',
+	MAIL_FROM: 'noreply@test.local',
+	MAIL_ORDER_TO: 'orders@test.local',
+	MAIL_APP_URL: 'http://localhost:3000'
 };
 
 Object.assign(process.env, testEnv);

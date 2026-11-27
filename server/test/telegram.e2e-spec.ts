@@ -8,6 +8,7 @@ import {
 	TelegramMessageStatus,
 	TelegramOrderMessage
 } from 'src/db/entities/TelegramOrderMessage';
+import { MailService } from 'src/mail/mail.service';
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
 import { createTestApp, orderPayload, resetDb, seedCatalog } from './utils';
 
@@ -49,7 +50,8 @@ describe('Telegram-уведомления (e2e)', () => {
 			dataSource.getRepository(Order),
 			dataSource.getRepository(TelegramOrderMessage),
 			{ sendMessage } as any,
-			config
+			config,
+			app.get(MailService)
 		);
 	});
 

@@ -23,6 +23,8 @@ import { UserDto } from './dto/UserDto';
 import { hashPassword } from 'src/helpers/authHelper';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/LoginDto';
+import { ForgotPasswordDto } from './dto/ForgotPasswordDto';
+import { ResetPasswordDto } from './dto/ResetPasswordDto';
 import { Response, Request } from 'express';
 import { Auth } from 'src/decorators/auth';
 import { Throttle } from '@nestjs/throttler';
@@ -125,5 +127,32 @@ export class AuthController {
 	logout(@Res({ passthrough: true }) response: Response) {
 		response.clearCookie('access_token', cookieOptions);
 		return '';
+	}
+
+	@Post('forgot')
+	@Throttle(AUTH_THROTTLE)
+	@ApiOperation({ summary: 'Запросить письмо для сброса пароля' })
+	@ApiResponse({
+		status: 201,
+		description: 'Если аккаунт существует — письмо со ссылкой отправлено'
+	})
+	@ApiBody({ type: ForgotPasswordDto })
+	async forgot(@Body() dto: ForgotPasswordDto) {
+		await this.authService.requestPasswordReset(dto.mail);
+		return { ok: true };
+	}
+
+	@Post('reset')
+	@Throttle(AUTH_THROTTLE)
+	@ApiOperation({ summary: 'Установить новый пароль по токену из письма' })
+	@ApiResponse({ status: 201, description: 'Пароль обновлён' })
+	@ApiResponse({
+		status: 400,
+		description: 'Токен недействителен или пароли не совпадают'
+	})
+	@ApiBody({ type: ResetPasswordDto })
+	async reset(@Body() dto: ResetPasswordDto) {
+		await this.authService.resetPassword(dto);
+		return { ok: true };
 	}
 }

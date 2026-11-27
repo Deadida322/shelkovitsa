@@ -44,9 +44,21 @@
 |-----------|----------|--------|
 | `CORS` | Разрешенные источники (через запятую) | `http://localhost:3000,https://shelkovitsa.ru` |
 
+### Почта (основной канал уведомлений)
+| Переменная | Описание | Пример |
+|-----------|----------|--------|
+| `SMTP_HOST` | SMTP-хост (если пусто — mock-транспорт) | `smtp.yandex.ru` |
+| `SMTP_PORT` | Порт SMTP (обязателен при `SMTP_HOST`) | `587` |
+| `SMTP_USER` | Логин SMTP | `shop@example.com` |
+| `SMTP_PASS` | Пароль / app-password | `…` |
+| `MAIL_FROM` | From в письмах | `Шелковица <shop@example.com>` |
+| `MAIL_ORDER_TO` | Inbox для писем о новых заказах | `orders@example.com` |
+| `MAIL_APP_URL` | URL витрины для ссылок (сброс пароля) | `https://shelkovitsa.ru` |
+
 ### Telegram (опционально)
 | Переменная | Описание | Пример |
 |-----------|----------|--------|
+| `TELEGRAM_ENABLED` | Включить Telegram (`true` / `false`, по умолчанию выкл.) | `false` |
 | `TELEGRAM_TOKEN` | Токен Telegram бота | `123456:ABC-DEF...` |
 | `ADMIN_TG_ID` | ID администратора в Telegram | `123456789` |
 | `CHAT_TG_ID` | ID чата/канала для уведомлений | `-1001234567890` или `@channel_name` |
@@ -84,7 +96,17 @@ CORS=http://localhost:3000
 TEMP_PATH=temp/src
 DEST_PATH=temp/dist
 
-# Telegram (опционально)
+# Почта
+SMTP_HOST=smtp.yandex.ru
+SMTP_PORT=587
+SMTP_USER=shop@example.com
+SMTP_PASS=app-password
+MAIL_FROM=Шелковица <shop@example.com>
+MAIL_ORDER_TO=orders@example.com
+MAIL_APP_URL=http://localhost:3000
+
+# Telegram (опционально; по умолчанию выключен)
+TELEGRAM_ENABLED=false
 TELEGRAM_TOKEN=your_telegram_bot_token_here
 ADMIN_TG_ID=your_admin_telegram_id
 CHAT_TG_ID=your_telegram_chat_id

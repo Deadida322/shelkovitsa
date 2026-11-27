@@ -36,4 +36,21 @@ describe('validateEnv', () => {
 			validateEnv({ ...validEnv, THROTTLE_ENABLED: 'false' })
 		).not.toThrow();
 	});
+
+	it('при SMTP_HOST требует порт, учётку и адреса писем', () => {
+		expect(() => validateEnv({ ...validEnv, SMTP_HOST: 'smtp.example.com' })).toThrow(
+			/SMTP_PORT|SMTP_USER|MAIL_FROM|MAIL_ORDER_TO/
+		);
+		expect(() =>
+			validateEnv({
+				...validEnv,
+				SMTP_HOST: 'smtp.example.com',
+				SMTP_PORT: '587',
+				SMTP_USER: 'u',
+				SMTP_PASS: 'p',
+				MAIL_FROM: 'shop@example.com',
+				MAIL_ORDER_TO: 'orders@example.com'
+			})
+		).not.toThrow();
+	});
 });

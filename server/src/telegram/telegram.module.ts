@@ -16,7 +16,7 @@ import { TELEGRAM } from './telegram.constants';
 			// Бот только отправляет сообщения: polling/webhook не нужен, сеть при старте не трогаем
 			useFactory: (config: ConfigService) => {
 				const token = config.get<string>('TELEGRAM_TOKEN');
-				const enabled = config.get<string>('TELEGRAM_ENABLED') !== 'false';
+				const enabled = config.get<string>('TELEGRAM_ENABLED') === 'true';
 				return enabled && token ? new Telegram(token) : null;
 			}
 		},

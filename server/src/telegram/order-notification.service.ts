@@ -11,9 +11,14 @@ import {
 	TelegramOrderMessage
 } from 'src/db/entities/TelegramOrderMessage';
 import { formatKopecks } from 'src/helpers/money';
+import { MailService } from 'src/mail/mail.service';
+import {
+	buildAdminOrderMail,
+	buildCustomerOrderMail
+} from 'src/mail/order-mail.templates';
 import { orderRelations } from 'src/order/order.relations';
 
-// Уведомления о заказах в Telegram: отправка, учёт статуса, повторные попытки
+// Уведомления о заказах: почта (основной канал) + опциональный Telegram
 @Injectable()
 export class OrderNotificationService implements OnApplicationShutdown {
 	private readonly logger = new Logger(OrderNotificationService.name);
@@ -26,20 +31,59 @@ export class OrderNotificationService implements OnApplicationShutdown {
 		private readonly telegramMessageRepository: Repository<TelegramOrderMessage>,
 		@Inject(TELEGRAM)
 		private readonly telegram: Telegram | null,
-		private readonly configService: ConfigService
+		private readonly configService: ConfigService,
+		private readonly mailService: MailService
 	) {}
 
 	// Отправка в фоне, не блокируя ответ клиенту
 	notifyOrderCreated(order: Order) {
-		const tracked = this.sendTgCreateOrder(order)
+		const tracked = this.dispatchOrderCreated(order)
 			.catch((error) => {
 				this.logger.error(
-					'Ошибка при асинхронной отправке Telegram сообщения',
+					'Ошибка при асинхронной отправке уведомления о заказе',
 					error?.stack ?? error
 				);
 			})
 			.finally(() => this.pendingNotifications.delete(tracked));
 		this.pendingNotifications.add(tracked);
+	}
+
+	private async dispatchOrderCreated(order: Order) {
+		await this.sendOrderMails(order);
+		await this.sendTgCreateOrder(order);
+	}
+
+	async sendOrderMails(order: Order) {
+		const adminTo = this.mailService.getOrderInbox();
+		if (!adminTo) {
+			this.logger.warn(
+				`MAIL_ORDER_TO не задан — письмо админу о заказе #${order.id} пропущено`
+			);
+		} else {
+			try {
+				const adminMail = buildAdminOrderMail(order);
+				await this.mailService.sendMail({ to: adminTo, ...adminMail });
+			} catch (error: any) {
+				this.logger.error(
+					`Не удалось отправить письмо админу о заказе #${order.id}`,
+					error?.stack ?? error
+				);
+			}
+		}
+
+		if (!order.mail) {
+			return;
+		}
+
+		try {
+			const customerMail = buildCustomerOrderMail(order);
+			await this.mailService.sendMail({ to: order.mail, ...customerMail });
+		} catch (error: any) {
+			this.logger.error(
+				`Не удалось отправить письмо клиенту о заказе #${order.id}`,
+				error?.stack ?? error
+			);
+		}
 	}
 
 	async waitForPendingNotifications() {
@@ -52,7 +96,8 @@ export class OrderNotificationService implements OnApplicationShutdown {
 	}
 
 	private isTelegramEnabled(): boolean {
-		return this.configService.get<string>('TELEGRAM_ENABLED') !== 'false';
+		// По умолчанию выключен: включается только явным TELEGRAM_ENABLED=true
+		return this.configService.get<string>('TELEGRAM_ENABLED') === 'true';
 	}
 
 	async sendTgCreateOrder(newOrder: Order, isRetry: boolean = false) {

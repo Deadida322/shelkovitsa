@@ -1,5 +1,6 @@
 import { plainToInstance, Transform } from 'class-transformer';
 import {
+	IsEmail,
 	IsIn,
 	IsInt,
 	IsNotEmpty,
@@ -82,6 +83,42 @@ export class EnvironmentVariables {
 	@IsOptional()
 	@IsString()
 	CHAT_TG_ID?: string;
+
+	// SMTP: если SMTP_HOST задан — обязательны порт/логин/пароль/from/inbox
+	@IsOptional()
+	@IsString()
+	SMTP_HOST?: string;
+
+	@ValidateIf((env) => Boolean(env.SMTP_HOST))
+	@Transform(toInt)
+	@IsInt()
+	@Min(1)
+	SMTP_PORT?: number;
+
+	@ValidateIf((env) => Boolean(env.SMTP_HOST))
+	@IsString()
+	@IsNotEmpty()
+	SMTP_USER?: string;
+
+	@ValidateIf((env) => Boolean(env.SMTP_HOST))
+	@IsString()
+	@IsNotEmpty()
+	SMTP_PASS?: string;
+
+	// Обязательны при SMTP; без SMTP — опциональны (mock-транспорт в тестах)
+	@ValidateIf((env) => Boolean(env.SMTP_HOST) || env.MAIL_FROM != null)
+	@IsString()
+	@IsNotEmpty()
+	MAIL_FROM?: string;
+
+	@ValidateIf((env) => Boolean(env.SMTP_HOST) || env.MAIL_ORDER_TO != null)
+	@IsEmail()
+	MAIL_ORDER_TO?: string;
+
+	// Базовый URL витрины для ссылок в письмах (сброс пароля)
+	@IsOptional()
+	@IsString()
+	MAIL_APP_URL?: string;
 
 	// Хранилище фото: local — DEST_PATH на диске, s3 — S3-совместимый бакет
 	@IsOptional()

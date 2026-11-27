@@ -50,11 +50,14 @@ describe('AuthGuard', () => {
 	beforeEach(() => {
 		jwt = { verifyAsync: vi.fn() };
 		users = { findActiveByMailAndId: vi.fn() };
+		const authService = {
+			isUserAdmin: (user?: Pick<User, 'role'>) => user?.role === UserRole.ADMIN
+		};
 		guard = new AuthGuard(
 			jwt as unknown as JwtService,
 			new Reflector(),
 			users as unknown as UserService,
-			new AuthService(users as unknown as UserService, jwt as unknown as JwtService)
+			authService as unknown as AuthService
 		);
 	});
 
