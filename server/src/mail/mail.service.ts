@@ -18,14 +18,14 @@ export class MailService {
 		this.from = this.config.get('MAIL_FROM', { infer: true }) || 'noreply@localhost';
 
 		if (this.smtpConfigured) {
+			const user = this.config.get('SMTP_USER', { infer: true });
+			const pass = this.config.get('SMTP_PASS', { infer: true });
+			const auth = user && pass ? { user, pass } : undefined;
 			this.transporter = nodemailer.createTransport({
 				host,
 				port: this.config.get('SMTP_PORT', { infer: true }) ?? 587,
 				secure: false,
-				auth: {
-					user: this.config.get('SMTP_USER', { infer: true }),
-					pass: this.config.get('SMTP_PASS', { infer: true })
-				}
+				...(auth ? { auth } : {})
 			});
 		} else {
 			// Без SMTP — jsonTransport: письма не уходят наружу, но доступны в getSentMails()

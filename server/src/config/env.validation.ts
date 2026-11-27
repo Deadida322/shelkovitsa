@@ -84,7 +84,8 @@ export class EnvironmentVariables {
 	@IsString()
 	CHAT_TG_ID?: string;
 
-	// SMTP: если SMTP_HOST задан — обязательны порт/логин/пароль/from/inbox
+	// SMTP: если SMTP_HOST задан — обязательны порт/from/inbox.
+	// USER/PASS опциональны (Mailpit и др. без auth); пустые строки = без auth.
 	@IsOptional()
 	@IsString()
 	SMTP_HOST?: string;
@@ -95,14 +96,12 @@ export class EnvironmentVariables {
 	@Min(1)
 	SMTP_PORT?: number;
 
-	@ValidateIf((env) => Boolean(env.SMTP_HOST))
+	@IsOptional()
 	@IsString()
-	@IsNotEmpty()
 	SMTP_USER?: string;
 
-	@ValidateIf((env) => Boolean(env.SMTP_HOST))
+	@IsOptional()
 	@IsString()
-	@IsNotEmpty()
 	SMTP_PASS?: string;
 
 	// Обязательны при SMTP; без SMTP — опциональны (mock-транспорт в тестах)

@@ -37,10 +37,19 @@ describe('validateEnv', () => {
 		).not.toThrow();
 	});
 
-	it('при SMTP_HOST требует порт, учётку и адреса писем', () => {
+	it('при SMTP_HOST требует порт и адреса писем; USER/PASS опциональны', () => {
 		expect(() => validateEnv({ ...validEnv, SMTP_HOST: 'smtp.example.com' })).toThrow(
-			/SMTP_PORT|SMTP_USER|MAIL_FROM|MAIL_ORDER_TO/
+			/SMTP_PORT|MAIL_FROM|MAIL_ORDER_TO/
 		);
+		expect(() =>
+			validateEnv({
+				...validEnv,
+				SMTP_HOST: 'localhost',
+				SMTP_PORT: '1025',
+				MAIL_FROM: 'shop@example.com',
+				MAIL_ORDER_TO: 'orders@example.com'
+			})
+		).not.toThrow();
 		expect(() =>
 			validateEnv({
 				...validEnv,

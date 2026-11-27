@@ -47,13 +47,15 @@
 ### Почта (основной канал уведомлений)
 | Переменная | Описание | Пример |
 |-----------|----------|--------|
-| `SMTP_HOST` | SMTP-хост (если пусто — mock-транспорт) | `smtp.yandex.ru` |
-| `SMTP_PORT` | Порт SMTP (обязателен при `SMTP_HOST`) | `587` |
-| `SMTP_USER` | Логин SMTP | `shop@example.com` |
-| `SMTP_PASS` | Пароль / app-password | `…` |
-| `MAIL_FROM` | From в письмах | `Шелковица <shop@example.com>` |
+| `SMTP_HOST` | SMTP-хост (если пусто — mock-транспорт) | `smtp.yandex.ru` или `127.0.0.1` (Mailpit) |
+| `SMTP_PORT` | Порт SMTP (обязателен при `SMTP_HOST`) | `587` / `1025` (Mailpit) |
+| `SMTP_USER` | Логин SMTP (опционально; для Mailpit можно пусто) | `shop@example.com` |
+| `SMTP_PASS` | Пароль / app-password (опционально; для Mailpit можно пусто) | `…` |
+| `MAIL_FROM` | From в письмах (обязателен при `SMTP_HOST`) | `Шелковица <shop@example.com>` |
 | `MAIL_ORDER_TO` | Inbox для писем о новых заказах | `orders@example.com` |
 | `MAIL_APP_URL` | URL витрины для ссылок (сброс пароля) | `https://shelkovitsa.ru` |
+
+Локально: `docker compose up -d mailpit` — SMTP `localhost:1025`, UI [http://localhost:8025](http://localhost:8025). Без Docker — бинарь [Mailpit releases](https://github.com/axllent/mailpit/releases). На стенде см. [deploy/README.md](../../deploy/README.md#почта-на-тестовом-стенде).
 
 ### Telegram (опционально)
 | Переменная | Описание | Пример |
