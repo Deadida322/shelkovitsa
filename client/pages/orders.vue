@@ -195,7 +195,7 @@ useHead({
                                 <td>{{ item.amount }}</td>
                                 <td>{{ item.product?.productSize?.name || '—' }}</td>
                                 <td>{{ item.product?.productColor?.name || '—' }}</td>
-                                <td>{{ formatRub(lineTotal(item)) }}</td>
+                                <td class="orders-page__sum">{{ formatRub(lineTotal(item)) }}</td>
                             </tr>
                         </tbody>
                     </v-table>
@@ -418,10 +418,13 @@ useHead({
                 th:nth-child(5),
                 td:nth-child(5) {
                     width: 20%;
-                    white-space: nowrap;
                 }
             }
         }
+    }
+
+    &__sum {
+        white-space: nowrap;
     }
 }
 </style>

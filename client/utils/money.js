@@ -5,14 +5,15 @@
 export function formatRub(kopecks, { withCurrency = true } = {}) {
     const n = Math.trunc(Number(kopecks));
     if (!Number.isFinite(n)) {
-        return withCurrency ? '— ₽' : '—';
+        // NBSP: «₽» не переносится на следующую строку в узких колонках
+        return withCurrency ? '—\u00A0₽' : '—';
     }
     const sign = n < 0 ? '-' : '';
     const abs = Math.abs(n);
     const rubles = Math.floor(abs / 100);
     const rest = String(abs % 100).padStart(2, '0');
     const amount = `${sign}${rubles},${rest}`;
-    return withCurrency ? `${amount} ₽` : amount;
+    return withCurrency ? `${amount}\u00A0₽` : amount;
 }
 
 /** Строка/число рублей из инпута админки → копейки */
