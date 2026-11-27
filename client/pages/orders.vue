@@ -149,7 +149,12 @@ useHead({
                         <div class="orders-page__id">№ {{ order.id }}</div>
                         <div class="orders-page__date">{{ formatOrderDate(order.created_at) }}</div>
                     </div>
-                    <div class="orders-page__status">{{ statusTitle(order.status) }}</div>
+                    <span
+                        class="orders-page__status"
+                        :class="`orders-page__status--${order.status}`"
+                    >
+                        {{ statusTitle(order.status) }}
+                    </span>
                     <div class="orders-page__price">{{ formatRub(order.price) }}</div>
                     <v-icon size="small" class="orders-page__chevron">
                         {{ expandedId === order.id ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
@@ -302,10 +307,53 @@ useHead({
     }
 
     &__status {
-        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        max-width: 100%;
+        padding: 3px 10px;
+        border: 1px solid rgba(34, 60, 80, 0.28);
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.3;
+        white-space: nowrap;
+        color: rgba(34, 60, 80, 0.85);
+        background: transparent;
 
         @media screen and (max-width: 700px) {
             grid-area: status;
+        }
+
+        &--create {
+            border-color: rgba(34, 60, 80, 0.35);
+            color: rgba(34, 60, 80, 0.8);
+        }
+
+        &--in_work {
+            border-color: #c47a1a;
+            color: #9a5c10;
+        }
+
+        &--payment {
+            border-color: $primary;
+            color: $primary;
+            background: rgba($primary, 0.04);
+        }
+
+        &--delivery {
+            border-color: #1a5cff;
+            color: #1a5cff;
+        }
+
+        &--close {
+            border-color: #2e7d4f;
+            color: #2e7d4f;
+        }
+
+        &--cancelled {
+            border-color: rgba(34, 60, 80, 0.28);
+            color: rgba(34, 60, 80, 0.55);
         }
     }
 
