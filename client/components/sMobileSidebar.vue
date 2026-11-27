@@ -59,6 +59,14 @@ async function onLogout() {
             </template>
             Контакты
         </vs-sidebar-item>
+        <client-only>
+            <vs-sidebar-item v-if="authStore.user" id="/orders" @click="onItemClick">
+                <template #icon>
+                    <v-icon size="small">mdi-clipboard-list-outline</v-icon>
+                </template>
+                Мои заказы
+            </vs-sidebar-item>
+        </client-only>
         <template #footer>
             <div class="footer d-flex flex-column">
                 <client-only>

@@ -1,0 +1,264 @@
+<script setup>
+import { formatRub } from '~/utils/money';
+import { ORDER_STATUSES } from '~/utils/orderStatus';
+
+definePageMeta({
+    middleware: ['user'],
+});
+
+const { $api } = useNuxtApp();
+const filtersStore = useFiltersStore();
+
+const PAGE_SIZE = 10;
+const page = ref(1);
+const totalItems = ref(0);
+const loading = ref(false);
+const orders = ref([]);
+const expandedId = ref(null);
+
+const pageCount = computed(() => Math.max(1, Math.ceil(totalItems.value / PAGE_SIZE)));
+
+const statusTitleByValue = Object.fromEntries(ORDER_STATUSES.map((s) => [s.value, s.title]));
+
+function statusTitle(status) {
+    return statusTitleByValue[status] ?? status;
+}
+
+function formatOrderDate(value) {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return date.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function lineTotal(product) {
+    const unit = product.price ?? product.product?.productArticle?.price ?? 0;
+    return unit * (product.amount ?? 0);
+}
+
+function toggleExpand(id) {
+    expandedId.value = expandedId.value === id ? null : id;
+}
+
+function goToCatalog() {
+    navigateTo({ path: '/catalog', query: filtersStore.toQuery() });
+}
+
+async function getOrders() {
+    loading.value = true;
+    try {
+        const res = await $api('/api/order', {
+            query: {
+                page: page.value - 1,
+                itemsPerPage: PAGE_SIZE,
+            },
+        });
+        orders.value = res?.data ?? [];
+        totalItems.value = res?.count ?? 0;
+    } catch {
+        orders.value = [];
+        totalItems.value = 0;
+    } finally {
+        loading.value = false;
+    }
+}
+
+watch(page, () => {
+    getOrders();
+});
+
+onMounted(() => {
+    getOrders();
+});
+
+useHead({
+    title: 'Мои заказы - Шелковица',
+    meta: [
+        {
+            name: 'description',
+            content: 'История заказов в личном кабинете интернет-магазина «Шелковица».',
+        },
+        { name: 'robots', content: 'noindex, nofollow' },
+    ],
+});
+</script>
+
+<template>
+    <div class="orders-page">
+        <div class="text-h6 mb-6">Мои заказы</div>
+
+        <vs-alert v-if="!loading" class="mb-6" color="#1A5CFF">
+            <template #icon>
+                <v-icon size="40">mdi-information</v-icon>
+            </template>
+            <template v-if="totalItems">Найдено заказов: {{ totalItems }}</template>
+            <template v-else>
+                Заказов пока нет —
+                <a href="#" class="orders-page__catalog-link" @click.prevent="goToCatalog">
+                    перейти в каталог
+                </a>
+            </template>
+        </vs-alert>
+
+        <div v-if="loading" class="orders-page__loading text-center pa-8">Загрузка…</div>
+
+        <div v-else class="orders-page__list">
+            <div v-for="order in orders" :key="order.id" class="orders-page__card">
+                <button
+                    type="button"
+                    class="orders-page__row"
+                    :aria-expanded="expandedId === order.id"
+                    @click="toggleExpand(order.id)"
+                >
+                    <div class="orders-page__meta">
+                        <div class="orders-page__id">№ {{ order.id }}</div>
+                        <div class="orders-page__date">{{ formatOrderDate(order.created_at) }}</div>
+                    </div>
+                    <div class="orders-page__status">{{ statusTitle(order.status) }}</div>
+                    <div class="orders-page__price">{{ formatRub(order.price) }}</div>
+                    <v-icon size="small" class="orders-page__chevron">
+                        {{ expandedId === order.id ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
+                    </v-icon>
+                </button>
+
+                <div v-if="expandedId === order.id" class="orders-page__details">
+                    <div class="orders-page__delivery">
+                        <span v-if="order.deliveryType?.name">
+                            Доставка: {{ order.deliveryType.name }}
+                        </span>
+                        <span v-if="order.address">· {{ order.address }}</span>
+                        <span v-if="order.region">({{ order.region }})</span>
+                    </div>
+                    <v-table density="compact" class="orders-page__items">
+                        <thead>
+                            <tr>
+                                <th>Товар</th>
+                                <th>Кол-во</th>
+                                <th>Размер</th>
+                                <th>Цвет</th>
+                                <th>Сумма</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in order.orderProducts || []" :key="item.id">
+                                <td>{{ item.product?.productArticle?.name || '—' }}</td>
+                                <td>{{ item.amount }}</td>
+                                <td>{{ item.product?.productSize?.name || '—' }}</td>
+                                <td>{{ item.product?.productColor?.name || '—' }}</td>
+                                <td>{{ formatRub(lineTotal(item)) }}</td>
+                            </tr>
+                        </tbody>
+                    </v-table>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="pageCount > 1" class="d-flex justify-end mt-10">
+            <vs-pagination
+                :key="`orders-pagination-${pageCount}`"
+                v-model:current-page="page"
+                :layout="['prev', 'pager', 'next']"
+                :page-size="PAGE_SIZE"
+                :total="totalItems"
+            />
+        </div>
+    </div>
+</template>
+
+<style lang="scss">
+.orders-page {
+    width: 100%;
+
+    &__catalog-link {
+        color: inherit;
+        text-decoration: underline;
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    &__card {
+        box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.12);
+        border-radius: 12px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    &__row {
+        width: 100%;
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto auto;
+        gap: 12px 16px;
+        align-items: center;
+        padding: 16px 20px;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        cursor: pointer;
+
+        @media screen and (max-width: 700px) {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+    }
+
+    &__meta {
+        min-width: 0;
+    }
+
+    &__id {
+        font-weight: 600;
+    }
+
+    &__date {
+        font-size: 13px;
+        opacity: 0.7;
+        margin-top: 2px;
+    }
+
+    &__status {
+        font-size: 14px;
+
+        @media screen and (max-width: 700px) {
+            grid-column: 1;
+        }
+    }
+
+    &__price {
+        font-weight: 600;
+        white-space: nowrap;
+        color: $primary;
+    }
+
+    &__chevron {
+        justify-self: end;
+    }
+
+    &__details {
+        padding: 0 20px 16px;
+        border-top: 1px solid rgba(34, 60, 80, 0.08);
+    }
+
+    &__delivery {
+        font-size: 13px;
+        opacity: 0.75;
+        padding: 12px 0 8px;
+    }
+
+    &__items {
+        @media screen and (max-width: 700px) {
+            :deep(table) {
+                min-width: 480px;
+            }
+        }
+    }
+}
+</style>

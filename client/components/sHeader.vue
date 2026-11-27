@@ -70,6 +70,14 @@ function isMenuActive(to) {
                             title="Админка"
                         />
                     </NuxtLink>
+                    <NuxtLink to="/orders" class="mr-2" title="Мои заказы">
+                        <v-btn
+                            variant="tonal"
+                            size="small"
+                            icon="mdi-clipboard-list-outline"
+                            title="Мои заказы"
+                        />
+                    </NuxtLink>
                     <NuxtLink to="/deliver">
                         <v-btn variant="tonal" size="small" icon="mdi-cart-outline" />
                     </NuxtLink>

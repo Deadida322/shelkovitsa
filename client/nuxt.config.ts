@@ -90,6 +90,10 @@ export default defineNuxtConfig({
             prerender: false,
             ssr: false,
         },
+        '/orders': {
+            ssr: false,
+            headers: { 'cache-control': 'no-cache' },
+        },
         '/admin': {
             ssr: false,
             headers: { 'cache-control': 'no-cache' },

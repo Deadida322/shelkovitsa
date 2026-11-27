@@ -18,7 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
             if (res.isAdmin) {
                 navigateTo({ path: '/admin' });
             } else {
-                navigateTo({ path: '/deliver' });
+                navigateTo({ path: '/orders' });
                 useCartStore().mergeCartWithBackend();
             }
         });

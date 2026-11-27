@@ -14,7 +14,7 @@ const isAdminPage = computed(() => route.path.startsWith('/admin'));
 watch(
     () => route.fullPath,
     (newPath) => {
-        if (newPath === '/deliver' || newPath.startsWith('/admin')) {
+        if (newPath === '/deliver' || newPath === '/orders' || newPath.startsWith('/admin')) {
             cartStore.isDisabled = true;
         } else {
             cartStore.isDisabled = false;
