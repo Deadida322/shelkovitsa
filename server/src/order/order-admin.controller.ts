@@ -11,10 +11,10 @@ import {
 } from '@nestjs/common';
 import { PaginatedDto } from 'src/common/dto/PaginatedDto';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { GetListDto } from 'src/common/dto/GetListDto';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
 import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
+import { GetAdminOrderListDto } from './dto/GetAdminOrderListDto';
 import { OrderAdminDto } from './dto/OrderAdminDto';
 import { OrderDto } from './dto/OrderDto';
 import { OrderService } from './order.service';
@@ -32,7 +32,7 @@ export class OrderAdminController {
 	@SerializeOptions({ type: PaginatedDto(OrderAdminDto) })
 	@Get()
 	@ApiOperation({ summary: 'Все заказы, новые сначала' })
-	async getList(@Query() query: GetListDto) {
+	async getList(@Query() query: GetAdminOrderListDto) {
 		return this.orderService.getAdminOrderList(query);
 	}
 

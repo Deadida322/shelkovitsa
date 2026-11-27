@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
+import { DeliveryType } from 'src/db/entities/DeliveryType';
 import { Product } from 'src/db/entities/Product';
 import { TelegramOrderMessage } from 'src/db/entities/TelegramOrderMessage';
 import { DeliveryTypeService } from 'src/delivery-type/delivery-type.service';
@@ -206,6 +207,61 @@ describe('Order (e2e)', () => {
 		expect(order.orderProducts[0].price).toBe(100000);
 	});
 
+	it('админ фильтрует заказы по query, status и deliveryTypeId', async () => {
+		const admin = await registerAdmin(app);
+		const catalog = await seedCatalog(app, { amount: 10 });
+		const courier = await app
+			.get(DataSource)
+			.manager.save(DeliveryType, { name: 'Курьер' });
+
+		await request(app.getHttpServer())
+			.post('/api/order')
+			.send({
+				...orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]),
+				fio: 'Алиса Смирнова',
+				mail: 'alice@example.com',
+				tel: '+79991112233'
+			})
+			.expect(201);
+
+		const second = await request(app.getHttpServer())
+			.post('/api/order')
+			.send({
+				...orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]),
+				fio: 'Боб Петров',
+				mail: 'bob@example.com',
+				tel: '+79994445566',
+				deliveryTypeId: courier.id
+			})
+			.expect(201);
+
+		await admin
+			.patch(`/api/admin/order/${second.body.id}`)
+			.send({ status: 'in_work' })
+			.expect(200);
+
+		const byQuery = await admin
+			.get('/api/admin/order')
+			.query({ page: 0, itemsPerPage: 10, query: 'alice@' })
+			.expect(200);
+		expect(byQuery.body.count).toBe(1);
+		expect(byQuery.body.data[0].mail).toBe('alice@example.com');
+
+		const byStatus = await admin
+			.get('/api/admin/order')
+			.query({ page: 0, itemsPerPage: 10, status: 'in_work' })
+			.expect(200);
+		expect(byStatus.body.count).toBe(1);
+		expect(byStatus.body.data[0].id).toBe(second.body.id);
+
+		const byDelivery = await admin
+			.get('/api/admin/order')
+			.query({ page: 0, itemsPerPage: 10, deliveryTypeId: courier.id })
+			.expect(200);
+		expect(byDelivery.body.count).toBe(1);
+		expect(byDelivery.body.data[0].deliveryType.id).toBe(courier.id);
+	});
+
 	it('ответы с заказами не раскрывают пароль и служебные поля пользователя', async () => {
 		const admin = await registerAdmin(app);
 		const customer = await registerAgent(app, CUSTOMER);
@@ -251,6 +307,116 @@ describe('Order (e2e)', () => {
 			.send({ status: 'in_work' })
 			.expect(200);
 		expect(res.body.status).toBe('in_work');
+	});
+
+	it('разрешённый переход create → in_work → payment', async () => {
+		const admin = await registerAdmin(app);
+		const catalog = await seedCatalog(app);
+		const order = await request(app.getHttpServer())
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
+			.expect(201);
+
+		await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'in_work' })
+			.expect(200);
+
+		const res = await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'payment' })
+			.expect(200);
+		expect(res.body.status).toBe('payment');
+	});
+
+	it('запрещённый переход in_work → delivery — 400', async () => {
+		const admin = await registerAdmin(app);
+		const catalog = await seedCatalog(app);
+		const order = await request(app.getHttpServer())
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
+			.expect(201);
+
+		await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'in_work' })
+			.expect(200);
+
+		await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'delivery' })
+			.expect(400);
+	});
+
+	it('cancelled → in_work разрешён и снова списывает склад', async () => {
+		const admin = await registerAdmin(app);
+		const catalog = await seedCatalog(app, { amount: 5 });
+
+		const order = await request(app.getHttpServer())
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
+			.expect(201);
+		expect(await productAmount(catalog.product.id)).toBe(3);
+
+		await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'cancelled' })
+			.expect(200);
+		expect(await productAmount(catalog.product.id)).toBe(5);
+
+		const res = await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'in_work' })
+			.expect(200);
+		expect(res.body.status).toBe('in_work');
+		expect(await productAmount(catalog.product.id)).toBe(3);
+	});
+
+	it('cancelled → in_work — 400 при недостаточном остатке', async () => {
+		const admin = await registerAdmin(app);
+		const catalog = await seedCatalog(app, { amount: 2 });
+
+		const order = await request(app.getHttpServer())
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
+			.expect(201);
+		await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'cancelled' })
+			.expect(200);
+		expect(await productAmount(catalog.product.id)).toBe(2);
+
+		await request(app.getHttpServer())
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
+			.expect(201);
+		expect(await productAmount(catalog.product.id)).toBe(0);
+
+		await admin
+			.patch(`/api/admin/order/${order.body.id}`)
+			.send({ status: 'in_work' })
+			.expect(400);
+		expect(await productAmount(catalog.product.id)).toBe(0);
+	});
+
+	it('close остаётся терминальным', async () => {
+		const admin = await registerAdmin(app);
+		const catalog = await seedCatalog(app, { amount: 5 });
+
+		const closedOrder = await request(app.getHttpServer())
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
+			.expect(201);
+		for (const status of ['in_work', 'payment', 'delivery', 'close'] as const) {
+			await admin
+				.patch(`/api/admin/order/${closedOrder.body.id}`)
+				.send({ status })
+				.expect(200);
+		}
+		await admin
+			.patch(`/api/admin/order/${closedOrder.body.id}`)
+			.send({ status: 'cancelled' })
+			.expect(400);
 	});
 
 	it('отмена заказа возвращает остаток на склад', async () => {
