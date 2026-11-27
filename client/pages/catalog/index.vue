@@ -299,12 +299,13 @@ const sizeNames = computed(() => ({
     ...Object.fromEntries(facets.value.sizes.map((size) => [size.id, size.name])),
 }));
 const priceLabel = computed(() => {
+    // NBSP перед ₽ — на мобилке чип фильтра не ломает знак валюты
     if (filters.value.minPrice != null && filters.value.maxPrice != null) {
-        return `${filters.value.minPrice} – ${filters.value.maxPrice} ₽`;
+        return `${filters.value.minPrice} – ${filters.value.maxPrice}\u00A0₽`;
     }
     return filters.value.minPrice != null
-        ? `от ${filters.value.minPrice} ₽`
-        : `до ${filters.value.maxPrice} ₽`;
+        ? `от ${filters.value.minPrice}\u00A0₽`
+        : `до ${filters.value.maxPrice}\u00A0₽`;
 });
 
 // URL зеркалит стор, пока мы на /catalog (не на /catalog/:id)

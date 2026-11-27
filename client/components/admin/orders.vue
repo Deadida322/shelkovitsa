@@ -396,7 +396,7 @@ onMounted(() => {
                                     <td>{{ product.amount }}</td>
                                     <td>{{ product.product.productSize.name }}</td>
                                     <td>{{ product.product.productColor.name }}</td>
-                                    <td>
+                                    <td class="admin-orders__price">
                                         {{
                                             formatRub(
                                                 (product.price ??
@@ -415,7 +415,7 @@ onMounted(() => {
                 {{ item.tel }}
             </template>
             <template #[`item.price`]="{ item }">
-                {{ formatRub(item.price) }}
+                <span class="admin-orders__price">{{ formatRub(item.price) }}</span>
             </template>
             <template #[`item.description`]="{ item }">
                 {{ item.description || '—' }}
@@ -497,6 +497,10 @@ onMounted(() => {
         &--terminal {
             opacity: 0.65;
         }
+    }
+
+    &__price {
+        white-space: nowrap;
     }
 
     &__table {

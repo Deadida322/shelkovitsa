@@ -341,7 +341,7 @@ const shopColorImage = computed(() => {
                             шт.
                         </div>
                         <div class="item-info__actions d-flex mt-4">
-                            <vs-button disabled type="flat">
+                            <vs-button class="item-info__price" disabled type="flat">
                                 {{ formatRub(shopItem.price) }}
                             </vs-button>
                             <vs-button @click="submit">
@@ -414,6 +414,17 @@ const shopColorImage = computed(() => {
                 max-width: 100%;
             }
         }
+    }
+
+    &__price {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    &__actions {
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
     }
 }
 </style>

@@ -95,7 +95,7 @@ function clearCart() {
                             />
                         </div>
                         <div class="cart-item__price mt-2">
-                            {{ formatRub(item.price * item.amount) }}
+                            <span>{{ formatRub(item.price * item.amount) }}</span>
                         </div>
                     </div>
                 </div>
@@ -203,8 +203,11 @@ function clearCart() {
     }
 
     &__price {
+        white-space: nowrap;
+
         span {
             color: $primary;
+            white-space: nowrap;
         }
     }
 }

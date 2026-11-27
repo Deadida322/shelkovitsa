@@ -581,7 +581,7 @@ const headers = [
                 {{ item.brand || '—' }}
             </template>
             <template #[`item.price`]="{ item }">
-                {{ formatRub(item.price) }}
+                <span class="text-no-wrap">{{ formatRub(item.price) }}</span>
             </template>
             <template #[`item.totalAmount`]="{ item }">
                 {{ item.totalAmount ?? 0 }}
