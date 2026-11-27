@@ -13,6 +13,16 @@ const mobileMenuVisible = ref(false);
 
 const router = useRouter();
 
+/** Центровое меню: «ЗАКАЗЫ» только для авторизованных */
+const menuItems = computed(() => {
+    const items = [...menu];
+    if (!authStore.user) return items;
+    const contactsIdx = items.findIndex((item) => item.to === '/contacts');
+    const insertAt = contactsIdx >= 0 ? contactsIdx : items.length;
+    items.splice(insertAt, 0, { title: 'ЗАКАЗЫ', to: '/orders' });
+    return items;
+});
+
 watch(active, (val) => {
     // «Каталог» всегда с сохранёнными фильтрами (возврат с карточки товара)
     if (val === '/catalog') {
@@ -51,7 +61,7 @@ function isMenuActive(to) {
             </NuxtLink>
         </template>
         <vs-navbar-item
-            v-for="item in menu"
+            v-for="item in menuItems"
             :id="item.to"
             :key="item.to"
             class="d-none d-sm-flex"
@@ -70,15 +80,7 @@ function isMenuActive(to) {
                             title="Админка"
                         />
                     </NuxtLink>
-                    <NuxtLink to="/orders" class="mr-2" title="Мои заказы">
-                        <v-btn
-                            variant="tonal"
-                            size="small"
-                            icon="mdi-clipboard-list-outline"
-                            title="Мои заказы"
-                        />
-                    </NuxtLink>
-                    <NuxtLink to="/deliver">
+                    <NuxtLink to="/deliver" title="Корзина">
                         <v-btn variant="tonal" size="small" icon="mdi-cart-outline" />
                     </NuxtLink>
                     <v-btn

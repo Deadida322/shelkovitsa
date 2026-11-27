@@ -64,7 +64,7 @@ async function onLogout() {
                 <template #icon>
                     <v-icon size="small">mdi-clipboard-list-outline</v-icon>
                 </template>
-                Мои заказы
+                Заказы
             </vs-sidebar-item>
         </client-only>
         <template #footer>

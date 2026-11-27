@@ -194,6 +194,89 @@ describe('Order (e2e)', () => {
 		expect(order.orderProducts[0].product?.productArticle?.name).toBeTruthy();
 	});
 
+	it('клиентский список фильтрует по scope=active|completed и пагинирует', async () => {
+		const admin = await registerAdmin(app);
+		const customer = await registerAgent(app, CUSTOMER);
+		const catalog = await seedCatalog(app, { amount: 20 });
+
+		const activeOrder = await customer
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
+			.expect(201);
+
+		const cancelledOrder = await customer
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
+			.expect(201);
+
+		const closedOrder = await customer
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 1 }]))
+			.expect(201);
+
+		await admin
+			.patch(`/api/admin/order/${cancelledOrder.body.id}`)
+			.send({ status: 'cancelled' })
+			.expect(200);
+
+		for (const status of ['in_work', 'payment', 'delivery', 'close'] as const) {
+			await admin
+				.patch(`/api/admin/order/${closedOrder.body.id}`)
+				.send({ status })
+				.expect(200);
+		}
+
+		const defaultList = await customer
+			.get('/api/order')
+			.query({ page: 0, itemsPerPage: 10 })
+			.expect(200);
+		expect(defaultList.body.count).toBe(1);
+		expect(defaultList.body.data.map((o: { id: number }) => o.id)).toEqual([
+			activeOrder.body.id
+		]);
+
+		const activeList = await customer
+			.get('/api/order')
+			.query({ page: 0, itemsPerPage: 10, scope: 'active' })
+			.expect(200);
+		expect(activeList.body.count).toBe(1);
+		expect(activeList.body.data[0].id).toBe(activeOrder.body.id);
+
+		const completedList = await customer
+			.get('/api/order')
+			.query({ page: 0, itemsPerPage: 10, scope: 'completed' })
+			.expect(200);
+		expect(completedList.body.count).toBe(2);
+		expect(completedList.body.data.map((o: { id: number }) => o.id).sort()).toEqual(
+			[cancelledOrder.body.id, closedOrder.body.id].sort()
+		);
+		expect(
+			completedList.body.data.every((o: { status: string }) =>
+				['close', 'cancelled'].includes(o.status)
+			)
+		).toBe(true);
+
+		const page0 = await customer
+			.get('/api/order')
+			.query({ page: 0, itemsPerPage: 1, scope: 'completed' })
+			.expect(200);
+		expect(page0.body.count).toBe(2);
+		expect(page0.body.data).toHaveLength(1);
+
+		const page1 = await customer
+			.get('/api/order')
+			.query({ page: 1, itemsPerPage: 1, scope: 'completed' })
+			.expect(200);
+		expect(page1.body.count).toBe(2);
+		expect(page1.body.data).toHaveLength(1);
+		expect(page1.body.data[0].id).not.toBe(page0.body.data[0].id);
+
+		await customer
+			.get('/api/order')
+			.query({ page: 0, itemsPerPage: 10, scope: 'all' })
+			.expect(422);
+	});
+
 	it('в админском списке позиции хранят цену на момент заказа', async () => {
 		const admin = await registerAdmin(app);
 		const catalog = await seedCatalog(app, { price: 100000 });

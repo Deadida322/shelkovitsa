@@ -15,8 +15,11 @@ const totalItems = ref(0);
 const loading = ref(false);
 const orders = ref([]);
 const expandedId = ref(null);
+/** false — активные; true — завершённые (close + cancelled) */
+const showCompleted = ref(false);
 
 const pageCount = computed(() => Math.max(1, Math.ceil(totalItems.value / PAGE_SIZE)));
+const scope = computed(() => (showCompleted.value ? 'completed' : 'active'));
 
 const statusTitleByValue = Object.fromEntries(ORDER_STATUSES.map((s) => [s.value, s.title]));
 
@@ -52,11 +55,13 @@ function goToCatalog() {
 
 async function getOrders() {
     loading.value = true;
+    expandedId.value = null;
     try {
         const res = await $api('/api/order', {
             query: {
                 page: page.value - 1,
                 itemsPerPage: PAGE_SIZE,
+                scope: scope.value,
             },
         });
         orders.value = res?.data ?? [];
@@ -68,6 +73,14 @@ async function getOrders() {
         loading.value = false;
     }
 }
+
+watch(showCompleted, () => {
+    if (page.value !== 1) {
+        page.value = 1;
+        return;
+    }
+    getOrders();
+});
 
 watch(page, () => {
     getOrders();
@@ -91,15 +104,22 @@ useHead({
 
 <template>
     <div class="orders-page">
-        <div class="text-h6 mb-6">Мои заказы</div>
+        <div class="orders-page__toolbar mb-6">
+            <div class="text-h6">Мои заказы</div>
+            <label class="orders-page__scope">
+                <vs-switch v-model="showCompleted" />
+                <span>Завершённые</span>
+            </label>
+        </div>
 
         <vs-alert v-if="!loading" class="mb-6" color="#1A5CFF">
             <template #icon>
                 <v-icon size="40">mdi-information</v-icon>
             </template>
             <template v-if="totalItems">Найдено заказов: {{ totalItems }}</template>
+            <template v-else-if="showCompleted">Завершённых заказов пока нет</template>
             <template v-else>
-                Заказов пока нет —
+                Активных заказов пока нет —
                 <a href="#" class="orders-page__catalog-link" @click.prevent="goToCatalog">
                     перейти в каталог
                 </a>
@@ -161,7 +181,7 @@ useHead({
 
         <div v-if="pageCount > 1" class="d-flex justify-end mt-10">
             <vs-pagination
-                :key="`orders-pagination-${pageCount}`"
+                :key="`orders-pagination-${scope}-${pageCount}`"
                 v-model:current-page="page"
                 :layout="['prev', 'pager', 'next']"
                 :page-size="PAGE_SIZE"
@@ -174,6 +194,23 @@ useHead({
 <style lang="scss">
 .orders-page {
     width: 100%;
+
+    &__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 24px;
+    }
+
+    &__scope {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        user-select: none;
+        font-size: 14px;
+    }
 
     &__catalog-link {
         color: inherit;
