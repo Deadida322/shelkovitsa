@@ -78,6 +78,22 @@ describe('Catalog (e2e)', () => {
 			.query({})
 			.expect(200);
 		expect(res.body.article).toBe('ART-001');
+		expect(res.body.available).toBe(5);
+	});
+
+	it('скрытый и закончившийся артикул: 404 и available=0', async () => {
+		const catalog = await seedCatalog(app, { amount: 0 });
+		const inStock = await request(app.getHttpServer())
+			.get(`/api/product-article/${catalog.article.id}`)
+			.expect(200);
+		expect(inStock.body.available).toBe(0);
+
+		await app
+			.get(DataSource)
+			.manager.update(ProductArticle, catalog.article.id, { isVisible: false });
+		await request(app.getHttpServer())
+			.get(`/api/product-article/${catalog.article.id}`)
+			.expect(404);
 	});
 
 	it('категории доступны без авторизации', async () => {

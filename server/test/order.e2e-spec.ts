@@ -3,6 +3,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { DeliveryType } from 'src/db/entities/DeliveryType';
 import { Product } from 'src/db/entities/Product';
+import { ProductArticle } from 'src/db/entities/ProductArticle';
 import { TelegramOrderMessage } from 'src/db/entities/TelegramOrderMessage';
 import { DeliveryTypeService } from 'src/delivery-type/delivery-type.service';
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
@@ -297,6 +298,50 @@ describe('Order (e2e)', () => {
 		const [order] = res.body.data;
 		expect(order.price).toBe(200000);
 		expect(order.orderProducts[0].price).toBe(100000);
+	});
+
+	it('клиентский список сохраняет снимок цены и товара после нулевого остатка и архива', async () => {
+		const customer = await registerAgent(app, CUSTOMER);
+		const catalog = await seedCatalog(app, { amount: 3, price: 120000 });
+		const articleName = catalog.article.name;
+		const sizeName = catalog.size.name;
+		const colorName = catalog.color.name;
+
+		const created = await customer
+			.post('/api/order')
+			.send(orderPayload(catalog, [{ productId: catalog.product.id, amount: 2 }]))
+			.expect(201);
+		expect(created.body.orderProducts[0].price).toBe(120000);
+
+		const manager = app.get(DataSource).manager;
+		await manager.update(Product, catalog.product.id, { amount: 0 });
+		await manager.update(ProductArticle, catalog.article.id, {
+			isVisible: false,
+			price: 1
+		});
+		await manager.softDelete(ProductArticle, catalog.article.id);
+
+		await request(app.getHttpServer())
+			.get(`/api/product-article/${catalog.article.id}`)
+			.expect(404);
+
+		const res = await customer
+			.get('/api/order')
+			.query({ page: 0, itemsPerPage: 10 })
+			.expect(200);
+		expect(res.body.count).toBe(1);
+		const [order] = res.body.data;
+		expect(order.id).toBe(created.body.id);
+		expect(order.price).toBe(240000);
+		expect(order.orderProducts).toHaveLength(1);
+		const line = order.orderProducts[0];
+		expect(line.price).toBe(120000);
+		expect(line.amount).toBe(2);
+		expect(line.product?.id).toBe(catalog.product.id);
+		expect(line.product?.productArticle?.id).toBe(catalog.article.id);
+		expect(line.product?.productArticle?.name).toBe(articleName);
+		expect(line.product?.productSize?.name).toBe(sizeName);
+		expect(line.product?.productColor?.name).toBe(colorName);
 	});
 
 	it('админ фильтрует заказы по query, status и deliveryTypeId', async () => {

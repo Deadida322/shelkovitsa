@@ -101,6 +101,7 @@ export class ProductArticleService {
 		const productsOfSize = payload.productSizeId
 			? products.filter((p) => p.productSize.id === payload.productSizeId)
 			: products;
+		const available = products.reduce((sum, p) => sum + (p.amount ?? 0), 0);
 
 		// превью (isLogo) всегда первым — и в админке, и на карточке
 		const productFiles = [...(article.productFiles ?? [])].sort(
@@ -110,6 +111,7 @@ export class ProductArticleService {
 		// сериализация — FullProductArticleDto / FullProductArticleAdminDto в контроллере
 		return {
 			...article,
+			available,
 			productFiles,
 			productColors: filterDuplicateObjectById(
 				productsOfSize.map((p) => p.productColor)

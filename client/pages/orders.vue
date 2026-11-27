@@ -46,6 +46,14 @@ function lineTotal(product) {
     return unit * (product.amount ?? 0);
 }
 
+function productArticleId(item) {
+    return item?.product?.productArticle?.id ?? null;
+}
+
+function productName(item) {
+    return item?.product?.productArticle?.name || '—';
+}
+
 function toggleExpand(id) {
     expandedId.value = expandedId.value === id ? null : id;
 }
@@ -168,7 +176,17 @@ useHead({
                         </thead>
                         <tbody>
                             <tr v-for="item in order.orderProducts || []" :key="item.id">
-                                <td>{{ item.product?.productArticle?.name || '—' }}</td>
+                                <td>
+                                    <NuxtLink
+                                        v-if="productArticleId(item)"
+                                        :to="`/catalog/${productArticleId(item)}`"
+                                        class="orders-page__product-link"
+                                        @click.stop
+                                    >
+                                        {{ productName(item) }}
+                                    </NuxtLink>
+                                    <template v-else>{{ productName(item) }}</template>
+                                </td>
                                 <td>{{ item.amount }}</td>
                                 <td>{{ item.product?.productSize?.name || '—' }}</td>
                                 <td>{{ item.product?.productColor?.name || '—' }}</td>
@@ -221,6 +239,15 @@ useHead({
     &__catalog-link {
         color: inherit;
         text-decoration: underline;
+    }
+
+    &__product-link {
+        color: $primary;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
     }
 
     &__list {
