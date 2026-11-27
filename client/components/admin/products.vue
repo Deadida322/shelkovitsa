@@ -187,6 +187,23 @@ function buildApiQuery() {
     return query;
 }
 
+function openArticleFromRoute() {
+    const id = toInt(route.query.articleId);
+    if (!id) {
+        return;
+    }
+    editableItem.value = { id };
+    modalShow.value = true;
+}
+
+function clearArticleQuery() {
+    if (!route.query.articleId) {
+        return;
+    }
+    const { articleId: _removed, ...query } = route.query;
+    router.replace({ query });
+}
+
 function syncRouteQuery() {
     if (skipUrlSync) {
         return;
@@ -194,6 +211,9 @@ function syncRouteQuery() {
     const kept = {};
     if (route.query.tab) {
         kept.tab = route.query.tab;
+    }
+    if (route.query.articleId) {
+        kept.articleId = route.query.articleId;
     }
     const next = { ...kept, ...filtersToRouteQuery() };
     const same =
@@ -304,6 +324,21 @@ function toggleModal(item) {
     editableItem.value = item;
 }
 
+watch(modalShow, (visible) => {
+    if (!visible) {
+        clearArticleQuery();
+    }
+});
+
+watch(
+    () => route.query.articleId,
+    (value) => {
+        if (value) {
+            openArticleFromRoute();
+        }
+    },
+);
+
 watch(searchInput, () => {
     if (applyingFromRoute) {
         return;
@@ -360,6 +395,7 @@ applyFromRoute();
 onMounted(() => {
     categoriesStore.getAdminCategories();
     loadBrandOptions();
+    openArticleFromRoute();
 });
 
 async function updateXlsx(file) {
@@ -581,7 +617,7 @@ const headers = [
                 {{ item.brand || '—' }}
             </template>
             <template #[`item.price`]="{ item }">
-                {{ formatRub(item.price) }}
+                <span class="text-no-wrap">{{ formatRub(item.price) }}</span>
             </template>
             <template #[`item.totalAmount`]="{ item }">
                 {{ item.totalAmount ?? 0 }}

@@ -30,7 +30,6 @@ const queryKeys = [
     'size',
     'minPrice',
     'maxPrice',
-    'inStock',
     'sort',
     'page',
     'category',
@@ -120,7 +119,7 @@ const filterQuery = computed(() => ({
     ...(filters.value.maxPrice != null
         ? { maxPrice: rublesFilterToKopecks(filters.value.maxPrice) }
         : null),
-    ...(filters.value.inStock ? { inStock: true } : null),
+    inStock: true,
 }));
 const payload = computed(() => ({
     page: filters.value.page - 1,
@@ -157,7 +156,6 @@ watch(
         filters.value.sizes,
         filters.value.minPrice,
         filters.value.maxPrice,
-        filters.value.inStock,
         filters.value.sort,
     ],
     () => {
@@ -299,12 +297,13 @@ const sizeNames = computed(() => ({
     ...Object.fromEntries(facets.value.sizes.map((size) => [size.id, size.name])),
 }));
 const priceLabel = computed(() => {
+    // NBSP перед ₽ — на мобилке чип фильтра не ломает знак валюты
     if (filters.value.minPrice != null && filters.value.maxPrice != null) {
-        return `${filters.value.minPrice} – ${filters.value.maxPrice} ₽`;
+        return `${filters.value.minPrice} – ${filters.value.maxPrice}\u00A0₽`;
     }
     return filters.value.minPrice != null
-        ? `от ${filters.value.minPrice} ₽`
-        : `до ${filters.value.maxPrice} ₽`;
+        ? `от ${filters.value.minPrice}\u00A0₽`
+        : `до ${filters.value.maxPrice}\u00A0₽`;
 });
 
 // URL зеркалит стор, пока мы на /catalog (не на /catalog/:id)
@@ -427,11 +426,6 @@ useHead({
             </div>
 
             <div class="catalog-toolbar__row catalog-toolbar__row--meta">
-                <label class="catalog-toolbar__stock">
-                    <vs-switch v-model="filters.inStock" />
-                    <span>В наличии</span>
-                </label>
-
                 <ClientOnly>
                     <vs-select
                         v-model="filters.sort"
@@ -696,7 +690,7 @@ useHead({
 
         &--meta {
             width: 100%;
-            justify-content: space-between;
+            justify-content: flex-end;
         }
     }
 
@@ -725,14 +719,6 @@ useHead({
         color: #fff;
         font-size: 11px;
         line-height: 1;
-    }
-
-    &__stock {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        user-select: none;
     }
 
     &__sort {

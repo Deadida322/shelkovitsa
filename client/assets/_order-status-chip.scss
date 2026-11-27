@@ -1,0 +1,57 @@
+@use '~/assets/_colors.scss' as *;
+
+// Общий вид статусов заказа (чип с обводкой) — ЛК и админка.
+@mixin order-status-chip-base {
+    border: 1px solid rgba(34, 60, 80, 0.28);
+    color: rgba(34, 60, 80, 0.85);
+    background: transparent;
+}
+
+@mixin order-status-chip-create {
+    border-color: rgba(34, 60, 80, 0.35);
+    color: rgba(34, 60, 80, 0.8);
+}
+
+@mixin order-status-chip-in_work {
+    border-color: #c47a1a;
+    color: #9a5c10;
+}
+
+@mixin order-status-chip-payment {
+    border-color: $primary;
+    color: $primary;
+    background: rgba($primary, 0.04);
+}
+
+@mixin order-status-chip-delivery {
+    border-color: #1a5cff;
+    color: #1a5cff;
+}
+
+@mixin order-status-chip-close {
+    border-color: #2e7d4f;
+    color: #2e7d4f;
+}
+
+@mixin order-status-chip-cancelled {
+    border-color: rgba(34, 60, 80, 0.28);
+    color: rgba(34, 60, 80, 0.55);
+}
+
+@mixin order-status-chip-variant($status) {
+  @include order-status-chip-base;
+
+  @if $status == create {
+    @include order-status-chip-create;
+  } @else if $status == in_work {
+    @include order-status-chip-in_work;
+  } @else if $status == payment {
+    @include order-status-chip-payment;
+  } @else if $status == delivery {
+    @include order-status-chip-delivery;
+  } @else if $status == close {
+    @include order-status-chip-close;
+  } @else if $status == cancelled {
+    @include order-status-chip-cancelled;
+  }
+}

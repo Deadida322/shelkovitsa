@@ -78,6 +78,72 @@ describe('Catalog (e2e)', () => {
 			.query({})
 			.expect(200);
 		expect(res.body.article).toBe('ART-001');
+		expect(res.body.available).toBe(5);
+	});
+
+	it('карточка: в селектах только размеры и цвета с остатком', async () => {
+		const catalog = await seedCatalog(app);
+		const manager = app.get(DataSource).manager;
+		const sizeInStock = await manager.save(ProductSize, { name: '50' });
+		const sizeOos = await manager.save(ProductSize, { name: '52' });
+		const colorInStock = await manager.save(ProductColor, { name: 'Белый' });
+		const colorOos = await manager.save(ProductColor, { name: 'Принт' });
+		await manager.save(Product, {
+			amount: 3,
+			productArticle: catalog.article,
+			productColor: colorInStock,
+			productSize: sizeInStock
+		});
+		await manager.save(Product, {
+			amount: 0,
+			productArticle: catalog.article,
+			productColor: colorOos,
+			productSize: sizeInStock
+		});
+		await manager.save(Product, {
+			amount: 0,
+			productArticle: catalog.article,
+			productColor: colorInStock,
+			productSize: sizeOos
+		});
+
+		const card = await request(app.getHttpServer())
+			.get(`/api/product-article/${catalog.article.id}`)
+			.query({})
+			.expect(200);
+		expect(card.body.productSizes.map((s: { name: string }) => s.name).sort()).toEqual([
+			'50',
+			'75B'
+		]);
+		expect(card.body.productColors.map((c: { name: string }) => c.name)).not.toContain(
+			'Принт'
+		);
+
+		const bySize = await request(app.getHttpServer())
+			.get(`/api/product-article/${catalog.article.id}`)
+			.query({ productSizeId: sizeInStock.id })
+			.expect(200);
+		expect(bySize.body.productColors.map((c: { name: string }) => c.name)).toEqual([
+			'Белый'
+		]);
+		expect(bySize.body.productColors.map((c: { name: string }) => c.name)).not.toContain(
+			'Принт'
+		);
+	});
+
+	it('скрытый и закончившийся артикул: 404 и available=0', async () => {
+		const catalog = await seedCatalog(app, { amount: 0 });
+		const inStock = await request(app.getHttpServer())
+			.get(`/api/product-article/${catalog.article.id}`)
+			.expect(200);
+		expect(inStock.body.available).toBe(0);
+
+		await app
+			.get(DataSource)
+			.manager.update(ProductArticle, catalog.article.id, { isVisible: false });
+		await request(app.getHttpServer())
+			.get(`/api/product-article/${catalog.article.id}`)
+			.expect(404);
 	});
 
 	it('категории доступны без авторизации', async () => {
@@ -236,28 +302,19 @@ describe('Catalog (e2e)', () => {
 			expect((await publicList({ productSizeId: catalog.size.id })).count).toBe(0);
 		});
 
-		it('inStock, цена, сортировка и поиск по бренду работают вместе', async () => {
+		it('в наличии по умолчанию, цена, сортировка и поиск по бренду', async () => {
 			await manager().update(Product, { id: catalog.product.id }, { amount: 0 });
 			expect(articles(await publicList({ inStock: 'true' }))).toEqual(['ART-003']);
-			// inStock=false — это «не фильтровать»
-			expect((await publicList({ inStock: 'false' })).count).toBe(2);
+			// публичный каталог всегда только в наличии — query не отключает
+			expect((await publicList({ inStock: 'false' })).count).toBe(1);
 
 			const all = await publicList({ sort: 'priceDesc' });
-			expect(articles(all)).toEqual(['ART-003', 'ART-001']);
-			expect(articles(await publicList({ sort: 'priceAsc' }))).toEqual([
-				'ART-001',
-				'ART-003'
-			]);
-			expect(articles(await publicList({ sort: 'new' }))).toEqual([
-				'ART-003',
-				'ART-001'
-			]);
+			expect(articles(all)).toEqual(['ART-003']);
+			expect(articles(await publicList({ sort: 'priceAsc' }))).toEqual(['ART-003']);
+			expect(articles(await publicList({ sort: 'new' }))).toEqual(['ART-003']);
 			// default = по популярности; без заказов порядок стабильный по id
-			expect(articles(await publicList({ sort: 'default' }))).toEqual([
-				'ART-001',
-				'ART-003'
-			]);
-			expect(articles(await publicList({}))).toEqual(['ART-001', 'ART-003']);
+			expect(articles(await publicList({ sort: 'default' }))).toEqual(['ART-003']);
+			expect(articles(await publicList({}))).toEqual(['ART-003']);
 
 			expect(articles(await publicList({ minPrice: 200000 }))).toEqual(['ART-003']);
 			// поиск находит и по бренду, и сочетается с фильтром бренда
@@ -550,17 +607,16 @@ describe('Catalog (e2e)', () => {
 			await article('A5', 'Sielei', 180000, [[size75B, 0]]);
 		});
 
-		it('без фильтров: бренды, размеры в наличии, цена; Sielei без остатка есть в брендах', async () => {
+		it('без фильтров: бренды и размеры только с остатком, цена', async () => {
 			const body = await filters();
 			expect(brandMap(body)).toEqual({
 				Janira: 2,
-				Milavitsa: 2,
-				Sielei: 1
+				Milavitsa: 2
 			});
 			// A5 не даёт 75B (amount=0); 75B = A1+A3, 80C = A2+A4
 			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
 			expect(body.price).toEqual({ min: 100000, max: 250000 });
-			expect(articles(await list())).toEqual(['A1', 'A2', 'A3', 'A4', 'A5']);
+			expect(articles(await list())).toEqual(['A1', 'A2', 'A3', 'A4']);
 		});
 
 		it('бренд: список сужается; размеры/цена — по бренду; другие бренды остаются в фасетах', async () => {
@@ -572,8 +628,7 @@ describe('Catalog (e2e)', () => {
 			// omit brand → счётчики брендов как без brand-фильтра
 			expect(brandMap(body)).toEqual({
 				Janira: 2,
-				Milavitsa: 2,
-				Sielei: 1
+				Milavitsa: 2
 			});
 		});
 
@@ -619,8 +674,7 @@ describe('Catalog (e2e)', () => {
 		it('несколько брендов/размеров — OR внутри типа', async () => {
 			expect(articles(await list({ brand: ['Milavitsa', 'Sielei'] }))).toEqual([
 				'A1',
-				'A2',
-				'A5'
+				'A2'
 			]);
 			expect(
 				articles(await list({ productSizeId: [size75B.id, size80C.id] }))
@@ -633,25 +687,19 @@ describe('Catalog (e2e)', () => {
 
 		it('цена: список и фасеты согласованы; диапазон цен не сужается сам собой', async () => {
 			expect(articles(await list({ minPrice: 180000, maxPrice: 220000 }))).toEqual([
-				'A2',
-				'A5'
+				'A2'
 			]);
 
 			const body = await filters({ minPrice: 180000, maxPrice: 220000 });
 			// omit price → полный диапазон каталога
 			expect(body.price).toEqual({ min: 100000, max: 250000 });
-			expect(brandMap(body)).toEqual({ Milavitsa: 1, Sielei: 1 });
+			expect(brandMap(body)).toEqual({ Milavitsa: 1 });
 			expect(sizeMap(body)).toEqual({ '80C': 1 });
 		});
 
-		it('inStock: убирает A5 из списка и из счётчиков брендов', async () => {
-			expect(articles(await list({ inStock: 'true' }))).toEqual([
-				'A1',
-				'A2',
-				'A3',
-				'A4'
-			]);
-			const body = await filters({ inStock: 'true' });
+		it('по умолчанию A5 (без остатка) не в списке и фасетах', async () => {
+			expect(articles(await list())).toEqual(['A1', 'A2', 'A3', 'A4']);
+			const body = await filters();
 			expect(brandMap(body)).toEqual({ Janira: 2, Milavitsa: 2 });
 			expect(sizeMap(body)).toEqual({ '75B': 2, '80C': 2 });
 			expect(body.price).toEqual({ min: 100000, max: 250000 });

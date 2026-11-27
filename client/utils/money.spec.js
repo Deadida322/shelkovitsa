@@ -8,11 +8,11 @@ import {
 
 describe('money', () => {
     it('formatRub', () => {
-        expect(formatRub(101430)).toBe('1014,30 ₽');
-        expect(formatRub(199000)).toBe('1990,00 ₽');
+        expect(formatRub(101430)).toBe('1014,30\u00A0₽');
+        expect(formatRub(199000)).toBe('1990,00\u00A0₽');
         expect(formatRub(5, { withCurrency: false })).toBe('0,05');
         // старые рубли в корзине без миграции выглядели бы как копейки
-        expect(formatRub(1990)).toBe('19,90 ₽');
+        expect(formatRub(1990)).toBe('19,90\u00A0₽');
     });
 
     it('rublesInputToKopecks', () => {

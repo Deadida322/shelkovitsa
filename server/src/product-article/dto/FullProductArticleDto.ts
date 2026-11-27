@@ -29,6 +29,10 @@ export class FullProductArticleDto {
 	@Transform(({ value }) => (value == null ? value : Number(value)))
 	price!: number;
 
+	/** Суммарный остаток по активным вариантам (витрина) */
+	@Expose()
+	available!: number;
+
 	@Expose()
 	@Type(() => ProductFileDto)
 	productFiles?: ProductFileDto[];

@@ -11,9 +11,9 @@ import { PaginatedDto } from 'src/common/dto/PaginatedDto';
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
-import { GetListDto } from 'src/common/dto/GetListDto';
 import { Auth } from 'src/decorators/auth';
 import { CreateOrderDto } from './dto/CreateOrderDto';
+import { GetCustomerOrderListDto } from './dto/GetCustomerOrderListDto';
 import { OrderDto } from './dto/OrderDto';
 import { OrderService } from './order.service';
 
@@ -39,8 +39,12 @@ export class OrderController {
 	@Get()
 	@Auth()
 	@ApiCookieAuth('access_token')
-	@ApiOperation({ summary: 'Мои заказы' })
-	async getMine(@Query() query: GetListDto, @Req() request: Request) {
+	@ApiOperation({
+		summary: 'Мои заказы',
+		description:
+			'scope=active (по умолчанию) — create|in_work|payment|delivery; scope=completed — close|cancelled'
+	})
+	async getMine(@Query() query: GetCustomerOrderListDto, @Req() request: Request) {
 		return this.orderService.getOrderList(query, request.user.id);
 	}
 }

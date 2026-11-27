@@ -45,7 +45,7 @@ const hasCategories = computed(() => categoriesStore.categories.length > 0);
 
                 <vs-sidebar-item
                     v-for="nest in item.productSubcategories"
-                    :id="nest.id"
+                    :id="String(nest.id)"
                     :key="nest.name"
                     @click="navigate(item, nest)"
                 >

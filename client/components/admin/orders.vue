@@ -49,6 +49,11 @@ const hasActiveFilters = computed(
 
 const headers = [
     {
+        key: 'data-table-expand',
+        width: '48px',
+        sortable: false,
+    },
+    {
         title: 'id',
         value: 'id',
     },
@@ -234,6 +239,25 @@ function statusOptionsFor(order) {
     return getSelectableStatuses(order.status, statuses);
 }
 
+function productArticleId(orderProduct) {
+    return orderProduct?.product?.productArticle?.id ?? null;
+}
+
+function productName(orderProduct) {
+    return orderProduct?.product?.productArticle?.name || '—';
+}
+
+/** Открывает карточку артикула в админке (EditModal), в т.ч. архив / без остатка. */
+function productArticleAdminRoute(articleId) {
+    return {
+        path: '/admin',
+        query: {
+            tab: 'products',
+            articleId: String(articleId),
+        },
+    };
+}
+
 function updateStatus(status, orderId) {
     return $api(`/api/admin/order/${orderId}`, {
         method: 'PATCH',
@@ -369,6 +393,7 @@ onMounted(() => {
             items-per-page="10"
             :items-length="totalItems"
             show-expand
+            expand-on-click
             class="admin-orders__table"
             @update:options="onTableOptions"
         >
@@ -392,16 +417,26 @@ onMounted(() => {
                             </thead>
                             <tbody>
                                 <tr v-for="product in item.orderProducts" :key="product.id">
-                                    <td>{{ product.product.productArticle.name }}</td>
-                                    <td>{{ product.amount }}</td>
-                                    <td>{{ product.product.productSize.name }}</td>
-                                    <td>{{ product.product.productColor.name }}</td>
                                     <td>
+                                        <NuxtLink
+                                            v-if="productArticleId(product)"
+                                            :to="productArticleAdminRoute(productArticleId(product))"
+                                            class="admin-orders__product-link"
+                                            @click.stop
+                                        >
+                                            {{ productName(product) }}
+                                        </NuxtLink>
+                                        <template v-else>{{ productName(product) }}</template>
+                                    </td>
+                                    <td>{{ product.amount }}</td>
+                                    <td>{{ product.product?.productSize?.name || '—' }}</td>
+                                    <td>{{ product.product?.productColor?.name || '—' }}</td>
+                                    <td class="admin-orders__price">
                                         {{
                                             formatRub(
                                                 (product.price ??
-                                                    product.product.productArticle.price) *
-                                                    product.amount,
+                                                    product.product?.productArticle?.price ??
+                                                    0) * product.amount,
                                             )
                                         }}
                                     </td>
@@ -415,33 +450,44 @@ onMounted(() => {
                 {{ item.tel }}
             </template>
             <template #[`item.price`]="{ item }">
-                {{ formatRub(item.price) }}
+                <span class="admin-orders__price">{{ formatRub(item.price) }}</span>
             </template>
             <template #[`item.description`]="{ item }">
                 {{ item.description || '—' }}
             </template>
             <template #[`item.status`]="{ item }">
-                <v-select
-                    class="admin-orders__status-select mt-2"
-                    :class="{
-                        'admin-orders__status-select--terminal': isTerminalStatus(item.status),
-                    }"
-                    variant="solo-filled"
-                    density="compact"
-                    hide-details
-                    item-title="title"
-                    item-value="value"
-                    :model-value="item.status"
-                    :items="statusOptionsFor(item)"
-                    :disabled="isTerminalStatus(item.status)"
-                    @update:model-value="updateStatus($event, item.id)"
-                />
+                <div class="admin-orders__status-cell" @click.stop>
+                    <v-select
+                        class="admin-orders__status-select mt-2"
+                        :class="[
+                            `admin-orders__status-select--${item.status}`,
+                            {
+                                'admin-orders__status-select--terminal': isTerminalStatus(
+                                    item.status,
+                                ),
+                            },
+                        ]"
+                        variant="solo-filled"
+                        density="compact"
+                        hide-details
+                        item-title="title"
+                        item-value="value"
+                        :model-value="item.status"
+                        :items="statusOptionsFor(item)"
+                        :disabled="isTerminalStatus(item.status)"
+                        @update:model-value="updateStatus($event, item.id)"
+                    />
+                </div>
             </template>
         </v-data-table-server>
     </div>
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/order-status-chip' as *;
+
+$admin-order-statuses: create, in_work, payment, delivery, close, cancelled;
+
 .admin-orders {
     &__filters {
         display: flex;
@@ -494,17 +540,73 @@ onMounted(() => {
     &__status-select {
         min-width: 180px;
 
+        :deep(.v-field) {
+            border-radius: 999px;
+            box-shadow: none;
+        }
+
+        :deep(.v-field__overlay) {
+            border-radius: 999px;
+            opacity: 0;
+        }
+
+        :deep(.v-field__input) {
+            min-height: 32px;
+            padding-top: 3px;
+            padding-bottom: 3px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        :deep(.v-select__selection-text) {
+            font-size: 13px;
+            font-weight: 500;
+            color: currentColor;
+        }
+
+        :deep(.v-field__append-inner .v-icon) {
+            color: currentColor;
+            opacity: 0.75;
+        }
+
+        @each $status in $admin-order-statuses {
+            &--#{$status} :deep(.v-field) {
+                @include order-status-chip-variant($status);
+            }
+        }
+
         &--terminal {
             opacity: 0.65;
         }
     }
 
+    &__price {
+        white-space: nowrap;
+    }
+
+    &__product-link {
+        color: rgb(var(--v-theme-primary));
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
     &__table {
+        :deep(tbody > tr.v-data-table__tr) {
+            cursor: pointer;
+        }
+
         @media screen and (max-width: 800px) {
             :deep(table) {
                 min-width: 720px;
             }
         }
+    }
+
+    &__status-cell {
+        cursor: default;
     }
 }
 </style>

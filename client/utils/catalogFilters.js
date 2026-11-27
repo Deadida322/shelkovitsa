@@ -16,7 +16,6 @@ export function emptyFilters() {
         sizes: [],
         minPrice: null,
         maxPrice: null,
-        inStock: false,
         sort: 'default',
         page: 1,
     };
@@ -34,7 +33,6 @@ export function filtersFromQuery(query = {}) {
     next.sizes = toArray(query.size).map(Number).filter(Number.isInteger);
     next.minPrice = toInt(query.minPrice);
     next.maxPrice = toInt(query.maxPrice);
-    next.inStock = query.inStock === '1' || query.inStock === 'true';
     next.sort = SORT_IDS.has(query.sort) ? query.sort : 'default';
     next.page = Math.max(1, toInt(query.page) || 1);
     return next;
@@ -50,7 +48,6 @@ export function filtersToQuery(filters) {
         sizes,
         minPrice,
         maxPrice,
-        inStock,
         sort,
         page,
     } = filters;
@@ -63,7 +60,6 @@ export function filtersToQuery(filters) {
         ...(sizes.length ? { size: sizes.map(String) } : null),
         ...(minPrice != null ? { minPrice: String(minPrice) } : null),
         ...(maxPrice != null ? { maxPrice: String(maxPrice) } : null),
-        ...(inStock ? { inStock: '1' } : null),
         ...(sort !== 'default' ? { sort } : null),
         ...(page > 1 ? { page: String(page) } : null),
     };

@@ -3,15 +3,30 @@ import { NuxtLink } from '#components';
 import { useAuthStore, useFiltersStore } from '#imports';
 import menu from '~/assets/js/menu';
 import useBreakpoints from '~/composables/breakpoints';
+import { useDisplay } from 'vuetify';
 
 const authStore = useAuthStore();
 const filtersStore = useFiltersStore();
 const route = useRoute();
 const active = ref(route.path);
 const bp = useBreakpoints();
+const display = useDisplay();
 const mobileMenuVisible = ref(false);
+const centerCollapsed = computed(
+    () => display.xs.value || display.sm.value || display.md.value,
+);
 
 const router = useRouter();
+
+/** Центровое меню: «ЗАКАЗЫ» только для авторизованных */
+const menuItems = computed(() => {
+    const items = [...menu];
+    if (!authStore.user) return items;
+    const contactsIdx = items.findIndex((item) => item.to === '/contacts');
+    const insertAt = contactsIdx >= 0 ? contactsIdx : items.length;
+    items.splice(insertAt, 0, { title: 'ЗАКАЗЫ', to: '/orders' });
+    return items;
+});
 
 watch(active, (val) => {
     // «Каталог» всегда с сохранёнными фильтрами (возврат с карточки товара)
@@ -42,7 +57,7 @@ function isMenuActive(to) {
     <vs-navbar
         v-model="active"
         shadow
-        :center-collapsed="bp.isTablet || bp.isMobile || bp.isSmallMobile"
+        :center-collapsed="centerCollapsed"
         padding-scroll
     >
         <template #left>
@@ -51,7 +66,7 @@ function isMenuActive(to) {
             </NuxtLink>
         </template>
         <vs-navbar-item
-            v-for="item in menu"
+            v-for="item in menuItems"
             :id="item.to"
             :key="item.to"
             class="d-none d-sm-flex"
@@ -70,19 +85,8 @@ function isMenuActive(to) {
                             title="Админка"
                         />
                     </NuxtLink>
-                    <NuxtLink to="/orders" class="mr-2" title="Мои заказы">
-                        <v-btn
-                            variant="tonal"
-                            size="small"
-                            icon="mdi-clipboard-list-outline"
-                            title="Мои заказы"
-                        />
-                    </NuxtLink>
-                    <NuxtLink to="/deliver">
-                        <v-btn variant="tonal" size="small" icon="mdi-cart-outline" />
-                    </NuxtLink>
                     <v-btn
-                        class="ml-2 d-none d-sm-flex"
+                        class="d-none d-sm-flex"
                         variant="tonal"
                         size="small"
                         icon="mdi-logout"

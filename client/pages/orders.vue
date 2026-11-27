@@ -9,14 +9,18 @@ definePageMeta({
 const { $api } = useNuxtApp();
 const filtersStore = useFiltersStore();
 
-const PAGE_SIZE = 10;
+/** Меньше page size — пагинация видна уже на демо с несколькими заказами */
+const PAGE_SIZE = 5;
 const page = ref(1);
 const totalItems = ref(0);
 const loading = ref(false);
 const orders = ref([]);
 const expandedId = ref(null);
+/** false — активные; true — завершённые (close + cancelled) */
+const showCompleted = ref(false);
 
 const pageCount = computed(() => Math.max(1, Math.ceil(totalItems.value / PAGE_SIZE)));
+const scope = computed(() => (showCompleted.value ? 'completed' : 'active'));
 
 const statusTitleByValue = Object.fromEntries(ORDER_STATUSES.map((s) => [s.value, s.title]));
 
@@ -42,6 +46,14 @@ function lineTotal(product) {
     return unit * (product.amount ?? 0);
 }
 
+function productArticleId(item) {
+    return item?.product?.productArticle?.id ?? null;
+}
+
+function productName(item) {
+    return item?.product?.productArticle?.name || '—';
+}
+
 function toggleExpand(id) {
     expandedId.value = expandedId.value === id ? null : id;
 }
@@ -52,11 +64,13 @@ function goToCatalog() {
 
 async function getOrders() {
     loading.value = true;
+    expandedId.value = null;
     try {
         const res = await $api('/api/order', {
             query: {
                 page: page.value - 1,
                 itemsPerPage: PAGE_SIZE,
+                scope: scope.value,
             },
         });
         orders.value = res?.data ?? [];
@@ -68,6 +82,14 @@ async function getOrders() {
         loading.value = false;
     }
 }
+
+watch(showCompleted, () => {
+    if (page.value !== 1) {
+        page.value = 1;
+        return;
+    }
+    getOrders();
+});
 
 watch(page, () => {
     getOrders();
@@ -91,15 +113,22 @@ useHead({
 
 <template>
     <div class="orders-page">
-        <div class="text-h6 mb-6">Мои заказы</div>
+        <div class="orders-page__toolbar mb-6">
+            <div class="text-h6">Мои заказы</div>
+            <label class="orders-page__scope">
+                <vs-switch v-model="showCompleted" />
+                <span>Завершённые</span>
+            </label>
+        </div>
 
         <vs-alert v-if="!loading" class="mb-6" color="#1A5CFF">
             <template #icon>
                 <v-icon size="40">mdi-information</v-icon>
             </template>
             <template v-if="totalItems">Найдено заказов: {{ totalItems }}</template>
+            <template v-else-if="showCompleted">Завершённых заказов пока нет</template>
             <template v-else>
-                Заказов пока нет —
+                Активных заказов пока нет —
                 <a href="#" class="orders-page__catalog-link" @click.prevent="goToCatalog">
                     перейти в каталог
                 </a>
@@ -120,7 +149,12 @@ useHead({
                         <div class="orders-page__id">№ {{ order.id }}</div>
                         <div class="orders-page__date">{{ formatOrderDate(order.created_at) }}</div>
                     </div>
-                    <div class="orders-page__status">{{ statusTitle(order.status) }}</div>
+                    <span
+                        class="orders-page__status"
+                        :class="`orders-page__status--${order.status}`"
+                    >
+                        {{ statusTitle(order.status) }}
+                    </span>
                     <div class="orders-page__price">{{ formatRub(order.price) }}</div>
                     <v-icon size="small" class="orders-page__chevron">
                         {{ expandedId === order.id ? 'mdi-chevron-up' : 'mdi-chevron-down' }}
@@ -132,14 +166,15 @@ useHead({
                         <span v-if="order.deliveryType?.name">
                             Доставка: {{ order.deliveryType.name }}
                         </span>
-                        <span v-if="order.address">· {{ order.address }}</span>
-                        <span v-if="order.region">({{ order.region }})</span>
+                        <span v-if="order.address">&nbsp;· {{ order.address }}</span>
+                        <span v-if="order.region">&nbsp;({{ order.region }})</span>
                     </div>
                     <v-table density="compact" class="orders-page__items">
                         <thead>
                             <tr>
                                 <th>Товар</th>
-                                <th>Кол-во</th>
+                                <!-- неразрывный дефис: «Кол-во» не ломается на две строки на мобилке -->
+                                <th>Кол&#8209;во</th>
                                 <th>Размер</th>
                                 <th>Цвет</th>
                                 <th>Сумма</th>
@@ -147,11 +182,21 @@ useHead({
                         </thead>
                         <tbody>
                             <tr v-for="item in order.orderProducts || []" :key="item.id">
-                                <td>{{ item.product?.productArticle?.name || '—' }}</td>
+                                <td>
+                                    <NuxtLink
+                                        v-if="productArticleId(item)"
+                                        :to="`/catalog/${productArticleId(item)}`"
+                                        class="orders-page__product-link"
+                                        @click.stop
+                                    >
+                                        {{ productName(item) }}
+                                    </NuxtLink>
+                                    <template v-else>{{ productName(item) }}</template>
+                                </td>
                                 <td>{{ item.amount }}</td>
                                 <td>{{ item.product?.productSize?.name || '—' }}</td>
                                 <td>{{ item.product?.productColor?.name || '—' }}</td>
-                                <td>{{ formatRub(lineTotal(item)) }}</td>
+                                <td class="orders-page__sum">{{ formatRub(lineTotal(item)) }}</td>
                             </tr>
                         </tbody>
                     </v-table>
@@ -159,9 +204,14 @@ useHead({
             </div>
         </div>
 
-        <div v-if="pageCount > 1" class="d-flex justify-end mt-10">
+        <!--
+            Показываем пагинацию при любом ненулевом count (не только pageCount > 1),
+            чтобы контролы и total были видны; PAGE_SIZE=5 делает несколько страниц на демо.
+            key пересоздаёт vs-pagination при смене scope/числа страниц (как в каталоге).
+        -->
+        <div v-if="totalItems > 0" class="d-flex justify-end mt-10">
             <vs-pagination
-                :key="`orders-pagination-${pageCount}`"
+                :key="`orders-pagination-${scope}-${pageCount}`"
                 v-model:current-page="page"
                 :layout="['prev', 'pager', 'next']"
                 :page-size="PAGE_SIZE"
@@ -172,12 +222,40 @@ useHead({
 </template>
 
 <style lang="scss">
+@use '~/assets/order-status-chip' as *;
+
 .orders-page {
     width: 100%;
+
+    &__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px 24px;
+    }
+
+    &__scope {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        user-select: none;
+        font-size: 14px;
+    }
 
     &__catalog-link {
         color: inherit;
         text-decoration: underline;
+    }
+
+    &__product-link {
+        color: $primary;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
     }
 
     &__list {
@@ -206,12 +284,19 @@ useHead({
         cursor: pointer;
 
         @media screen and (max-width: 700px) {
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            grid-template-areas:
+                'chevron meta price'
+                'chevron status status';
         }
     }
 
     &__meta {
         min-width: 0;
+
+        @media screen and (max-width: 700px) {
+            grid-area: meta;
+        }
     }
 
     &__id {
@@ -225,10 +310,44 @@ useHead({
     }
 
     &__status {
-        font-size: 14px;
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        max-width: 100%;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.3;
+        white-space: nowrap;
+        @include order-status-chip-base;
 
         @media screen and (max-width: 700px) {
-            grid-column: 1;
+            grid-area: status;
+        }
+
+        &--create {
+            @include order-status-chip-create;
+        }
+
+        &--in_work {
+            @include order-status-chip-in_work;
+        }
+
+        &--payment {
+            @include order-status-chip-payment;
+        }
+
+        &--delivery {
+            @include order-status-chip-delivery;
+        }
+
+        &--close {
+            @include order-status-chip-close;
+        }
+
+        &--cancelled {
+            @include order-status-chip-cancelled;
         }
     }
 
@@ -236,10 +355,20 @@ useHead({
         font-weight: 600;
         white-space: nowrap;
         color: $primary;
+
+        @media screen and (max-width: 700px) {
+            grid-area: price;
+        }
     }
 
     &__chevron {
         justify-self: end;
+
+        @media screen and (max-width: 700px) {
+            grid-area: chevron;
+            justify-self: start;
+            align-self: center;
+        }
     }
 
     &__details {
@@ -254,11 +383,56 @@ useHead({
     }
 
     &__items {
-        @media screen and (max-width: 700px) {
-            :deep(table) {
-                min-width: 480px;
+        :deep(th),
+        :deep(td) {
+            &.orders-page__sum,
+            &:nth-child(2),
+            &:nth-child(5) {
+                white-space: nowrap;
             }
         }
+
+        @media screen and (max-width: 700px) {
+            :deep(table) {
+                min-width: 560px;
+                table-layout: fixed;
+
+                th {
+                    white-space: nowrap;
+                }
+
+                // Товар — больше места под название
+                th:nth-child(1),
+                td:nth-child(1) {
+                    width: 40%;
+                }
+
+                // Кол-во
+                th:nth-child(2),
+                td:nth-child(2) {
+                    width: 16%;
+                }
+
+                // Размер / Цвет — уже
+                th:nth-child(3),
+                td:nth-child(3),
+                th:nth-child(4),
+                td:nth-child(4) {
+                    width: 12%;
+                }
+
+                // Сумма — целиком «1014,30 ₽»
+                th:nth-child(5),
+                td:nth-child(5) {
+                    width: 20%;
+                    white-space: nowrap;
+                }
+            }
+        }
+    }
+
+    &__sum {
+        white-space: nowrap;
     }
 }
 </style>

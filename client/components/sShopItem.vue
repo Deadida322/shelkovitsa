@@ -45,7 +45,7 @@ const imageSrc = `${base}/static/${getLogo}`;
             <vs-button color="danger" icon>
                 <v-icon>mdi-cart</v-icon>
             </vs-button>
-            <v-chip class="ml-4" variant="flat" label>
+            <v-chip class="ml-4 shop-item__price" variant="flat" label>
                 {{ formatRub(item.price) }}
             </v-chip>
         </template>
@@ -53,6 +53,11 @@ const imageSrc = `${base}/static/${getLogo}`;
 </template>
 
 <style lang="scss" scoped>
+.shop-item__price {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 .item-title {
     display: -webkit-box;
     -webkit-box-orient: vertical;

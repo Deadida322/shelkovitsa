@@ -11,7 +11,6 @@ import { Product } from 'src/db/entities/Product';
 import { User } from 'src/db/entities/User';
 import { DeliveryType } from 'src/db/entities/DeliveryType';
 import { baseProductWhere } from 'src/product-article/product-article.types';
-import { GetListDto } from 'src/common/dto/GetListDto';
 import {
 	getPaginateResult,
 	getPaginateWhere,
@@ -20,6 +19,11 @@ import {
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
 import { CreateOrderDto } from './dto/CreateOrderDto';
 import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
+import {
+	ACTIVE_ORDER_STATUSES,
+	COMPLETED_ORDER_STATUSES,
+	GetCustomerOrderListDto
+} from './dto/GetCustomerOrderListDto';
 import { GetAdminOrderListDto } from './dto/GetAdminOrderListDto';
 import { canTransition } from './order-status.transitions';
 import { orderRelations } from './order.relations';
@@ -143,14 +147,19 @@ export class OrderService {
 	}
 
 	async getOrderList(
-		getListDto: GetListDto,
+		getListDto: GetCustomerOrderListDto,
 		userId: number
 	): Promise<IPaginateResult<Order>> {
+		const scope = getListDto.scope ?? 'active';
+		const statuses =
+			scope === 'completed' ? COMPLETED_ORDER_STATUSES : ACTIVE_ORDER_STATUSES;
+
 		const [result, total] = await this.orderRepository.findAndCount({
 			where: {
 				user: {
 					id: userId
-				}
+				},
+				status: In(statuses)
 			},
 			relations: orderRelations,
 			// позиции с товарами из архива остаются в заказе
