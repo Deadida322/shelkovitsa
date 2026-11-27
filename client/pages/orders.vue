@@ -153,7 +153,7 @@ useHead({
                         <span v-if="order.deliveryType?.name">
                             Доставка: {{ order.deliveryType.name }}
                         </span>
-                        <span v-if="order.address">· {{ order.address }}</span>
+                        <span v-if="order.address">&nbsp;· {{ order.address }}</span>
                         <span v-if="order.region">&nbsp;({{ order.region }})</span>
                     </div>
                     <v-table density="compact" class="orders-page__items">
