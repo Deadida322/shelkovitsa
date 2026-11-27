@@ -22,6 +22,7 @@ import { baseDestPath, baseSrcPath } from './helpers/storageHelper';
 import { createDataSourceOptions } from './db/dataSourceOptions';
 import { HealthModule } from './health/health.module';
 import { StorageModule } from './storage/storage.module';
+import { MailModule } from './mail/mail.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
@@ -71,6 +72,7 @@ type AppConfigService = ConfigService<EnvironmentVariables, true>;
 				}
 			]
 		}),
+		MailModule,
 		ProductModule,
 		AuthModule,
 		UserModule,

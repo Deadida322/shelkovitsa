@@ -20,6 +20,8 @@ Swagger UI: `http://localhost:8000/api/docs`.
 | GET | `/health` | Проверка сервиса и БД |
 | POST | `/auth/register` | Регистрация `{ mail, fio, password, rePassword }`; лимит 10/мин |
 | POST | `/auth/login` | Вход `{ mail, password }`; лимит 10/мин |
+| POST | `/auth/forgot` | Запрос сброса пароля `{ mail }` (письмо со ссылкой); лимит 10/мин |
+| POST | `/auth/reset` | Новый пароль `{ token, password, rePassword }`; лимит 10/мин |
 | POST | `/auth/logout` | Выход (сбрасывает куку) |
 | GET | `/auth/me` | Текущий пользователь `{ mail, fio, isAdmin }` 🔒 |
 | GET | `/product-article` | Каталог: `page`, `itemsPerPage` (≤ 20), `categoryId`, `subcategoryId`, `minPrice`/`maxPrice` (**копейки**), `productSizeId` и `brand` (повторяющиеся: `?brand=A&brand=B`; размер — только в наличии), `inStock=true`, `sort` (`default` = по популярности за месяц \| `new` \| `priceAsc` \| `priceDesc`), `query` (артикул, название, описание, бренд). Поле `price` в ответах — **копейки** (integer). |
@@ -50,7 +52,7 @@ Swagger UI: `http://localhost:8000/api/docs`.
 | GET | `/admin/product` | Вариант любого (в т.ч. скрытого) артикула |
 | GET | `/admin/order` | Все заказы, новые сначала |
 | PATCH | `/admin/order/:id` | Смена статуса `{ status }` |
-| POST | `/admin/order/:id/telegram-retry` | Повторить Telegram-уведомление |
+| POST | `/admin/order/:id/telegram-retry` | Повторить Telegram-уведомление (если `TELEGRAM_ENABLED=true`) |
 | GET | `/admin/order/telegram-failed` | Заказы с неотправленным уведомлением |
 | GET | `/admin/product-category` | Все категории и подкатегории, включая пустые |
 | POST | `/admin/product-category` | Создать категорию `{ name }` |
