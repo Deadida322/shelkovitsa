@@ -31,8 +31,7 @@ async function requestReset() {
         });
         VsNotification({
             title: 'Готово',
-            content:
-                'Если аккаунт с таким email существует, мы отправили ссылку для сброса пароля',
+            content: 'Если аккаунт с таким email существует, мы отправили ссылку для сброса пароля',
             position: 'bottom-center',
             border: 'success',
         });
