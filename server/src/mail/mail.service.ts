@@ -20,8 +20,7 @@ export class MailService {
 		if (this.smtpConfigured) {
 			const user = this.config.get('SMTP_USER', { infer: true });
 			const pass = this.config.get('SMTP_PASS', { infer: true });
-			const auth =
-				user && pass ? { user, pass } : undefined;
+			const auth = user && pass ? { user, pass } : undefined;
 			this.transporter = nodemailer.createTransport({
 				host,
 				port: this.config.get('SMTP_PORT', { infer: true }) ?? 587,
