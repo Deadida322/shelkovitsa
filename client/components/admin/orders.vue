@@ -44,9 +44,7 @@ const deliveryFilterOptions = computed(() => [
 
 const hasActiveFilters = computed(
     () =>
-        Boolean(filters.query?.trim()) ||
-        filters.status != null ||
-        filters.deliveryTypeId != null,
+        Boolean(filters.query?.trim()) || filters.status != null || filters.deliveryTypeId != null,
 );
 
 const headers = [

@@ -250,9 +250,7 @@ export class OrderService {
 				const orderProducts = await manager.find(OrderProduct, {
 					where: { order: { id } }
 				});
-				const productIds = [
-					...new Set(orderProducts.map((op) => op.product.id))
-				];
+				const productIds = [...new Set(orderProducts.map((op) => op.product.id))];
 				if (productIds.length > 0) {
 					const lockedProducts = await manager
 						.createQueryBuilder(Product, 'product')
