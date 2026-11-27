@@ -80,11 +80,8 @@ function isMenuActive(to) {
                             title="Админка"
                         />
                     </NuxtLink>
-                    <NuxtLink to="/deliver" title="Корзина">
-                        <v-btn variant="tonal" size="small" icon="mdi-cart-outline" />
-                    </NuxtLink>
                     <v-btn
-                        class="ml-2 d-none d-sm-flex"
+                        class="d-none d-sm-flex"
                         variant="tonal"
                         size="small"
                         icon="mdi-logout"

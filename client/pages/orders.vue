@@ -9,7 +9,8 @@ definePageMeta({
 const { $api } = useNuxtApp();
 const filtersStore = useFiltersStore();
 
-const PAGE_SIZE = 10;
+/** Меньше page size — пагинация видна уже на демо с несколькими заказами */
+const PAGE_SIZE = 5;
 const page = ref(1);
 const totalItems = ref(0);
 const loading = ref(false);
@@ -153,7 +154,7 @@ useHead({
                             Доставка: {{ order.deliveryType.name }}
                         </span>
                         <span v-if="order.address">· {{ order.address }}</span>
-                        <span v-if="order.region">({{ order.region }})</span>
+                        <span v-if="order.region">&nbsp;({{ order.region }})</span>
                     </div>
                     <v-table density="compact" class="orders-page__items">
                         <thead>
@@ -179,7 +180,12 @@ useHead({
             </div>
         </div>
 
-        <div v-if="pageCount > 1" class="d-flex justify-end mt-10">
+        <!--
+            Показываем пагинацию при любом ненулевом count (не только pageCount > 1),
+            чтобы контролы и total были видны; PAGE_SIZE=5 делает несколько страниц на демо.
+            key пересоздаёт vs-pagination при смене scope/числа страниц (как в каталоге).
+        -->
+        <div v-if="totalItems > 0" class="d-flex justify-end mt-10">
             <vs-pagination
                 :key="`orders-pagination-${scope}-${pageCount}`"
                 v-model:current-page="page"
