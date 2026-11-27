@@ -69,7 +69,7 @@ function onSubAdd(category) {
     <v-card class="pa-2">
         <v-expansion-panels
             v-model="choosen"
-            variant="accordeon"
+            variant="accordion"
             @update:model-value="editableSubCategory = {}"
         >
             <v-expansion-panel

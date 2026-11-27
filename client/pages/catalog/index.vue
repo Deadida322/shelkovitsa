@@ -30,7 +30,6 @@ const queryKeys = [
     'size',
     'minPrice',
     'maxPrice',
-    'inStock',
     'sort',
     'page',
     'category',
@@ -120,7 +119,7 @@ const filterQuery = computed(() => ({
     ...(filters.value.maxPrice != null
         ? { maxPrice: rublesFilterToKopecks(filters.value.maxPrice) }
         : null),
-    ...(filters.value.inStock ? { inStock: true } : null),
+    inStock: true,
 }));
 const payload = computed(() => ({
     page: filters.value.page - 1,
@@ -157,7 +156,6 @@ watch(
         filters.value.sizes,
         filters.value.minPrice,
         filters.value.maxPrice,
-        filters.value.inStock,
         filters.value.sort,
     ],
     () => {
@@ -428,11 +426,6 @@ useHead({
             </div>
 
             <div class="catalog-toolbar__row catalog-toolbar__row--meta">
-                <label class="catalog-toolbar__stock">
-                    <vs-switch v-model="filters.inStock" />
-                    <span>В наличии</span>
-                </label>
-
                 <ClientOnly>
                     <vs-select
                         v-model="filters.sort"
@@ -697,7 +690,7 @@ useHead({
 
         &--meta {
             width: 100%;
-            justify-content: space-between;
+            justify-content: flex-end;
         }
     }
 
@@ -726,14 +719,6 @@ useHead({
         color: #fff;
         font-size: 11px;
         line-height: 1;
-    }
-
-    &__stock {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        user-select: none;
     }
 
     &__sort {

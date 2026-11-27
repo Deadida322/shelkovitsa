@@ -3,13 +3,18 @@ import { NuxtLink } from '#components';
 import { useAuthStore, useFiltersStore } from '#imports';
 import menu from '~/assets/js/menu';
 import useBreakpoints from '~/composables/breakpoints';
+import { useDisplay } from 'vuetify';
 
 const authStore = useAuthStore();
 const filtersStore = useFiltersStore();
 const route = useRoute();
 const active = ref(route.path);
 const bp = useBreakpoints();
+const display = useDisplay();
 const mobileMenuVisible = ref(false);
+const centerCollapsed = computed(
+    () => display.xs.value || display.sm.value || display.md.value,
+);
 
 const router = useRouter();
 
@@ -52,7 +57,7 @@ function isMenuActive(to) {
     <vs-navbar
         v-model="active"
         shadow
-        :center-collapsed="bp.isTablet || bp.isMobile || bp.isSmallMobile"
+        :center-collapsed="centerCollapsed"
         padding-scroll
     >
         <template #left>

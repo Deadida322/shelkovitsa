@@ -59,9 +59,9 @@ const props = defineProps({
         default: '',
     },
 });
-const isServer = typeof window === 'undefined';
-const isLoaded = ref<boolean>(!!isServer);
-const isServerRenderedLoaded = isServer;
+// SSR и первый клиентский кадр: картинка «видима», без opacity/transform рассинхрона
+const isLoaded = ref(true);
+const hasMounted = ref(false);
 
 const imgRef = ref<HTMLImageElement | null>(null);
 
@@ -118,12 +118,14 @@ function onError() {
 }
 
 onMounted(() => {
-    if (imgRef.value) {
-        if (imgRef.value.complete && imgRef.value.naturalWidth > 0) {
-            isLoaded.value = true;
-        } else {
-            isLoaded.value = false;
-        }
+    hasMounted.value = true;
+    const img = imgRef.value;
+    if (!img) {
+        return;
+    }
+    // Анимация появления только после mount и только если ещё не в кэше
+    if (!img.complete || img.naturalWidth === 0) {
+        isLoaded.value = false;
     }
 });
 </script>
@@ -135,7 +137,7 @@ onMounted(() => {
 
         <!-- Placeholder (blur) - показываем только на клиенте когда изображение ещё не loaded -->
         <img
-            v-if="!isLoaded && lazySrc && !isServerRenderedLoaded"
+            v-if="!isLoaded && lazySrc && hasMounted"
             class="s-image__placeholder"
             :src="lazySrc"
             :alt="alt"

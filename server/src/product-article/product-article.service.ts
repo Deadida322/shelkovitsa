@@ -77,8 +77,8 @@ export class ProductArticleService {
 	) {}
 
 	/**
-	 * Карточка артикула. Цвета — только те, что есть в выбранном размере (если он передан),
-	 * размеры — все активные варианты, чтобы размер можно было сменить.
+	 * Карточка артикула. На витрине — только варианты с amount > 0; цвета сужаются по
+	 * выбранному размеру. Размеры — все такие, у которых есть остаток (смена размера).
 	 * Админ видит и неопубликованные, и архивные артикулы.
 	 */
 	async getProductArticle(
@@ -98,10 +98,14 @@ export class ProductArticleService {
 		}
 
 		const products = await this.activeProducts(this.dataSource.manager, article.id);
+		// Витрина: в селектах только варианты с остатком; админ видит все активные SKU.
+		const sellableProducts = isAdmin
+			? products
+			: products.filter((p) => (p.amount ?? 0) > 0);
 		const productsOfSize = payload.productSizeId
-			? products.filter((p) => p.productSize.id === payload.productSizeId)
-			: products;
-		const available = products.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+			? sellableProducts.filter((p) => p.productSize.id === payload.productSizeId)
+			: sellableProducts;
+		const available = sellableProducts.reduce((sum, p) => sum + (p.amount ?? 0), 0);
 
 		// превью (isLogo) всегда первым — и в админке, и на карточке
 		const productFiles = [...(article.productFiles ?? [])].sort(
@@ -116,7 +120,9 @@ export class ProductArticleService {
 			productColors: filterDuplicateObjectById(
 				productsOfSize.map((p) => p.productColor)
 			),
-			productSizes: filterDuplicateObjectById(products.map((p) => p.productSize)),
+			productSizes: filterDuplicateObjectById(
+				sellableProducts.map((p) => p.productSize)
+			),
 			currentProductSize: payload.productSizeId
 		};
 	}
@@ -302,7 +308,8 @@ export class ProductArticleService {
 			conditions.push({ sql: (id) => `EXISTS (${inStock(id)})`, params: {} });
 		} else if (isAdmin && payload.stock === 'without') {
 			conditions.push({ sql: (id) => `NOT EXISTS (${inStock(id)})`, params: {} });
-		} else if (payload.inStock) {
+		} else if (!isAdmin || payload.inStock) {
+			// публичный каталог — только с остатком; inStock в query нельзя отключить
 			conditions.push({ sql: (id) => `EXISTS (${inStock(id)})`, params: {} });
 		}
 
@@ -406,7 +413,7 @@ export class ProductArticleService {
 					});
 				}
 			}
-			if (payload.inStock) {
+			if (!isAdmin || payload.inStock) {
 				qb.andWhere(inStockSql(alias));
 			}
 			return qb;

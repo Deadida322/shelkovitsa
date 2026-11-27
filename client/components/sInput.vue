@@ -52,15 +52,28 @@ const rules = computed(() => ({
 const $v = useVuelidate(rules, componentValue);
 const computedErrors = computed(() => $v.value.$errors?.[0]?.$message);
 const attrs = useAttrs();
+
+const inputState = computed(() => (computedErrors.value ? 'danger' : undefined));
+
+const vsInputAttrs = computed(() => {
+    const result = { ...attrs };
+    for (const key of ['color', 'state']) {
+        const value = result[key];
+        if (value === '' || value == null) {
+            delete result[key];
+        }
+    }
+    return result;
+});
 </script>
 
 <template>
     <vs-input
         v-model="componentValue"
         class="s-input"
-        :state="computedErrors ? 'danger' : ''"
+        :state="inputState"
         placeholder="Ваш логин"
-        v-bind="attrs"
+        v-bind="vsInputAttrs"
         @blur="$v.$touch()"
         @input="$v.$reset()"
     >

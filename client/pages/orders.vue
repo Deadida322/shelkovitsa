@@ -222,6 +222,8 @@ useHead({
 </template>
 
 <style lang="scss">
+@use '~/assets/order-status-chip' as *;
+
 .orders-page {
     width: 100%;
 
@@ -313,48 +315,39 @@ useHead({
         width: fit-content;
         max-width: 100%;
         padding: 3px 10px;
-        border: 1px solid rgba(34, 60, 80, 0.28);
         border-radius: 999px;
         font-size: 13px;
         font-weight: 500;
         line-height: 1.3;
         white-space: nowrap;
-        color: rgba(34, 60, 80, 0.85);
-        background: transparent;
+        @include order-status-chip-base;
 
         @media screen and (max-width: 700px) {
             grid-area: status;
         }
 
         &--create {
-            border-color: rgba(34, 60, 80, 0.35);
-            color: rgba(34, 60, 80, 0.8);
+            @include order-status-chip-create;
         }
 
         &--in_work {
-            border-color: #c47a1a;
-            color: #9a5c10;
+            @include order-status-chip-in_work;
         }
 
         &--payment {
-            border-color: $primary;
-            color: $primary;
-            background: rgba($primary, 0.04);
+            @include order-status-chip-payment;
         }
 
         &--delivery {
-            border-color: #1a5cff;
-            color: #1a5cff;
+            @include order-status-chip-delivery;
         }
 
         &--close {
-            border-color: #2e7d4f;
-            color: #2e7d4f;
+            @include order-status-chip-close;
         }
 
         &--cancelled {
-            border-color: rgba(34, 60, 80, 0.28);
-            color: rgba(34, 60, 80, 0.55);
+            @include order-status-chip-cancelled;
         }
     }
 

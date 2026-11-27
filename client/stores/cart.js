@@ -3,7 +3,6 @@ import { ref, useAuthStore, useCookie } from '#imports';
 import { defineStore } from 'pinia';
 
 export const useCartStore = defineStore('cart', () => {
-    const auth = useAuthStore();
     // cart_v2: цены в копейках; старая cookie `cart` с рублями сбрасываем
     const cartCookie = useCookie('cart_v2', {
         default: () => [],
@@ -12,11 +11,22 @@ export const useCartStore = defineStore('cart', () => {
 
     const cart = ref([]);
     const isDisabled = ref(false);
-    // $api берём внутри методов: store может создаться из api-плагина до provide
-    const initializeCart = async () => {
-        if (legacyCartCookie.value != null) {
-            legacyCartCookie.value = null;
+
+    const clearLegacyCartCookie = () => {
+        if (legacyCartCookie.value == null) {
+            return;
         }
+        // useCookie на SSR может отдавать readonly Ref — не трогаем .value на сервере
+        if (import.meta.server) {
+            return;
+        }
+        legacyCartCookie.value = null;
+    };
+
+    // auth только внутри методов: не создаём auth store в setup cart (readonly / цикл с api)
+    const initializeCart = async () => {
+        clearLegacyCartCookie();
+        const auth = useAuthStore();
         if (auth.user) {
             try {
                 const { $api } = useNuxtApp();
@@ -32,6 +42,7 @@ export const useCartStore = defineStore('cart', () => {
     };
 
     const syncCart = async () => {
+        const auth = useAuthStore();
         if (auth.user) {
             try {
                 const { $api } = useNuxtApp();
@@ -70,6 +81,7 @@ export const useCartStore = defineStore('cart', () => {
     };
 
     const mergeCartWithBackend = async () => {
+        const auth = useAuthStore();
         if (auth.user && cartCookie.value?.length > 0) {
             try {
                 const { $api } = useNuxtApp();

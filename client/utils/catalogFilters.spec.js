@@ -30,7 +30,6 @@ describe('filtersFromQuery / filtersToQuery', () => {
             size: ['4', '5'],
             minPrice: '700',
             maxPrice: '2000',
-            inStock: '1',
             sort: 'priceAsc',
             page: '2',
             category: '1',
@@ -42,7 +41,6 @@ describe('filtersFromQuery / filtersToQuery', () => {
         expect(state.sizes).toEqual([4, 5]);
         expect(state.minPrice).toBe(700);
         expect(state.maxPrice).toBe(2000);
-        expect(state.inStock).toBe(true);
         expect(state.sort).toBe('priceAsc');
         expect(state.page).toBe(2);
         expect(state.category).toBe('1');
@@ -54,7 +52,6 @@ describe('filtersFromQuery / filtersToQuery', () => {
             size: ['4', '5'],
             minPrice: '700',
             maxPrice: '2000',
-            inStock: '1',
             sort: 'priceAsc',
             page: '2',
             category: '1',

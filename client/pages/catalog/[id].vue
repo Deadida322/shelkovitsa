@@ -38,21 +38,44 @@ const {
     },
 );
 
-/** 404 / скрыт / архив — недоступен; 200 с нулевым остатком — закончился */
-const unavailableKind = computed(() => {
-    if (loadError.value || !shopItem.value?.id) return 'unavailable';
-    if ((shopItem.value.available ?? 0) <= 0) return 'out_of_stock';
-    return null;
-});
+/** Только 404 / скрыт / архив — полноэкранная заглушка. Нулевой остаток карточку не прячет. */
+const isUnavailable = computed(() => Boolean(loadError.value || !shopItem.value?.id));
 
-const unavailableTitle = computed(() =>
-    unavailableKind.value === 'out_of_stock' ? 'Товар закончился' : 'Товар недоступен',
+/** Остаток выбранного SKU (только после /api/product с размером и цветом). */
+const variantStock = ref(null);
+
+const hasVariantSelection = computed(
+    () => Boolean(cartInfo.value.size && cartInfo.value.color),
 );
 
-const unavailableText = computed(() =>
-    unavailableKind.value === 'out_of_stock'
-        ? 'Этот товар временно отсутствует на складе. Посмотрите другие позиции в каталоге.'
-        : 'Товар снят с витрины или не найден. Посмотрите другие позиции в каталоге.',
+const showStockCaption = computed(
+    () =>
+        hasVariantSelection.value &&
+        typeof variantStock.value === 'number' &&
+        variantStock.value > 0,
+);
+
+const countInputMax = computed(() => {
+    if (!hasVariantSelection.value || typeof variantStock.value !== 'number') {
+        return 1;
+    }
+    return Math.max(1, variantStock.value);
+});
+
+/** Нет в наличии — только для выбранного варианта, не по сумме артикула. */
+const isOutOfStock = computed(() => {
+    if (isUnavailable.value || !hasVariantSelection.value) return false;
+    if (variantStock.value === null) return false;
+    return variantStock.value <= 0;
+});
+
+const canAddToCart = computed(
+    () =>
+        !isUnavailable.value &&
+        !isOutOfStock.value &&
+        hasVariantSelection.value &&
+        typeof variantStock.value === 'number' &&
+        variantStock.value > 0,
 );
 
 const logo = computed(() => {
@@ -64,7 +87,7 @@ const logo = computed(() => {
 displayedImage.value = logo.value;
 
 function addToCart() {
-    if (!shopItem.value?.id || unavailableKind.value) return;
+    if (!shopItem.value?.id || !canAddToCart.value) return;
     const item = {
         id: route.params.id,
         productId: cartInfo.value.productId,
@@ -73,7 +96,7 @@ function addToCart() {
         name: shopItem.value.name,
         price: shopItem.value.price,
         amount: cartInfo.value.amount,
-        maxAmount: shopItem.value.available,
+        maxAmount: variantStock.value ?? 1,
         logo: (
             shopItem.value.productFiles?.find((item) => item.isLogo) ??
             shopItem.value.productFiles?.[0]
@@ -97,11 +120,15 @@ function goToCatalog() {
 
 // Функция для обновления SEO информации
 function updateSEO() {
-    if (unavailableKind.value) {
+    if (isUnavailable.value) {
         useHead({
-            title: `${unavailableTitle.value} - Шелковица`,
+            title: 'Товар недоступен - Шелковица',
             meta: [
-                { name: 'description', content: unavailableText.value },
+                {
+                    name: 'description',
+                    content:
+                        'Товар снят с витрины или не найден. Посмотрите другие позиции в каталоге.',
+                },
                 { name: 'robots', content: 'noindex, nofollow' },
             ],
         });
@@ -152,6 +179,8 @@ watch(
         };
 
         delete cartInfo.value.color;
+        variantStock.value = null;
+        delete cartInfo.value.productId;
     },
 );
 
@@ -180,7 +209,7 @@ watch(
 watch(
     cartInfo,
     async () => {
-        if (unavailableKind.value || !shopItem.value?.id) return;
+        if (isUnavailable.value || !shopItem.value?.id) return;
         await nextTick();
         if (cartInfo.value.color && cartInfo.value.size) {
             try {
@@ -191,11 +220,13 @@ watch(
                     },
                 });
                 cartInfo.value.productId = id;
-                shopItem.value.available = amount;
+                variantStock.value = typeof amount === 'number' ? amount : 0;
             } catch {
-                shopItem.value.available = 0;
+                variantStock.value = 0;
             }
         } else {
+            variantStock.value = null;
+            delete cartInfo.value.productId;
             try {
                 const res = await $api(`/api/product-article/${route.params.id}`, {
                     query: payload.value,
@@ -240,15 +271,17 @@ const shopColorImage = computed(() => {
         </div>
 
         <div
-            v-else-if="unavailableKind"
+            v-else-if="isUnavailable"
             class="catalog-item-page catalog-item-page--status"
         >
             <vs-alert color="#1A5CFF">
                 <template #icon>
                     <v-icon size="40">mdi-information</v-icon>
                 </template>
-                <div class="text-h6 mb-2">{{ unavailableTitle }}</div>
-                <div>{{ unavailableText }}</div>
+                <div class="text-h6 mb-2">Товар недоступен</div>
+                <div>
+                    Товар снят с витрины или не найден. Посмотрите другие позиции в каталоге.
+                </div>
                 <a href="#" class="catalog-item-page__catalog-link" @click.prevent="goToCatalog">
                     Перейти в каталог
                 </a>
@@ -256,6 +289,18 @@ const shopColorImage = computed(() => {
         </div>
 
         <div v-else class="catalog-item-page catalog-item">
+            <vs-alert v-if="isOutOfStock" class="mb-4" color="#1A5CFF">
+                <template #icon>
+                    <v-icon size="40">mdi-information</v-icon>
+                </template>
+                <div class="text-h6 mb-2">Товар закончился</div>
+                <div>
+                    Этот товар временно отсутствует на складе. Посмотрите другие позиции в каталоге.
+                </div>
+                <a href="#" class="catalog-item-page__catalog-link" @click.prevent="goToCatalog">
+                    Перейти в каталог
+                </a>
+            </vs-alert>
             <h1 class="text-h6">
                 {{ shopItem.name }}
             </h1>
@@ -331,22 +376,22 @@ const shopColorImage = computed(() => {
                         </div>
                         <s-count-input
                             v-model="cartInfo.amount"
-                            :max="shopItem.available || 1"
+                            :max="countInputMax"
                             class="mt-4"
                             label="Количество"
                         />
-                        <div v-if="shopItem.available" class="item-info__count-caption">
+                        <div v-if="showStockCaption" class="item-info__count-caption">
                             На складе
-                            <span>{{ shopItem.available }}</span>
+                            <span>{{ variantStock }}</span>
                             шт.
                         </div>
                         <div class="item-info__actions d-flex mt-4">
                             <vs-button class="item-info__price" disabled type="flat">
                                 {{ formatRub(shopItem.price) }}
                             </vs-button>
-                            <vs-button @click="submit">
-                                Добавить в корзину
-                                <v-icon class="ml-1">mdi-cart-outline</v-icon>
+                            <vs-button :disabled="isOutOfStock" @click="submit">
+                                {{ isOutOfStock ? 'Нет в наличии' : 'Добавить в корзину' }}
+                                <v-icon v-if="!isOutOfStock" class="ml-1">mdi-cart-outline</v-icon>
                             </vs-button>
                         </div>
                     </div>

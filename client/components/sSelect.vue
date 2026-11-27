@@ -43,14 +43,27 @@ const rules = computed(() => ({
 
 const $v = useVuelidate(rules, componentValue);
 const computedErrors = computed(() => $v.value.$errors?.[0]?.$message);
+
+const selectState = computed(() => (computedErrors.value ? 'danger' : undefined));
+
+const vsSelectAttrs = computed(() => {
+    const result = { ...attrs };
+    for (const key of ['color', 'state']) {
+        const value = result[key];
+        if (value === '' || value == null) {
+            delete result[key];
+        }
+    }
+    return result;
+});
 </script>
 
 <template>
     <ClientOnly>
         <vs-select
-            v-bind="attrs"
+            v-bind="vsSelectAttrs"
             v-model="componentValue"
-            :state="computedErrors ? 'danger' : ''"
+            :state="selectState"
             @blur="$v.$touch()"
             @input="$v.$reset()"
         >

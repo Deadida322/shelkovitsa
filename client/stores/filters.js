@@ -28,7 +28,6 @@ export const useFiltersStore = defineStore('filters', () => {
         filters.value.sizes = [];
         filters.value.minPrice = null;
         filters.value.maxPrice = null;
-        filters.value.inStock = false;
         filters.value.page = 1;
     }
 

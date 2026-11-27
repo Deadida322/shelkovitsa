@@ -38,6 +38,16 @@ watch(
         }
     },
 );
+
+watch(
+    () => route.query.articleId,
+    (value) => {
+        if (value && tab.value !== 'products') {
+            tab.value = 'products';
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
