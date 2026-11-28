@@ -60,7 +60,25 @@ const updateSearch = debounce((value) => {
     filters.value.search = value;
     filters.value.page = 1;
 }, 500);
-watch(search, updateSearch);
+
+function applySearchToStore(value) {
+    updateSearch.cancel();
+    filters.value.search = value;
+    filters.value.page = 1;
+}
+
+watch(search, (value) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+        applySearchToStore('');
+        return;
+    }
+    updateSearch(value);
+});
+
+onBeforeUnmount(() => {
+    updateSearch.cancel();
+});
 
 function findCategoryIdForSelection() {
     if (filters.value.category != null && filters.value.category !== '') {
@@ -174,6 +192,7 @@ const isProductsLoading = ref(true);
 
 function clearFilters() {
     filtersStore.clearFilters();
+    applySearchToStore('');
     search.value = '';
     priceInput.min = '';
     priceInput.max = '';
@@ -577,8 +596,7 @@ useHead({
                 class="catalog-active__chip"
                 @click="
                     search = '';
-                    filters.search = '';
-                    filters.page = 1;
+                    applySearchToStore('');
                 "
             >
                 «{{ search.trim() }}»
@@ -625,7 +643,7 @@ useHead({
                 @click="
                     resetProductFilters();
                     search = '';
-                    filters.search = '';
+                    applySearchToStore('');
                 "
             >
                 Сбросить все

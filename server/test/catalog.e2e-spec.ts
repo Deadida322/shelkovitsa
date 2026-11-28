@@ -302,6 +302,17 @@ describe('Catalog (e2e)', () => {
 			expect((await publicList({ productSizeId: catalog.size.id })).count).toBe(0);
 		});
 
+		it('поиск: exact/prefix артикула и подстрока в названии', async () => {
+			expect(articles(await publicList({ query: 'ART-001' }))).toEqual(['ART-001']);
+			expect(articles(await publicList({ query: 'ART-00' }))).toContain('ART-001');
+			await manager().update(
+				ProductArticle,
+				{ article: 'ART-001' },
+				{ name: 'Бюстгальтер кружевной Crystal' }
+			);
+			expect(articles(await publicList({ query: 'кружев' }))).toEqual(['ART-001']);
+		});
+
 		it('в наличии по умолчанию, цена, сортировка и поиск по бренду', async () => {
 			await manager().update(Product, { id: catalog.product.id }, { amount: 0 });
 			expect(articles(await publicList({ inStock: 'true' }))).toEqual(['ART-003']);
