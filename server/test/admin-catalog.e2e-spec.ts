@@ -355,6 +355,21 @@ describe('Админка каталога (e2e)', () => {
 			expect(await storage().exists(second.name)).toBe(false);
 		});
 
+		it('удаление последнего фото опубликованного артикула снимает с витрины', async () => {
+			await uploadImage().expect(201);
+			await update({ isVisible: true }).expect(200);
+			const [only] = await files();
+			await admin
+				.delete(`/api/admin/product-article/images/${only.id}`)
+				.expect(204);
+			const article = await manager().findOneBy(ProductArticle, {
+				id: catalog.article.id
+			});
+			expect(article!.isVisible).toBe(false);
+			expect(await files()).toHaveLength(0);
+			expect((await publicList().expect(200)).body.count).toBe(0);
+		});
+
 		it('не-картинка и подделанный Content-Type — 422', async () => {
 			const upload = (buffer: Buffer, filename: string, contentType: string) =>
 				admin

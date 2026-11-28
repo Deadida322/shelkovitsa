@@ -542,16 +542,25 @@ export class ProductArticleService {
 			throw new NotFoundException('Не найдено такого файла');
 		}
 
+		const articleId = file.productArticle.id;
+
 		await this.dataSource.transaction(async (manager) => {
 			await manager.delete(ProductFile, file.id);
 			if (file.isLogo) {
 				const next = await manager.findOne(ProductFile, {
-					where: { productArticle: { id: file.productArticle.id } },
+					where: { productArticle: { id: articleId } },
 					order: { id: 'ASC' }
 				});
 				if (next) {
 					await manager.update(ProductFile, next.id, { isLogo: true });
 				}
+			}
+
+			const remaining = await manager.count(ProductFile, {
+				where: { productArticle: { id: articleId } }
+			});
+			if (remaining === 0) {
+				await manager.update(ProductArticle, articleId, { isVisible: false });
 			}
 		});
 
