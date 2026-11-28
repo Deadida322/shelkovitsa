@@ -1,19 +1,19 @@
 import { computed, reactive } from 'vue';
 import { useDisplay } from 'vuetify';
-import { navFlagsForBreakpoint } from '~/utils/breakpoints';
+import { navFlagsForWidth } from '~/utils/breakpoints';
 
 /**
  * Единые границы Vuetify 3:
  * xs <600 | sm 600–959 | md 960–1279 | lg 1280–1919 | xl ≥1920
  *
  * Пары без дыр (см. utils/breakpoints.js + spec):
- * - isNavCompact / isNavWide — шапка, порог 1280
+ * - isNavCompact / isNavWide — шапка, порог 1000 (ширина окна)
  * - категории — CSS `$bp-categories` (1000), сайдбар ↔ mobile cats
  */
 export default function useBreakpoints() {
     const display = useDisplay();
 
-    const navFlags = computed(() => navFlagsForBreakpoint(display.name.value));
+    const navFlags = computed(() => navFlagsForWidth(display.width.value));
 
     return reactive({
         isSmallMobile: computed(() => display.xs.value), // < 600
@@ -22,9 +22,9 @@ export default function useBreakpoints() {
         isLaptop: computed(() => display.lg.value), // 1280–1919
         isDesktop: computed(() => display.xl.value), // ≥ 1920
 
-        /** Шапка: свёрнутый центр + гамбургер (< 1280) */
+        /** Шапка: свёрнутый центр + гамбургер (≤ 1000) */
         isNavCompact: computed(() => navFlags.value.isNavCompact),
-        /** Шапка: пункты меню + Войти/Выйти в навбаре (≥ 1280) */
+        /** Шапка: пункты меню + Войти/Выйти в навбаре (> 1000) */
         isNavWide: computed(() => navFlags.value.isNavWide),
 
         active: computed(() => display.name.value),

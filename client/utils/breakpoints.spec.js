@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
     CATEGORIES_BREAKPOINT_PX,
+    COMPACT_LAYOUT_PX,
     DISPLAY_NAMES,
+    NAV_BREAKPOINT_PX,
     VUETIFY_MIN_WIDTH,
     categoriesUiForWidth,
-    navFlagsForBreakpoint,
     navFlagsForWidth,
     vuetifyNameForWidth,
 } from './breakpoints.js';
@@ -30,34 +31,31 @@ describe('vuetifyNameForWidth', () => {
 });
 
 describe('navFlags — меню ↔ гамбургер', () => {
-    it('на каждом имени ровно один режим (нет дыры и нет двойного UI)', () => {
-        for (const name of DISPLAY_NAMES) {
-            const { isNavCompact, isNavWide } = navFlagsForBreakpoint(name);
+    it('шапка и категории делят один порог', () => {
+        expect(NAV_BREAKPOINT_PX).toBe(COMPACT_LAYOUT_PX);
+        expect(CATEGORIES_BREAKPOINT_PX).toBe(COMPACT_LAYOUT_PX);
+        expect(COMPACT_LAYOUT_PX).toBe(1000);
+    });
+
+    it('на любой ширине ровно один режим', () => {
+        const samples = [320, 600, 999, 1000, 1001, 1200, 1280, 1920];
+        for (const width of samples) {
+            const { isNavCompact, isNavWide } = navFlagsForWidth(width);
             expect(isNavCompact).toBe(!isNavWide);
             expect(isNavCompact || isNavWide).toBe(true);
         }
     });
 
-    it('compact до lg, wide с lg', () => {
-        expect(navFlagsForBreakpoint('xs')).toEqual({ isNavCompact: true, isNavWide: false });
-        expect(navFlagsForBreakpoint('sm')).toEqual({ isNavCompact: true, isNavWide: false });
-        expect(navFlagsForBreakpoint('md')).toEqual({ isNavCompact: true, isNavWide: false });
-        expect(navFlagsForBreakpoint('lg')).toEqual({ isNavCompact: false, isNavWide: true });
-        expect(navFlagsForBreakpoint('xl')).toEqual({ isNavCompact: false, isNavWide: true });
+    it('граница 1000px: слева гамбургер, справа десктоп-меню', () => {
+        expect(navFlagsForWidth(1000)).toEqual({ isNavCompact: true, isNavWide: false });
+        expect(navFlagsForWidth(1001)).toEqual({ isNavCompact: false, isNavWide: true });
     });
 
-    it('граница 1280px: слева гамбургер, справа десктоп-меню', () => {
-        expect(navFlagsForWidth(1279).isNavCompact).toBe(true);
-        expect(navFlagsForWidth(1279).isNavWide).toBe(false);
-        expect(navFlagsForWidth(1280).isNavCompact).toBe(false);
-        expect(navFlagsForWidth(1280).isNavWide).toBe(true);
-    });
-
-    it('бывшая дыра 600–1280 закрыта (compact + не wide)', () => {
-        for (const width of [600, 800, 959, 960, 1000, 1200, 1279]) {
+    it('в диапазоне 1001–1279 меню остаётся (раньше рано уходило в бургер)', () => {
+        for (const width of [1001, 1100, 1200, 1279]) {
             const flags = navFlagsForWidth(width);
-            expect(flags.isNavCompact, `width=${width}`).toBe(true);
-            expect(flags.isNavWide, `width=${width}`).toBe(false);
+            expect(flags.isNavWide, `width=${width}`).toBe(true);
+            expect(flags.isNavCompact, `width=${width}`).toBe(false);
         }
     });
 });

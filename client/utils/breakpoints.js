@@ -1,5 +1,5 @@
 /**
- * Контракт брейкпоинтов UI (Vuetify 3 defaults).
+ * Контракт брейкпоинтов UI.
  * Пары show/hide должны быть комплементарны — без ширины, где нет ни A, ни B.
  */
 
@@ -18,14 +18,16 @@ export const VUETIFY_MIN_WIDTH = {
     xl: 1920,
 };
 
-/** Шапка: compact = гамбургер + сайдбар; wide = пункты меню в навбаре */
-const NAV_COMPACT_NAMES = new Set(['xs', 'sm', 'md']);
-
 /**
- * Должен совпадать с `$bp-categories` в `assets/_breakpoints.scss`
- * (сайдбар категорий ↔ кнопка «Категории» / mobile cats).
+ * Общий compact-порог layout:
+ * - шапка: меню ↔ гамбургер
+ * - каталог: сайдбар категорий ↔ кнопка «Категории»
+ * Держать в синхроне с `$bp-categories` в `assets/_breakpoints.scss`.
  */
-export const CATEGORIES_BREAKPOINT_PX = 1000;
+export const COMPACT_LAYOUT_PX = 1000;
+
+export const CATEGORIES_BREAKPOINT_PX = COMPACT_LAYOUT_PX;
+export const NAV_BREAKPOINT_PX = COMPACT_LAYOUT_PX;
 
 /** Имя брейкпоинта Vuetify по ширине viewport */
 export function vuetifyNameForWidth(width) {
@@ -37,17 +39,13 @@ export function vuetifyNameForWidth(width) {
     return 'xl';
 }
 
-/** Флаги шапки: ровно один режим на любом имени */
-export function navFlagsForBreakpoint(name) {
-    const isNavCompact = NAV_COMPACT_NAMES.has(name);
+/** Флаги шапки по ширине: ровно один режим */
+export function navFlagsForWidth(width) {
+    const isNavCompact = Number(width) <= NAV_BREAKPOINT_PX;
     return {
         isNavCompact,
         isNavWide: !isNavCompact,
     };
-}
-
-export function navFlagsForWidth(width) {
-    return navFlagsForBreakpoint(vuetifyNameForWidth(width));
 }
 
 /**
