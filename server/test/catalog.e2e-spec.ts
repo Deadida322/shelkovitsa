@@ -111,13 +111,12 @@ describe('Catalog (e2e)', () => {
 			.get(`/api/product-article/${catalog.article.id}`)
 			.query({})
 			.expect(200);
-		expect(card.body.productSizes.map((s: { name: string }) => s.name).sort()).toEqual([
-			'50',
-			'75B'
-		]);
-		expect(card.body.productColors.map((c: { name: string }) => c.name)).not.toContain(
-			'Принт'
-		);
+		expect(
+			card.body.productSizes.map((s: { name: string }) => s.name).sort()
+		).toEqual(['50', '75B']);
+		expect(
+			card.body.productColors.map((c: { name: string }) => c.name)
+		).not.toContain('Принт');
 
 		const bySize = await request(app.getHttpServer())
 			.get(`/api/product-article/${catalog.article.id}`)
@@ -126,9 +125,9 @@ describe('Catalog (e2e)', () => {
 		expect(bySize.body.productColors.map((c: { name: string }) => c.name)).toEqual([
 			'Белый'
 		]);
-		expect(bySize.body.productColors.map((c: { name: string }) => c.name)).not.toContain(
-			'Принт'
-		);
+		expect(
+			bySize.body.productColors.map((c: { name: string }) => c.name)
+		).not.toContain('Принт');
 	});
 
 	it('скрытый и закончившийся артикул: 404 и available=0', async () => {
@@ -300,6 +299,17 @@ describe('Catalog (e2e)', () => {
 			// размер без остатка не считается
 			await manager().update(Product, { id: catalog.product.id }, { amount: 0 });
 			expect((await publicList({ productSizeId: catalog.size.id })).count).toBe(0);
+		});
+
+		it('поиск: exact/prefix артикула и подстрока в названии', async () => {
+			expect(articles(await publicList({ query: 'ART-001' }))).toEqual(['ART-001']);
+			expect(articles(await publicList({ query: 'ART-00' }))).toContain('ART-001');
+			await manager().update(
+				ProductArticle,
+				{ article: 'ART-001' },
+				{ name: 'Бюстгальтер кружевной Crystal' }
+			);
+			expect(articles(await publicList({ query: 'кружев' }))).toEqual(['ART-001']);
 		});
 
 		it('в наличии по умолчанию, цена, сортировка и поиск по бренду', async () => {

@@ -12,7 +12,6 @@ import {
 	EntityManager,
 	FindOptionsOrder,
 	FindOptionsWhere,
-	ILike,
 	In,
 	IsNull,
 	LessThanOrEqual,
@@ -21,8 +20,7 @@ import {
 	Between,
 	Raw,
 	Repository,
-	SelectQueryBuilder,
-	Brackets
+	SelectQueryBuilder
 } from 'typeorm';
 import { filterDuplicateObjectById } from 'src/common/utils';
 import { OrderProduct } from 'src/db/entities/OrderProduct';
@@ -58,6 +56,24 @@ const LIST_ORDERS: Record<
 
 // % и _ в поисковой строке — обычные символы, а не шаблон
 const escapeLike = (value: string) => value.replace(/[\\%_]/g, '\\$&');
+
+/** Параметры ILIKE: точный артикул, префикс артикула, подстрока по текстовым полям */
+const searchParams = (query: string) => ({
+	searchExact: query,
+	searchPrefix: `${escapeLike(query)}%`,
+	searchContains: `%${escapeLike(query)}%`
+});
+
+/** Условие поиска по артикулу (exact/prefix) и name/brand/description (подстрока, pg_trgm) */
+const productArticleSearchSql = (alias: string) =>
+	`(
+		LOWER(${alias}.article) = LOWER(:searchExact)
+		OR ${alias}.article ILIKE :searchPrefix
+		OR ${alias}.article ILIKE :searchContains
+		OR COALESCE(${alias}.name, '') ILIKE :searchContains
+		OR COALESCE(${alias}.brand, '') ILIKE :searchContains
+		OR COALESCE(${alias}.description, '') ILIKE :searchContains
+	)`;
 
 @Injectable()
 export class ProductArticleService {
@@ -153,9 +169,16 @@ export class ProductArticleService {
 			where.price = LessThanOrEqual(payload.maxPrice);
 		}
 
-		// Остальные условия — подзапросы по варианту/фото/бренду. Они собираются в один Raw
-		// на колонке id: у where один ключ на колонку, а поиск ниже ветвит условие по полям.
+		// Остальные условия — подзапросы по варианту/фото/бренду + поиск. Собираются в Raw на id.
 		const conditions = this.listConditions(payload, isAdmin);
+		const query = payload.query?.trim();
+		if (query) {
+			conditions.push({
+				sql: (id) =>
+					`EXISTS (SELECT 1 FROM product_article s WHERE s.id = ${id} AND ${productArticleSearchSql('s')})`,
+				params: searchParams(query)
+			});
+		}
 		if (conditions.length) {
 			const params = Object.assign({}, ...conditions.map((c) => c.params));
 			where.id = Raw(
@@ -175,14 +198,6 @@ export class ProductArticleService {
 			}
 		}
 
-		const query = payload.query?.trim();
-		const whereWithSearch = query
-			? (['article', 'name', 'description', 'brand'] as const).map((field) => ({
-					...where,
-					[field]: ILike(`%${escapeLike(query)}%`)
-				}))
-			: where;
-
 		const sort = payload.sort ?? 'default';
 		const { take, skip } = getPaginateWhere(payload);
 
@@ -192,7 +207,7 @@ export class ProductArticleService {
 		if (sort === 'default') {
 			// По популярности: заказы за месяц desc, без заказов — в конец по id
 			const matched = await this.productArticleRepository.find({
-				where: whereWithSearch,
+				where,
 				select: ['id'],
 				withDeleted: isAdmin
 			});
@@ -216,7 +231,7 @@ export class ProductArticleService {
 			[result, total] = await this.productArticleRepository.findAndCount({
 				take,
 				skip,
-				where: whereWithSearch,
+				where,
 				withDeleted: isAdmin,
 				relations: { productFiles: true },
 				order: LIST_ORDERS[sort]
@@ -381,14 +396,7 @@ export class ProductArticleService {
 			}
 			const query = payload.query?.trim();
 			if (query) {
-				qb.andWhere(
-					new Brackets((search) => {
-						(['article', 'name', 'description', 'brand'] as const).forEach(
-							(field) => search.orWhere(`${alias}.${field} ILIKE :search`)
-						);
-					}),
-					{ search: `%${escapeLike(query)}%` }
-				);
+				qb.andWhere(productArticleSearchSql(alias), searchParams(query));
 			}
 			// бренд не сужает список брендов — иначе выбранный бренд «запирает» остальные
 			if (omit !== 'brand' && payload.brand?.length) {

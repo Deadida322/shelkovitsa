@@ -158,6 +158,13 @@ describe('Админка каталога (e2e)', () => {
 				}
 			});
 			await manager().softDelete(Product, blackIn80.id);
+			const redIn80 = await manager().findOne(Product, {
+				where: {
+					productColor: { id: red.id },
+					productSize: { id: size80.id }
+				}
+			});
+			await manager().update(Product, redIn80!.id, { amount: 2 });
 			await uploadImage().expect(201);
 			await update({ isVisible: true }).expect(200);
 

@@ -1,20 +1,16 @@
 <script setup>
 import { NuxtLink } from '#components';
 import { useAuthStore, useFiltersStore } from '#imports';
-import menu from '~/assets/js/menu';
-import useBreakpoints from '~/composables/breakpoints';
 import { useDisplay } from 'vuetify';
+import menu from '~/assets/js/menu';
 
 const authStore = useAuthStore();
 const filtersStore = useFiltersStore();
 const route = useRoute();
 const active = ref(route.path);
-const bp = useBreakpoints();
 const display = useDisplay();
 const mobileMenuVisible = ref(false);
-const centerCollapsed = computed(
-    () => display.xs.value || display.sm.value || display.md.value,
-);
+const centerCollapsed = computed(() => display.xs.value || display.sm.value || display.md.value);
 
 const router = useRouter();
 
@@ -54,12 +50,7 @@ function isMenuActive(to) {
 </script>
 
 <template>
-    <vs-navbar
-        v-model="active"
-        shadow
-        :center-collapsed="centerCollapsed"
-        padding-scroll
-    >
+    <vs-navbar v-model="active" shadow :center-collapsed="centerCollapsed" padding-scroll>
         <template #left>
             <NuxtLink to="/">
                 <div class="logo">SHELKOVITSA</div>
