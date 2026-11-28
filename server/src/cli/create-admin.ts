@@ -4,11 +4,18 @@ import { User, UserRole } from 'src/db/entities/User';
 import { hashPassword } from 'src/helpers/authHelper';
 
 // Создаёт администратора или выдаёт права существующему пользователю.
-// Использование: npm run admin:create -- <почта> <пароль> [ФИО]
+// Использование: npm run admin:create -- <почта> <пароль> [ФИО] [телефон]
 async function main() {
-	const [mail, password, fio = 'Администратор'] = process.argv.slice(2);
+	const [
+		mail,
+		password,
+		fio = 'Администратор Системы',
+		tel = '+79990000000'
+	] = process.argv.slice(2);
 	if (!mail || !password) {
-		console.error('Использование: npm run admin:create -- <почта> <пароль> [ФИО]');
+		console.error(
+			'Использование: npm run admin:create -- <почта> <пароль> [ФИО] [телефон]'
+		);
 		process.exit(1);
 	}
 	if (password.length < 8) {
@@ -26,7 +33,8 @@ async function main() {
 			await repository.update(existing.id, {
 				role: UserRole.ADMIN,
 				password: passwordHash,
-				deleted_at: null
+				deleted_at: null,
+				...(existing.tel ? {} : { tel })
 			});
 			console.log(
 				`Пользователь ${mail} (id=${existing.id}) теперь администратор, пароль обновлён`
@@ -35,6 +43,7 @@ async function main() {
 			const user = await repository.save({
 				mail,
 				fio,
+				tel,
 				password: passwordHash,
 				role: UserRole.ADMIN
 			});

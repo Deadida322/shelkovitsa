@@ -70,6 +70,43 @@ describe('Auth (e2e)', () => {
 		expect(res.body.error.message).toBeInstanceOf(Array);
 	});
 
+	it('отклоняет регистрацию с некорректным ФИО (422)', async () => {
+		const res = await request(app.getHttpServer())
+			.post('/api/auth/register')
+			.send({
+				...CUSTOMER,
+				mail: 'fio-bad@test.ru',
+				fio: 'user@mail.ru'
+			})
+			.expect(422);
+		expect(res.body.error.message).toBeInstanceOf(Array);
+	});
+
+	it('регистрация без телефона допускается', async () => {
+		const { tel: _tel, ...withoutTel } = CUSTOMER;
+		const res = await request(app.getHttpServer())
+			.post('/api/auth/register')
+			.send({
+				...withoutTel,
+				mail: 'no-tel@test.ru',
+				rePassword: CUSTOMER.password
+			})
+			.expect(201);
+		expect(res.body.tel == null || res.body.tel === '').toBe(true);
+	});
+
+	it('регистрация сохраняет телефон в профиле', async () => {
+		const res = await request(app.getHttpServer())
+			.post('/api/auth/register')
+			.send({
+				...CUSTOMER,
+				mail: 'with-tel@test.ru',
+				rePassword: CUSTOMER.password
+			})
+			.expect(201);
+		expect(res.body.tel).toBe(CUSTOMER.tel);
+	});
+
 	it('логин с верным и неверным паролем', async () => {
 		await registerAdmin(app);
 		await registerAgent(app, CUSTOMER);

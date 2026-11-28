@@ -8,23 +8,37 @@ import {
 	IsOptional,
 	IsPhoneNumber,
 	IsString,
+	Matches,
+	MaxLength,
 	Min,
+	MinLength,
 	ValidateNested
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import 'reflect-metadata';
+import {
+	FIO_MAX_LENGTH,
+	FIO_MESSAGE,
+	FIO_MIN_LENGTH,
+	FIO_PATTERN,
+	normalizeFio
+} from 'src/helpers/fio';
 import { normalizeRuPhone } from 'src/helpers/phone';
 import { CreateOrderProductDto } from './CreateOrderProductDto';
 
 export class CreateOrderDto {
-	@ApiProperty({ description: 'ФИО заказчика', example: 'Иван Иванов' })
+	@ApiProperty({ description: 'ФИО заказчика', example: 'Иванов Иван' })
 	@Expose()
+	@Transform(({ value }) => normalizeFio(value))
 	@IsString({
 		message: 'Поле должно быть строкой'
 	})
 	@IsNotEmpty({
-		message: 'Поле не может быть пустым'
+		message: 'Укажите фамилию и имя'
 	})
+	@MinLength(FIO_MIN_LENGTH, { message: FIO_MESSAGE })
+	@MaxLength(FIO_MAX_LENGTH, { message: FIO_MESSAGE })
+	@Matches(FIO_PATTERN, { message: FIO_MESSAGE })
 	fio!: string;
 
 	@ApiProperty({ description: 'Email заказчика', example: 'ivan@example.com' })

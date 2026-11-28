@@ -51,6 +51,8 @@ describe('order-mail.templates', () => {
 		expect(mail.text).toContain('Бюстгальтер');
 		expect(mail.text).toContain('3000,00');
 		expect(mail.html).toContain('Позвонить вечером');
+		expect(mail.html).toContain('Шелковица');
+		expect(mail.html).toContain('#C41924');
 	});
 
 	it('клиентское письмо — заказ принят', () => {
@@ -58,6 +60,8 @@ describe('order-mail.templates', () => {
 		expect(mail.subject).toBe('Заказ #42 принят');
 		expect(mail.text).toMatch(/заказ #42 принят/i);
 		expect(mail.text).toContain('Ожидайте связи');
+		expect(mail.html).toContain('Спасибо за покупку');
+		expect(mail.html).toContain('Шелковица');
 	});
 
 	it('письмо сброса пароля содержит ссылку', () => {
@@ -67,5 +71,6 @@ describe('order-mail.templates', () => {
 		});
 		expect(mail.subject).toBe('Сброс пароля');
 		expect(mail.text).toContain('http://localhost:3000/recover?token=abc');
+		expect(mail.html).toContain('Задать новый пароль');
 	});
 });

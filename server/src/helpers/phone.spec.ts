@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeRuPhone } from './phone';
+import { formatRuPhoneMask, normalizeRuPhone } from './phone';
 
 describe('normalizeRuPhone', () => {
 	it('маска и распространённые форматы → E.164', () => {
@@ -12,5 +12,11 @@ describe('normalizeRuPhone', () => {
 	it('пустые значения пропускает', () => {
 		expect(normalizeRuPhone('')).toBe('');
 		expect(normalizeRuPhone(null)).toBe(null);
+	});
+});
+
+describe('formatRuPhoneMask', () => {
+	it('E.164 → маска для инпута', () => {
+		expect(formatRuPhoneMask('+79991234567')).toBe('+7 (999) 123-45-67');
 	});
 });

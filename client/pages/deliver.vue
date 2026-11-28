@@ -1,8 +1,16 @@
 <script setup>
-import { useCartStore, useFiltersStore, useMappingStore, useOrderStore } from '#imports';
+import {
+    useAuthStore,
+    useCartStore,
+    useFiltersStore,
+    useMappingStore,
+    useOrderStore,
+} from '#imports';
+import { helpers } from '@vuelidate/validators';
 import { VsNotification } from 'vuesax-alpha';
+import { FIO_MESSAGE, isValidFio, normalizeFio } from '~/utils/fio';
 import { formatRub } from '~/utils/money';
-import { normalizeRuPhone } from '~/utils/phone';
+import { formatRuPhoneMask, normalizeRuPhone } from '~/utils/phone';
 
 const config = useRuntimeConfig();
 const base = config.public.apiBase;
@@ -16,6 +24,45 @@ const orderStore = useOrderStore();
 const cartStore = useCartStore();
 const filtersStore = useFiltersStore();
 const mappingStore = useMappingStore();
+const authStore = useAuthStore();
+
+const fioValidation = computed(() => ({
+    fioFormat: helpers.withMessage(FIO_MESSAGE, (value) => !value || isValidFio(value)),
+}));
+
+function onFioBlur() {
+    if (typeof orderStore.order.fio === 'string') {
+        orderStore.order.fio = normalizeFio(orderStore.order.fio);
+    }
+}
+
+/** Подставить профиль авторизованного пользователя, не затирая уже введённое */
+function fillOrderFromUser() {
+    const u = authStore.user;
+    if (!u) return;
+    if (!orderStore.order.mail) {
+        orderStore.order.mail = u.mail || '';
+    }
+    if (!orderStore.order.fio) {
+        orderStore.order.fio = u.fio || '';
+    }
+    if (!orderStore.order.tel && u.tel) {
+        orderStore.order.tel = formatRuPhoneMask(u.tel);
+    }
+}
+
+watch(
+    () => authStore.user,
+    () => fillOrderFromUser(),
+    { immediate: true },
+);
+
+onMounted(async () => {
+    if (!authStore.user) {
+        await authStore.getMe();
+    }
+    fillOrderFromUser();
+});
 
 function goToCatalog() {
     navigateTo({ path: '/catalog', query: filtersStore.toQuery() });
@@ -36,6 +83,9 @@ function nextStep() {
     if (step.value < 2) return step.value++;
     if (submitting.value) return;
     submitting.value = true;
+    if (typeof orderStore.order.fio === 'string') {
+        orderStore.order.fio = normalizeFio(orderStore.order.fio);
+    }
     $api('/api/order', {
         method: 'POST',
         body: {
@@ -226,9 +276,11 @@ useHead({
                                 <s-input
                                     v-model="orderStore.order.fio"
                                     class="s-input"
-                                    placeholder="ФИО"
+                                    placeholder="Фамилия и имя"
                                     icon="account-outline"
                                     required
+                                    :custom-rules="fioValidation"
+                                    @blur="onFioBlur"
                                 />
 
                                 <s-input

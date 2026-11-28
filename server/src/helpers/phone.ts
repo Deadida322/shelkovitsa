@@ -22,3 +22,17 @@ export function normalizeRuPhone(raw: unknown): string | null | undefined {
 	}
 	return s;
 }
+
+/** E.164 / сырой номер → маска «+7 (999) 123-45-67» для UI */
+export function formatRuPhoneMask(raw: unknown): string {
+	const normalized = normalizeRuPhone(raw);
+	if (!normalized || typeof normalized !== 'string') {
+		return '';
+	}
+	const digits = normalized.replace(/\D/g, '');
+	if (digits.length !== 11 || !digits.startsWith('7')) {
+		return String(raw ?? '');
+	}
+	const local = digits.slice(1);
+	return `+7 (${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6, 8)}-${local.slice(8, 10)}`;
+}

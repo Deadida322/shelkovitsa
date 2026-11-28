@@ -3,6 +3,7 @@ import { PricesToKopecks1792767111912 } from './1792767111912-prices-to-kopecks'
 import { OrderStatusCancelled1792767111913 } from './1792767111913-order-status-cancelled';
 import { PasswordResetToken1792767111914 } from './1792767111914-password-reset-token';
 import { PgTrgmSearch1792767111915 } from './1792767111915-pg-trgm-search';
+import { UserTel1792767111916 } from './1792767111916-user-tel';
 
 // Новую миграцию (npm run migrate:add) нужно добавить в этот список
 export const migrations = [
@@ -10,5 +11,6 @@ export const migrations = [
 	PricesToKopecks1792767111912,
 	OrderStatusCancelled1792767111913,
 	PasswordResetToken1792767111914,
-	PgTrgmSearch1792767111915
+	PgTrgmSearch1792767111915,
+	UserTel1792767111916
 ];

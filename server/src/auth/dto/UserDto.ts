@@ -9,6 +9,9 @@ export class UserDto {
 	@Expose()
 	fio: string;
 
+	@Expose()
+	tel?: string | null;
+
 	// из guard приходит готовый isAdmin, из сущности — вычисляем по роли
 	@Expose()
 	@Transform(({ obj }) => obj.isAdmin ?? obj.role === UserRole.ADMIN, {

@@ -1,6 +1,8 @@
 <script setup>
 import { helpers } from '@vuelidate/validators';
 import { VsNotification } from 'vuesax-alpha';
+import { FIO_MESSAGE, isValidFio, normalizeFio } from '~/utils/fio';
+import { normalizeRuPhone } from '~/utils/phone';
 
 const { $api } = useNuxtApp();
 const user = ref({});
@@ -10,9 +12,37 @@ const rePasswordValidation = computed(() => ({
         (value) => !value || user.value.password === value,
     ),
 }));
+const fioValidation = computed(() => ({
+    fioFormat: helpers.withMessage(FIO_MESSAGE, (value) => !value || isValidFio(value)),
+}));
+const telOptionalValidation = computed(() => ({
+    telOptional: helpers.withMessage('Некорректный номер телефона', (value) => {
+        if (!value) return true;
+        const digits = String(value).replace(/\D/g, '');
+        // пустая маска «+7» / почти пусто — считаем «не заполнено»
+        if (digits.length <= 1) return true;
+        return digits.length === 11 && digits.startsWith('7');
+    }),
+}));
+
+function onFioBlur() {
+    if (typeof user.value.fio === 'string') {
+        user.value.fio = normalizeFio(user.value.fio);
+    }
+}
 
 function onSubmit() {
-    $api('/api/auth/register', { method: 'POST', body: user.value })
+    if (typeof user.value.fio === 'string') {
+        user.value.fio = normalizeFio(user.value.fio);
+    }
+    const tel = normalizeRuPhone(user.value.tel);
+    $api('/api/auth/register', {
+        method: 'POST',
+        body: {
+            ...user.value,
+            ...(tel ? { tel } : { tel: undefined }),
+        },
+    })
         .then(() => {
             VsNotification({
                 title: 'Успех!',
@@ -65,8 +95,19 @@ function onSubmit() {
                         v-model="user.fio"
                         class="s-input"
                         required
-                        placeholder="ФИО"
+                        placeholder="Фамилия и имя"
                         icon="account-outline"
+                        :custom-rules="fioValidation"
+                        @blur="onFioBlur"
+                    />
+                    <s-input
+                        v-model="user.tel"
+                        v-maska="'+7 (###) ###-##-##'"
+                        class="s-input"
+                        type="phone"
+                        placeholder="Номер телефона (необязательно)"
+                        icon="phone"
+                        :custom-rules="telOptionalValidation"
                     />
                     <s-input
                         v-model="user.password"

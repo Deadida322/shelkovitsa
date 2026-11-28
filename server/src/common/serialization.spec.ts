@@ -17,15 +17,17 @@ describe('сериализация ответов', () => {
 		id: 1,
 		mail: 'a@b.ru',
 		fio: 'Анна',
+		tel: '+79991234567',
 		password: '$2b$10$hash',
 		role: UserRole.ADMIN,
 		basket: [{ productId: 1 }]
 	});
 
-	it('UserDto: только mail, fio, isAdmin по роли', () => {
+	it('UserDto: только mail, fio, tel, isAdmin по роли', () => {
 		expect(serialize(UserDto, user)).toEqual({
 			mail: 'a@b.ru',
 			fio: 'Анна',
+			tel: '+79991234567',
 			isAdmin: true
 		});
 	});
@@ -44,7 +46,7 @@ describe('сериализация ответов', () => {
 		expect(
 			serialize(Paginated, { data: [user], count: 1, page: 0, itemsPerPage: 10 })
 		).toEqual({
-			data: [{ mail: 'a@b.ru', fio: 'Анна', isAdmin: true }],
+			data: [{ mail: 'a@b.ru', fio: 'Анна', tel: '+79991234567', isAdmin: true }],
 			count: 1,
 			page: 0,
 			itemsPerPage: 10

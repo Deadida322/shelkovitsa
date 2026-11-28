@@ -19,6 +19,10 @@ export class User extends SoftDeleteEntity {
 	@Column({ unique: true })
 	mail!: string;
 
+	/** E.164 (+7…); у старых пользователей может быть null */
+	@Column({ type: 'varchar', nullable: true })
+	tel?: string | null;
+
 	@Column()
 	password!: string;
 

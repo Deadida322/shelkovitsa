@@ -82,7 +82,8 @@ async function seedAdmin(dataSource: DataSource) {
 	await repository.save({
 		...(existing ?? {}),
 		mail,
-		fio: existing?.fio ?? 'Администратор',
+		fio: existing?.fio ?? 'Администратор Системы',
+		tel: existing?.tel ?? '+79990000000',
 		password: await hashPassword(password),
 		role: UserRole.ADMIN,
 		deleted_at: null

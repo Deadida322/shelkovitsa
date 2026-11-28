@@ -96,6 +96,7 @@ export class AuthController {
 		const newUser = await this.usersRepository.save({
 			mail: registerDto.mail,
 			fio: registerDto.fio,
+			tel: registerDto.tel,
 			password: await hashPassword(registerDto.password)
 		});
 

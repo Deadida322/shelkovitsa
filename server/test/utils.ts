@@ -37,10 +37,16 @@ export async function resetDb(app: INestApplication) {
 	await dataSource.query(`TRUNCATE ${tables} RESTART IDENTITY CASCADE`);
 }
 
-export const ADMIN = { mail: 'admin@test.ru', fio: 'Админ', password: 'admin-pass' };
+export const ADMIN = {
+	mail: 'admin@test.ru',
+	fio: 'Админ Тестов',
+	tel: '+79990001122',
+	password: 'admin-pass'
+};
 export const CUSTOMER = {
 	mail: 'user@test.ru',
-	fio: 'Покупатель',
+	fio: 'Покупатель Тестов',
+	tel: '+79990003344',
 	password: 'user-pass'
 };
 
