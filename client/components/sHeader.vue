@@ -1,15 +1,13 @@
 <script setup>
 import { NuxtLink } from '#components';
 import { useAuthStore, useFiltersStore } from '#imports';
-import menu from '~/assets/js/menu';
-import useBreakpoints from '~/composables/breakpoints';
 import { useDisplay } from 'vuetify';
+import menu from '~/assets/js/menu';
 
 const authStore = useAuthStore();
 const filtersStore = useFiltersStore();
 const route = useRoute();
 const active = ref(route.path);
-const bp = useBreakpoints();
 const display = useDisplay();
 const mobileMenuVisible = ref(false);
 const centerCollapsed = computed(() => display.xs.value || display.sm.value || display.md.value);
