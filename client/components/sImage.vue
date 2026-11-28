@@ -59,9 +59,10 @@ const props = defineProps({
         type: String,
         default: 'async',
     },
+    /** Nuxt Image: `md:50vw` или `800px`, не HTML `(max-width: …) …` */
     sizes: {
         type: String,
-        default: '100vw',
+        default: '',
     },
     srcset: {
         type: String,

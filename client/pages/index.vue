@@ -69,7 +69,7 @@ isLoading.value = pending.value;
                 :img-height="400"
                 alt="Шелковица - интернет-магазин нижнего белья"
                 eager
-                sizes="100vw"
+                sizes="1280px"
             >
                 <div class="d-flex flex-column justify-center align-center header__image-container">
                     <div class="text-h2 header__title">SHELKOVITSA</div>

@@ -34,7 +34,7 @@ const imageSrc = `${base}/static/${getLogo}`;
                 aspect-ratio="1"
                 :img-width="300"
                 :img-height="300"
-                sizes="(max-width: 600px) 50vw, 300px"
+                sizes="300px"
                 cover
             />
         </template>

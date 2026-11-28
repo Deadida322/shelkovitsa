@@ -310,7 +310,8 @@ const shopColorImage = computed(() => {
                         :height="mobile ? '400px' : '300px'"
                         :img-width="800"
                         :img-height="800"
-                        sizes="(max-width: 960px) 100vw, 50vw"
+                        sizes="800px"
+                        eager
                         :src="displayedImage"
                         @click="showImageViewer = true"
                         @error="handleImageError"
@@ -323,7 +324,7 @@ const shopColorImage = computed(() => {
                                 height="200px"
                                 :img-width="320"
                                 :img-height="200"
-                                sizes="(max-width: 960px) 45vw, 200px"
+                                sizes="200px"
                                 :src="`${base}/static/${name}`"
                                 @click="handleImageClick(`${base}/static/${name}`, key)"
                                 @error="handleImageError"
