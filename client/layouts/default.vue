@@ -15,14 +15,19 @@ if (import.meta.client) {
 await cartStore.initializeCart();
 const route = useRoute();
 const isAdminPage = computed(() => route.path.startsWith('/admin'));
+
+/** Sticky cart hidden on checkout/admin and auth-only flows */
+const CART_DISABLED_EXACT = ['/deliver', '/orders', '/signin', '/signup', '/recover'];
+const CART_DISABLED_PREFIXES = ['/admin'];
+
+const shouldDisableCart = (path) =>
+    CART_DISABLED_PREFIXES.some((prefix) => path.startsWith(prefix))
+    || CART_DISABLED_EXACT.includes(path);
+
 watch(
-    () => route.fullPath,
-    (newPath) => {
-        if (newPath === '/deliver' || newPath === '/orders' || newPath.startsWith('/admin')) {
-            cartStore.isDisabled = true;
-        } else {
-            cartStore.isDisabled = false;
-        }
+    () => route.path,
+    (path) => {
+        cartStore.isDisabled = shouldDisableCart(path);
     },
     {
         immediate: true,
