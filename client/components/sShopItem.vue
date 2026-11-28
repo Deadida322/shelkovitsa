@@ -1,4 +1,5 @@
 <script setup>
+import SImage from '~/components/sImage.vue';
 import { formatRub } from '~/utils/money';
 
 const props = defineProps({
@@ -26,14 +27,15 @@ const imageSrc = `${base}/static/${getLogo}`;
             </h3>
         </template>
         <template #img>
-            <img
+            <SImage
                 :src="imageSrc"
                 :alt="item.name"
-                loading="lazy"
-                decoding="async"
-                width="300"
-                height="300"
-                style="object-fit: cover"
+                width="100%"
+                aspect-ratio="1"
+                :img-width="300"
+                :img-height="300"
+                sizes="300px"
+                cover
             />
         </template>
         <template #text>
@@ -103,6 +105,7 @@ const imageSrc = `${base}/static/${getLogo}`;
     max-height: none;
 }
 
+::v-deep(.vs-card__img .s-image),
 ::v-deep(.vs-card__img img) {
     width: 100%;
     height: 100%;

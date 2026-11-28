@@ -2,6 +2,16 @@
 import { fixVuesaxUnwrapElement } from './build/plugins/fix-vuesax-unwrap-element';
 import { stripGoogleFonts } from './build/plugins/strip-vuesax-fonts';
 
+/** Хост API для ipx (картинки `/static/...` с BASE_URL) */
+function apiStaticImageDomains(): string[] {
+    const raw = process.env.BASE_URL || 'http://localhost:8000';
+    try {
+        return [new URL(raw).host];
+    } catch {
+        return ['localhost:8000'];
+    }
+}
+
 export default defineNuxtConfig({
     app: {
         head: {
@@ -119,7 +129,16 @@ export default defineNuxtConfig({
     image: {
         quality: 80,
         format: ['webp'],
-        provider: 'static',
+        domains: apiStaticImageDomains(),
+        screens: {
+            xs: 320,
+            sm: 640,
+            md: 768,
+            lg: 1024,
+            xl: 1280,
+            xxl: 1536,
+        },
+        densities: [1, 2],
     },
     googleFonts: {
         families: {

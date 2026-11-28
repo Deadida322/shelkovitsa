@@ -63,12 +63,13 @@ isLoading.value = pending.value;
                 gradient="linear-gradient(to top right, rgba(100,115,201,.33), rgba(25,32,72,.7))"
                 class="header__image"
                 src="/main.webp"
-                webp-src="/main.webp"
                 cover
                 height="400px"
+                :img-width="1280"
+                :img-height="400"
                 alt="Шелковица - интернет-магазин нижнего белья"
                 eager
-                sizes="100vw"
+                sizes="1280px"
             >
                 <div class="d-flex flex-column justify-center align-center header__image-container">
                     <div class="text-h2 header__title">SHELKOVITSA</div>
