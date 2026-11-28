@@ -370,6 +370,20 @@ describe('Админка каталога (e2e)', () => {
 			expect((await publicList().expect(200)).body.count).toBe(0);
 		});
 
+		it('опубликованный артикул без фото снимается с витрины при открытии карточки админки', async () => {
+			await manager().update(ProductArticle, catalog.article.id, { isVisible: true });
+			const res = await admin
+				.get(`/api/admin/product-article/${catalog.article.id}`)
+				.expect(200);
+			expect(res.body.isVisible).toBe(false);
+			expect(res.body.productFiles).toHaveLength(0);
+			const row = await manager().findOneBy(ProductArticle, {
+				id: catalog.article.id
+			});
+			expect(row!.isVisible).toBe(false);
+			expect((await publicList().expect(200)).body.count).toBe(0);
+		});
+
 		it('карточка админки и витрины не дублируют одно и то же фото', async () => {
 			await uploadImage().expect(201);
 			const [file] = await files();

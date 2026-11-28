@@ -71,6 +71,29 @@ describe('Catalog (e2e)', () => {
 		expect(res.body.count).toBe(1);
 	});
 
+	it('опубликованный артикул без фото недоступен в каталоге', async () => {
+		const catalog = await seedCatalog(app, { withImage: false });
+		await app
+			.get(DataSource)
+			.manager.update(ProductArticle, catalog.article.id, { isVisible: true });
+
+		await request(app.getHttpServer())
+			.get(`/api/product-article/${catalog.article.id}`)
+			.query({})
+			.expect(404);
+
+		const list = await request(app.getHttpServer())
+			.get('/api/product-article')
+			.query(listBody)
+			.expect(200);
+		expect(list.body.count).toBe(0);
+
+		const row = await app.get(DataSource).manager.findOneBy(ProductArticle, {
+			id: catalog.article.id
+		});
+		expect(row!.isVisible).toBe(false);
+	});
+
 	it('детальная карточка видимого артикула', async () => {
 		const catalog = await seedCatalog(app);
 		const res = await request(app.getHttpServer())

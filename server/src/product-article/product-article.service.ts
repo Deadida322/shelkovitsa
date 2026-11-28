@@ -128,9 +128,21 @@ export class ProductArticleService {
 			(a, b) => Number(b.isLogo) - Number(a.isLogo) || a.id - b.id
 		);
 
+		let isVisible = article.isVisible;
+		if (isVisible && productFiles.length === 0) {
+			const hidden = await this.unpublishIfNoImages(article.id);
+			if (hidden) {
+				isVisible = false;
+				if (!isAdmin) {
+					throw new NotFoundException('Артикул продукта не найден');
+				}
+			}
+		}
+
 		// сериализация — FullProductArticleDto / FullProductArticleAdminDto в контроллере
 		return {
 			...article,
+			isVisible,
 			available,
 			productFiles,
 			productColors: filterDuplicateObjectById(
@@ -340,6 +352,12 @@ export class ProductArticleService {
 			conditions.push({
 				sql: (id) =>
 					`NOT EXISTS (SELECT 1 FROM product_file f WHERE f."productArticleId" = ${id})`,
+				params: {}
+			});
+		} else if (!isAdmin) {
+			conditions.push({
+				sql: (id) =>
+					`EXISTS (SELECT 1 FROM product_file f WHERE f."productArticleId" = ${id})`,
 				params: {}
 			});
 		}
@@ -559,12 +577,7 @@ export class ProductArticleService {
 				}
 			}
 
-			const remaining = await manager.count(ProductFile, {
-				where: { productArticle: { id: articleId } }
-			});
-			if (remaining === 0) {
-				await manager.update(ProductArticle, articleId, { isVisible: false });
-			}
+			await this.unpublishIfNoImages(articleId, manager);
 		});
 
 		await this.storage
@@ -758,6 +771,28 @@ export class ProductArticleService {
 				}))
 		);
 		if (toCreate.length) await manager.save(Product, toCreate);
+	}
+
+	/** Снять с витрины, если в БД не осталось файлов (в т.ч. починка устаревших данных). */
+	private async unpublishIfNoImages(
+		articleId: number,
+		manager: EntityManager = this.dataSource.manager
+	): Promise<boolean> {
+		const remaining = await manager.count(ProductFile, {
+			where: { productArticle: { id: articleId } }
+		});
+		if (remaining !== 0) {
+			return false;
+		}
+		const article = await manager.findOne(ProductArticle, {
+			where: { id: articleId },
+			withDeleted: true
+		});
+		if (!article?.isVisible) {
+			return false;
+		}
+		await manager.update(ProductArticle, articleId, { isVisible: false });
+		return true;
 	}
 
 	private async assertPublishable(manager: EntityManager, articleId: number) {
