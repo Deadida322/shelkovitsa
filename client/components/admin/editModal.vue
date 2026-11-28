@@ -194,17 +194,27 @@ function deleteProduct() {
         });
 }
 
-function deleteImage(productFileId) {
-    $api(`/api/admin/product-article/images/${productFileId}`, { method: 'DELETE' }).then(() => {
-        loading.value = false;
+async function deleteImage(productFileId) {
+    try {
+        await $api(`/api/admin/product-article/images/${productFileId}`, { method: 'DELETE' });
         VsNotification({
             title: 'Отлично!',
             content: 'Изображение было удалено',
             position: 'bottom-center',
             border: 'success',
         });
-        getProduct();
-    });
+        await getProduct();
+        emit('updateProduct');
+    } catch ({ response }) {
+        VsNotification({
+            title: 'Ошибка!',
+            content: response?._data?.error?.message || 'Изображение не было удалено',
+            position: 'bottom-center',
+            border: 'danger',
+        });
+    } finally {
+        loading.value = false;
+    }
 }
 
 function changeLogo(productFileId) {

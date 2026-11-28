@@ -124,7 +124,7 @@ export class ProductArticleService {
 		const available = sellableProducts.reduce((sum, p) => sum + (p.amount ?? 0), 0);
 
 		// превью (isLogo) всегда первым — и в админке, и на карточке
-		const productFiles = [...(article.productFiles ?? [])].sort(
+		const productFiles = filterDuplicateObjectById(article.productFiles ?? []).sort(
 			(a, b) => Number(b.isLogo) - Number(a.isLogo) || a.id - b.id
 		);
 
@@ -245,7 +245,9 @@ export class ProductArticleService {
 		return getPaginateResult(
 			result.map((el) => ({
 				...el,
-				productFiles: el.productFiles.filter((file) => file.isLogo),
+				productFiles: filterDuplicateObjectById(el.productFiles ?? []).filter(
+					(file) => file.isLogo
+				),
 				...(isAdmin ? { totalAmount: amounts.get(el.id) ?? 0 } : {})
 			})),
 			total,
@@ -523,11 +525,12 @@ export class ProductArticleService {
 			throw new NotFoundException('Не найдено такого продукта');
 		}
 
+		const existing = filterDuplicateObjectById(productArticle.productFiles ?? []);
 		const { key, contentType } = uploadedImageKey(image);
 		await this.storage.save(key, image.buffer, contentType);
 		await this.productFileRepository.save({
 			name: key,
-			isLogo: productArticle.productFiles.length === 0,
+			isLogo: existing.length === 0,
 			productArticle
 		});
 	}
@@ -679,7 +682,7 @@ export class ProductArticleService {
 			await manager.delete(Product, { productArticle: { id } });
 			// фото удаляются каскадом (product_file.productArticleId ON DELETE CASCADE)
 			await manager.delete(ProductArticle, id);
-			return article.productFiles;
+			return filterDuplicateObjectById(article.productFiles ?? []);
 		});
 
 		await Promise.all(
@@ -767,9 +770,10 @@ export class ProductArticleService {
 			return;
 		}
 
+		const fileCount = filterDuplicateObjectById(article.productFiles ?? []).length;
 		const reasons = [
 			!article.name && 'отсутствует имя',
-			!article.productFiles?.length && 'отсутствуют файлы',
+			!fileCount && 'отсутствуют файлы',
 			!article.productSubcategory?.id && 'отсутствует привязка к подкатегории',
 			!(await this.activeProducts(manager, articleId)).length &&
 				'отсутствуют цвета или размеры продукта'

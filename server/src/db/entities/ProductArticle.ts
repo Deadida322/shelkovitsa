@@ -61,8 +61,6 @@ export class ProductArticle extends SoftDeleteEntity {
 	productSubcategory?: ProductSubcategory;
 
 	@Type(() => ProductFile)
-	@OneToMany(() => ProductFile, (productFile) => productFile.productArticle, {
-		eager: true
-	})
+	@OneToMany(() => ProductFile, (productFile) => productFile.productArticle)
 	productFiles!: ProductFile[];
 }

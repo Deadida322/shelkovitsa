@@ -77,12 +77,21 @@ const canAddToCart = computed(
 );
 
 const logo = computed(() => {
-    const logo =
+    const logoName =
         shopItem.value?.productFiles?.find((item) => item.isLogo)?.name ||
         shopItem.value?.productFiles?.[0]?.name;
-    return logo ? `${base}/static/${logo}` : '';
+    return logoName ? `${base}/static/${logoName}` : '';
 });
-displayedImage.value = logo.value;
+
+watch(
+    logo,
+    (src) => {
+        if (src) {
+            displayedImage.value = src;
+        }
+    },
+    { immediate: true },
+);
 
 function addToCart() {
     if (!shopItem.value?.id || !canAddToCart.value) return;
@@ -317,7 +326,7 @@ const shopColorImage = computed(() => {
                         @error="handleImageError"
                     />
                     <s-carousel class="images-carousel mt-4" :items-per-page="1.8">
-                        <s-slide v-for="({ name }, key) in shopItem.productFiles" :key="key">
+                        <s-slide v-for="(file, index) in shopItem.productFiles" :key="file.id">
                             <SImage
                                 cover
                                 class="carousel-image"
@@ -325,8 +334,8 @@ const shopColorImage = computed(() => {
                                 :img-width="320"
                                 :img-height="200"
                                 sizes="200px"
-                                :src="`${base}/static/${name}`"
-                                @click="handleImageClick(`${base}/static/${name}`, key)"
+                                :src="`${base}/static/${file.name}`"
+                                @click="handleImageClick(`${base}/static/${file.name}`, index)"
                                 @error="handleImageError"
                             />
                         </s-slide>
