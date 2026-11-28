@@ -86,6 +86,8 @@ function onSubmit() {
                         class="s-input"
                         placeholder="Повторите пароль"
                         type="password"
+                        required
+                        :min-length="8"
                         :custom-rules="rePasswordValidation"
                         icon="lock-outline"
                     />

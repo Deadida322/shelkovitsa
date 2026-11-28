@@ -44,7 +44,10 @@ const rules = computed(() => ({
     required: required.value ? helpers.withMessage('Укажите поле', requiredFunc) : true,
     email: email.value ? helpers.withMessage('Неверный формат почты', emailFunc) : true,
     minLength: minLength.value
-        ? helpers.withMessage(`Слишком короткое значение`, minLengthFunc(minLength))
+        ? helpers.withMessage(
+              `Минимум ${minLength.value} символов`,
+              minLengthFunc(minLength),
+          )
         : true,
     ...customRules.value,
 }));
