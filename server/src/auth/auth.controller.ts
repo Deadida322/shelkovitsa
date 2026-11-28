@@ -16,6 +16,8 @@ import {
 	ApiBody
 } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
+import { AuditService } from 'src/audit/audit.service';
+import { AuditActions } from 'src/audit/audit.types';
 import { User } from 'src/db/entities/User';
 import { Repository } from 'typeorm';
 import { RegisterDto } from './dto/RegisterDto';
@@ -61,7 +63,8 @@ export class AuthController {
 	constructor(
 		@InjectRepository(User)
 		private readonly usersRepository: Repository<User>,
-		private readonly authService: AuthService
+		private readonly authService: AuthService,
+		private readonly audit: AuditService
 	) {}
 
 	@Post('register')
@@ -103,6 +106,14 @@ export class AuthController {
 		const { access_token } = await this.authService.generateAccess(newUser);
 
 		response.cookie('access_token', access_token, cookieOptions);
+
+		this.audit.record({
+			actor: { id: newUser.id, mail: newUser.mail },
+			action: AuditActions.AUTH_REGISTER,
+			entity: 'user',
+			entityId: newUser.id,
+			meta: { hasTel: Boolean(newUser.tel) }
+		});
 
 		return newUser;
 	}

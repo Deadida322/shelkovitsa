@@ -1,3 +1,4 @@
+import { AuditLog } from './AuditLog';
 import { Benefit } from './Benefit';
 import { DeliveryType } from './DeliveryType';
 import { Order } from './Order';
@@ -16,6 +17,7 @@ import { User } from './User';
 // Явный список вместо glob: TypeORM не грузит файлы сам, а значит одинаково
 // работает в собранном приложении, в CLI миграций и в тестах (Vitest/ESM)
 export const entities = [
+	AuditLog,
 	Benefit,
 	DeliveryType,
 	Order,

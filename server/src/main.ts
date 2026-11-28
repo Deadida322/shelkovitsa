@@ -1,22 +1,15 @@
 import { NestFactory } from '@nestjs/core';
-import { Logger, LogLevel } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { configureApp } from './app.setup';
-
-const LOG_LEVELS: LogLevel[] = ['fatal', 'error', 'warn', 'log', 'debug', 'verbose'];
-
-// LOG_LEVEL=info|log → до log включительно; debug, verbose, warn, error — соответственно
-function resolveLogLevels(raw?: string): LogLevel[] {
-	const level = (raw === 'info' ? 'log' : raw) as LogLevel;
-	const index = LOG_LEVELS.indexOf(level);
-	return LOG_LEVELS.slice(0, index === -1 ? LOG_LEVELS.indexOf('log') + 1 : index + 1);
-}
+import { createAppLogger } from './logging/jsonl-logger';
 
 async function bootstrap() {
+	const appLogger = createAppLogger();
 	const app = await NestFactory.create(AppModule, {
 		bodyParser: true,
-		logger: resolveLogLevels(process.env.LOG_LEVEL)
+		logger: appLogger
 	});
 	configureApp(app);
 

@@ -4,6 +4,7 @@ import { OrderStatusCancelled1792767111913 } from './1792767111913-order-status-
 import { PasswordResetToken1792767111914 } from './1792767111914-password-reset-token';
 import { PgTrgmSearch1792767111915 } from './1792767111915-pg-trgm-search';
 import { UserTel1792767111916 } from './1792767111916-user-tel';
+import { AuditLog1792767111917 } from './1792767111917-audit-log';
 
 // Новую миграцию (npm run migrate:add) нужно добавить в этот список
 export const migrations = [
@@ -12,5 +13,6 @@ export const migrations = [
 	OrderStatusCancelled1792767111913,
 	PasswordResetToken1792767111914,
 	PgTrgmSearch1792767111915,
-	UserTel1792767111916
+	UserTel1792767111916,
+	AuditLog1792767111917
 ];

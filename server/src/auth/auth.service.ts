@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHash, randomBytes } from 'crypto';
 import { IsNull, MoreThan, Repository } from 'typeorm';
+import { AuditService } from 'src/audit/audit.service';
+import { AuditActions } from 'src/audit/audit.types';
 import { PasswordResetToken } from 'src/db/entities/PasswordResetToken';
 import { User, UserRole } from 'src/db/entities/User';
 import { hashPassword } from 'src/helpers/authHelper';
@@ -24,7 +26,8 @@ export class AuthService {
 		@InjectRepository(PasswordResetToken)
 		private readonly resetTokenRepository: Repository<PasswordResetToken>,
 		@InjectRepository(User)
-		private readonly usersRepository: Repository<User>
+		private readonly usersRepository: Repository<User>,
+		private readonly audit: AuditService
 	) {}
 
 	async signIn(loginDto: LoginDto) {
@@ -84,6 +87,13 @@ export class AuthService {
 		const resetUrl = `${this.mailService.getAppUrl().replace(/\/$/, '')}/recover?token=${rawToken}`;
 		const mailBody = buildPasswordResetMail({ fio: user.fio, resetUrl });
 		await this.mailService.sendMail({ to: user.mail, ...mailBody });
+
+		this.audit.record({
+			actor: { id: user.id, mail: user.mail },
+			action: AuditActions.AUTH_PASSWORD_RESET_REQUEST,
+			entity: 'user',
+			entityId: user.id
+		});
 	}
 
 	async resetPassword(dto: ResetPasswordDto): Promise<void> {
@@ -121,5 +131,12 @@ export class AuthService {
 			.where('"userId" = :userId', { userId: record.user.id })
 			.andWhere('"usedAt" IS NULL')
 			.execute();
+
+		this.audit.record({
+			actor: { id: record.user.id, mail: record.user.mail },
+			action: AuditActions.AUTH_PASSWORD_RESET,
+			entity: 'user',
+			entityId: record.user.id
+		});
 	}
 }

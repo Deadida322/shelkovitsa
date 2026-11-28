@@ -37,7 +37,11 @@
 | `PORT` | Порт сервера | `8000` | `8000` |
 | `NODE_ENV` | Окружение | `development` | `production` |
 | `LOG_LEVEL` | Уровень логирования | - | `info`, `debug`, `error` |
-| `IS_LOGGING_ROUTE` | Логировать маршруты | - | `true`, `false` |
+| `LOG_DIR` | Каталог JSONL (`app.jsonl`); пусто — только консоль | - | `/var/log/shelkovitsa` |
+| `LOG_MAX_FILE_MB` | Ротация файла по размеру | `50` | `50` |
+| `LOG_MAX_FILES` | Сколько архивов `app-*.jsonl.gz` держать | `7` | `7` |
+| `IS_LOGGING_ROUTE` | Access-лог каждого HTTP-запроса | - | `true`, `false` |
+| `AUDIT_RETENTION_DAYS` | Срок хранения `audit_log` | `90` | `90` |
 
 ### CORS
 | Переменная | Описание | Пример |

@@ -14,6 +14,7 @@ import { initDiskStorage } from './helpers/storageHelper';
 import { ConfigService } from '@nestjs/config';
 import { FILE_STORAGE } from './storage/storage.types';
 import { staticFromStorage } from './storage/static.middleware';
+import { requestContextMiddleware } from './logging/request-context.middleware';
 
 export function parseCorsOrigins(raw?: string): string[] {
 	return (raw ?? '')
@@ -63,6 +64,7 @@ export function configureApp(app: INestApplication) {
 	);
 	app.useGlobalFilters(new HttpExceptionFilter());
 	app.use(cookieParser());
+	app.use(requestContextMiddleware);
 
 	// Фото в S3: /static/<имя> отдаём из бакета (локально это делает ServeStaticModule)
 	const config = app.get(ConfigService);

@@ -7,12 +7,14 @@ import {
 	Patch,
 	Post,
 	Query,
+	Req,
 	SerializeOptions
 } from '@nestjs/common';
 import { PaginatedDto } from 'src/common/dto/PaginatedDto';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import { OrderNotificationService } from 'src/telegram/order-notification.service';
+import { Request } from 'express';
 import { ChangeOrderStatusDto } from './dto/ChangeOrderStatusDto';
 import { GetAdminOrderListDto } from './dto/GetAdminOrderListDto';
 import { OrderAdminDto } from './dto/OrderAdminDto';
@@ -48,9 +50,13 @@ export class OrderAdminController {
 	@ApiOperation({ summary: 'Сменить статус заказа' })
 	async changeStatus(
 		@Param('id', ParseIntPipe) id: number,
-		@Body() payload: ChangeOrderStatusDto
+		@Body() payload: ChangeOrderStatusDto,
+		@Req() req: Request
 	) {
-		return this.orderService.changeOrderStatus(id, payload);
+		return this.orderService.changeOrderStatus(id, payload, {
+			id: req.user?.id,
+			mail: req.user?.mail
+		});
 	}
 
 	@Post(':id/telegram-retry')

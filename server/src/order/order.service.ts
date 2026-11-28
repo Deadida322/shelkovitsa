@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, In, Repository } from 'typeorm';
+import { AuditService } from 'src/audit/audit.service';
+import { AuditActions, AuditActor } from 'src/audit/audit.types';
 import { Order, OrderStatus } from 'src/db/entities/Order';
 import {
 	TelegramMessageStatus,
@@ -36,7 +38,8 @@ export class OrderService {
 		@InjectRepository(Order)
 		private readonly orderRepository: Repository<Order>,
 		private readonly dataSource: DataSource,
-		private readonly notifications: OrderNotificationService
+		private readonly notifications: OrderNotificationService,
+		private readonly audit: AuditService
 	) {}
 
 	async create(createOrderDto: CreateOrderDto, userId?: number) {
@@ -143,6 +146,18 @@ export class OrderService {
 
 		this.notifications.notifyOrderCreated(newOrder);
 
+		this.audit.record({
+			actor: { id: userId, mail: createOrderDto.mail },
+			action: AuditActions.ORDER_CREATE,
+			entity: 'order',
+			entityId: orderId,
+			meta: {
+				price: newOrder.price,
+				items: createOrderDto.orderProducts.length,
+				guest: !userId
+			}
+		});
+
 		return newOrder;
 	}
 
@@ -227,8 +242,12 @@ export class OrderService {
 		return getPaginateResult(result, total, getListDto);
 	}
 
-	async changeOrderStatus(id: number, payload: ChangeOrderStatusDto) {
-		return this.dataSource.transaction(async (manager) => {
+	async changeOrderStatus(
+		id: number,
+		payload: ChangeOrderStatusDto,
+		actor?: AuditActor
+	) {
+		const previousStatus = await this.dataSource.transaction(async (manager) => {
 			const order = await manager
 				.createQueryBuilder(Order, 'order')
 				.setLock('pessimistic_write')
@@ -242,6 +261,8 @@ export class OrderService {
 					`Нельзя сменить статус с «${order.status}» на «${payload.status}»`
 				);
 			}
+
+			const fromStatus = order.status;
 
 			if (payload.status === OrderStatus.CANCELLED) {
 				const orderProducts = await manager.find(OrderProduct, {
@@ -291,7 +312,22 @@ export class OrderService {
 			}
 
 			order.status = payload.status;
-			return manager.save(order);
+			await manager.save(order);
+			return fromStatus;
+		});
+
+		this.audit.record({
+			actor,
+			action: AuditActions.ORDER_STATUS_CHANGE,
+			entity: 'order',
+			entityId: id,
+			meta: { from: previousStatus, to: payload.status }
+		});
+
+		return this.orderRepository.findOneOrFail({
+			where: { id },
+			relations: orderRelations,
+			withDeleted: true
 		});
 	}
 }

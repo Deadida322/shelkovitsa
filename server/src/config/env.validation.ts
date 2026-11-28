@@ -156,6 +156,34 @@ export class EnvironmentVariables {
 	@IsOptional()
 	@IsString()
 	S3_PUBLIC_URL?: string;
+
+	/** Каталог JSONL-логов; пусто — только консоль/journald */
+	@IsOptional()
+	@IsString()
+	LOG_DIR?: string;
+
+	@IsOptional()
+	@Transform(toInt)
+	@IsInt()
+	@Min(1)
+	LOG_MAX_FILE_MB?: number;
+
+	@IsOptional()
+	@Transform(toInt)
+	@IsInt()
+	@Min(1)
+	LOG_MAX_FILES?: number;
+
+	@IsOptional()
+	@IsIn(['true', 'false'])
+	IS_LOGGING_ROUTE?: string;
+
+	/** Сколько дней хранить audit_log (cron чистит ночью) */
+	@IsOptional()
+	@Transform(toInt)
+	@IsInt()
+	@Min(1)
+	AUDIT_RETENTION_DAYS?: number;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

@@ -24,6 +24,7 @@ set -euo pipefail
 PROJECT_DIR="${PROJECT_DIR:-/var/www/shelkovitsa}"
 DOMAIN="${DOMAIN:-shelkovitsa.ru}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 log() { echo "[deploy] $*"; }
 die() { echo "[deploy] Ошибка: $*" >&2; exit 1; }
@@ -53,6 +54,14 @@ prepare_server_writable_dirs() {
 	mkdir -p /temp/src /temp/dist
 	chown -R www-data:www-data /temp
 	chmod -R 755 /temp
+
+	# JSONL ops-логи Nest (LOG_DIR в server/.env)
+	mkdir -p /var/log/shelkovitsa
+	chown www-data:www-data /var/log/shelkovitsa
+	chmod 755 /var/log/shelkovitsa
+	if [[ -f "$SCRIPT_DIR/logrotate-shelkovitsa.conf" ]]; then
+		cp "$SCRIPT_DIR/logrotate-shelkovitsa.conf" /etc/logrotate.d/shelkovitsa
+	fi
 
 	local s="$PROJECT_DIR/server"
 	if [[ -d "$s" ]]; then

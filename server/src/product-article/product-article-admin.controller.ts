@@ -11,6 +11,7 @@ import {
 	Patch,
 	Post,
 	Query,
+	Req,
 	SerializeOptions,
 	StreamableFile,
 	UploadedFile,
@@ -18,6 +19,9 @@ import {
 } from '@nestjs/common';
 import { ApiConsumes, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import * as fs from 'node:fs/promises';
+import { Request } from 'express';
+import { AuditService } from 'src/audit/audit.service';
+import { AuditActions } from 'src/audit/audit.types';
 import { AdminAuth } from 'src/decorators/adminAuth';
 import {
 	existsFile,
@@ -45,8 +49,13 @@ import { ProductImportService } from './product-import.service';
 export class ProductArticleAdminController {
 	constructor(
 		private readonly productArticleService: ProductArticleService,
-		private readonly productImportService: ProductImportService
+		private readonly productImportService: ProductImportService,
+		private readonly audit: AuditService
 	) {}
+
+	private actor(req: Request) {
+		return { id: req.user?.id, mail: req.user?.mail };
+	}
 
 	@SerializeOptions({ type: PaginatedDto(ProductArticleAdminDto) })
 	@Get()
@@ -64,14 +73,32 @@ export class ProductArticleAdminController {
 
 	@Patch('images/:fileId/logo')
 	@HttpCode(204)
-	async setLogo(@Param('fileId', ParseIntPipe) fileId: number): Promise<void> {
+	async setLogo(
+		@Param('fileId', ParseIntPipe) fileId: number,
+		@Req() req: Request
+	): Promise<void> {
 		await this.productArticleService.changeLogo(fileId);
+		this.audit.record({
+			actor: this.actor(req),
+			action: AuditActions.PRODUCT_ARTICLE_LOGO,
+			entity: 'product_file',
+			entityId: fileId
+		});
 	}
 
 	@Delete('images/:fileId')
 	@HttpCode(204)
-	async deleteImage(@Param('fileId', ParseIntPipe) fileId: number): Promise<void> {
+	async deleteImage(
+		@Param('fileId', ParseIntPipe) fileId: number,
+		@Req() req: Request
+	): Promise<void> {
 		await this.productArticleService.deleteImage(fileId);
+		this.audit.record({
+			actor: this.actor(req),
+			action: AuditActions.PRODUCT_ARTICLE_IMAGE_DELETE,
+			entity: 'product_file',
+			entityId: fileId
+		});
 	}
 
 	@SerializeOptions({ type: FullProductArticleAdminDto })
@@ -88,9 +115,18 @@ export class ProductArticleAdminController {
 	})
 	async update(
 		@Param('id', ParseIntPipe) id: number,
-		@Body() payload: UpdateProductArticleDto
+		@Body() payload: UpdateProductArticleDto,
+		@Req() req: Request
 	) {
-		return this.productArticleService.updateProductArticle(id, payload);
+		const result = await this.productArticleService.updateProductArticle(id, payload);
+		this.audit.record({
+			actor: this.actor(req),
+			action: AuditActions.PRODUCT_ARTICLE_UPDATE,
+			entity: 'product_article',
+			entityId: id,
+			meta: { fields: Object.keys(payload) }
+		});
+		return result;
 	}
 
 	@Delete(':id')
@@ -99,8 +135,17 @@ export class ProductArticleAdminController {
 		summary:
 			'Удалить артикул полностью (с вариантами и фото). Только если его ни разу не заказывали'
 	})
-	async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+	async delete(
+		@Param('id', ParseIntPipe) id: number,
+		@Req() req: Request
+	): Promise<void> {
 		await this.productArticleService.deleteProductArticle(id);
+		this.audit.record({
+			actor: this.actor(req),
+			action: AuditActions.PRODUCT_ARTICLE_DELETE,
+			entity: 'product_article',
+			entityId: id
+		});
 	}
 
 	@Post(':id/images')
@@ -109,9 +154,16 @@ export class ProductArticleAdminController {
 	@ApiOperation({ summary: 'Загрузить фото (поле image: JPEG, PNG или WebP до 5 МБ)' })
 	async uploadImage(
 		@Param('id', ParseIntPipe) id: number,
-		@UploadedFile(new ParseImagePipe()) image: Express.Multer.File
+		@UploadedFile(new ParseImagePipe()) image: Express.Multer.File,
+		@Req() req: Request
 	): Promise<void> {
 		await this.productArticleService.uploadImage(id, image);
+		this.audit.record({
+			actor: this.actor(req),
+			action: AuditActions.PRODUCT_ARTICLE_IMAGE_UPLOAD,
+			entity: 'product_article',
+			entityId: id
+		});
 	}
 
 	@Post('import')
@@ -124,7 +176,8 @@ export class ProductArticleAdminController {
 	async import(
 		@UploadedFile(parseFileBuilder())
 		file: Express.Multer.File,
-		@Body() uploadFileDto: UploadProductArticleFileDto
+		@Body() uploadFileDto: UploadProductArticleFileDto,
+		@Req() req: Request
 	) {
 		const filePath = getSrcPath(file.filename);
 		try {
@@ -133,6 +186,13 @@ export class ProductArticleAdminController {
 				filePath,
 				uploadFileDto
 			);
+			this.audit.record({
+				actor: this.actor(req),
+				action: AuditActions.PRODUCT_ARTICLE_IMPORT,
+				entity: 'product_article',
+				entityId: null,
+				meta: { file: file.originalname }
+			});
 			return new StreamableFile(errorFile);
 		} finally {
 			// загруженный файл нужен только на время импорта

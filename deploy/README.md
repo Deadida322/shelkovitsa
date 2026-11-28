@@ -274,6 +274,27 @@ sudo env GIT_REPO='https://github.com/ваш-орг/shelkovitsa.git' GIT_BRANCH=
 
 Переопределение версий — через переменные в таблице выше и примеры для `install-server.sh`.
 
+## Логи и журнал действий
+
+| Что | Где |
+|-----|-----|
+| Ops JSONL | `LOG_DIR` (на стенде `/var/log/shelkovitsa/app.jsonl`), ротация в приложении + `deploy/logrotate-shelkovitsa.conf` |
+| stdout | `journalctl -u shelkovitsa-backend` (дубль того же Nest Logger) |
+| Журнал «кто что сделал» | таблица `audit_log` в Postgres, чистка cron раз в сутки (`AUDIT_RETENTION_DAYS`) |
+
+В `server/.env` на стенде:
+
+```env
+LOG_DIR=/var/log/shelkovitsa
+LOG_MAX_FILE_MB=50
+LOG_MAX_FILES=7
+IS_LOGGING_ROUTE=false
+AUDIT_RETENTION_DAYS=90
+```
+
+Скачать логи: `scp root@host:/var/log/shelkovitsa/app*.jsonl* .`  
+Выборка audit: `sudo -u postgres psql -d shelkovitsa -c "SELECT * FROM audit_log ORDER BY id DESC LIMIT 50;"`
+
 ## Почта на тестовом стенде
 
 Основной канал уведомлений о заказах и сброса пароля — **SMTP** (Nodemailer). Telegram на стенде лучше **выключить**, чтобы не дублировать и не зависеть от бота.
