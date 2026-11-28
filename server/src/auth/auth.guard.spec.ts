@@ -25,6 +25,7 @@ const customer = Object.assign(new User(), {
 	id: 2,
 	mail: 'u@test.ru',
 	fio: 'U',
+	tel: '+79991112233',
 	password: 'hash',
 	role: UserRole.CUSTOMER
 });
@@ -93,6 +94,7 @@ describe('AuthGuard', () => {
 			id: 2,
 			mail: customer.mail,
 			fio: 'U',
+			tel: '+79991112233',
 			isAdmin: false
 		});
 	});

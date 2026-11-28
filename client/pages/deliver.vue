@@ -10,7 +10,7 @@ import { helpers } from '@vuelidate/validators';
 import { VsNotification } from 'vuesax-alpha';
 import { FIO_MESSAGE, isValidFio, normalizeFio } from '~/utils/fio';
 import { formatRub } from '~/utils/money';
-import { formatRuPhoneMask, normalizeRuPhone } from '~/utils/phone';
+import { normalizeRuPhone } from '~/utils/phone';
 
 const config = useRuntimeConfig();
 const base = config.public.apiBase;
@@ -36,31 +36,24 @@ function onFioBlur() {
     }
 }
 
-/** Подставить профиль авторизованного пользователя, не затирая уже введённое */
+/** Ключ формы: после prefill пересоздаём vs-input, иначе они часто не подхватывают v-model */
+const recipientFormKey = ref(0);
+
 function fillOrderFromUser() {
-    const u = authStore.user;
-    if (!u) return;
-    if (!orderStore.order.mail) {
-        orderStore.order.mail = u.mail || '';
-    }
-    if (!orderStore.order.fio) {
-        orderStore.order.fio = u.fio || '';
-    }
-    if (!orderStore.order.tel && u.tel) {
-        orderStore.order.tel = formatRuPhoneMask(u.tel);
+    if (orderStore.prefillFromUser(authStore.user)) {
+        recipientFormKey.value += 1;
     }
 }
 
 watch(
     () => authStore.user,
     () => fillOrderFromUser(),
-    { immediate: true },
+    { immediate: true, deep: true },
 );
 
 onMounted(async () => {
-    if (!authStore.user) {
-        await authStore.getMe();
-    }
+    // всегда освежаем профиль с /me (там mail/fio/tel), даже если cookie уже есть
+    await authStore.getMe();
     fillOrderFromUser();
 });
 
@@ -263,7 +256,7 @@ useHead({
                     </v-stepper-header>
                     <v-stepper-window>
                         <v-stepper-window-item :value="1">
-                            <div class="deliver__form">
+                            <div :key="recipientFormKey" class="deliver__form">
                                 <s-input
                                     v-model="orderStore.order.mail"
                                     required

@@ -9,5 +9,7 @@ export class UserInRequest {
 	@Expose()
 	fio!: string;
 	@Expose()
+	tel?: string | null;
+	@Expose()
 	isAdmin?: boolean;
 }
