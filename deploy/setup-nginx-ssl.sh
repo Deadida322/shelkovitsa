@@ -46,9 +46,11 @@ write_from_template() {
 	[[ -f "$src" ]] || die "нет файла: $src"
 	local tmp
 	tmp="$(mktemp)"
+	local nuxt_public="${PROJECT_DIR}/client/.output/public"
 	sed \
 		-e "s|@SERVER_NAMES@|${SERVER_NAMES}|g" \
 		-e "s|@LETSENCRYPT_LIVE@|${LETSENCRYPT_LIVE_NAME}|g" \
+		-e "s|@NUXT_PUBLIC@|${nuxt_public}|g" \
 		"$src" >"$tmp"
 	mv "$tmp" "$dst"
 	log "записан $dst из $src"
