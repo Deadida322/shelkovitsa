@@ -87,14 +87,14 @@ function nextStep() {
             orderProducts: cartStore.cart,
         },
     })
-        .then(() => {
+        .then(async () => {
+            await cartStore.clearCart();
             VsNotification({
                 title: 'Отправлено!',
                 content: 'Заказ отправлен, ожидайте связи',
                 position: 'bottom-center',
                 border: 'success',
             });
-            cartStore.clearCart();
         })
         .catch((err) => {
             const message =

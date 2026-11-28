@@ -1,0 +1,11 @@
+---
+description: Запрет прямых коммитов и пушей в main — только ветка + PR
+alwaysApply: true
+---
+
+# No direct commits to main
+
+- **Запрещено** коммитить и пушить напрямую в `main` / `master`.
+- Рабочий поток: отдельная ветка (`feat/…`, `fix/…`) → `git push -u origin HEAD` → **PR** (`gh pr create`).
+- Даже «мелочь» и хотфиксы для стенда — через PR (мерж только после явного ОКсия пользователя, см. `no-auto-merge`).
+- Если сейчас на `main` с незакоммиченными правками: сначала `git checkout -b …`, затем commit/push/PR.

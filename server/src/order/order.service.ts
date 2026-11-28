@@ -135,6 +135,11 @@ export class OrderService {
 				retryCount: 0
 			});
 
+			// Корзина авторизованного покупателя — на бэке; чистим в той же транзакции
+			if (userId) {
+				await manager.update(User, { id: userId }, { basket: [] });
+			}
+
 			return order.id;
 		});
 
