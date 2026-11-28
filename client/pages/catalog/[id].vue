@@ -308,6 +308,9 @@ const shopColorImage = computed(() => {
                         cover
                         class="image-main"
                         :height="mobile ? '400px' : '300px'"
+                        :img-width="800"
+                        :img-height="800"
+                        sizes="(max-width: 960px) 100vw, 50vw"
                         :src="displayedImage"
                         @click="showImageViewer = true"
                         @error="handleImageError"
@@ -318,6 +321,9 @@ const shopColorImage = computed(() => {
                                 cover
                                 class="carousel-image"
                                 height="200px"
+                                :img-width="320"
+                                :img-height="200"
+                                sizes="(max-width: 960px) 45vw, 200px"
                                 :src="`${base}/static/${name}`"
                                 @click="handleImageClick(`${base}/static/${name}`, key)"
                                 @error="handleImageError"

@@ -26,6 +26,15 @@ const props = defineProps({
         type: [String, Number],
         default: '100%',
     },
+    /** Числовые размеры для Nuxt Image (генерация srcset) */
+    imgWidth: {
+        type: Number,
+        default: undefined,
+    },
+    imgHeight: {
+        type: Number,
+        default: undefined,
+    },
     aspectRatio: {
         type: [Number, String],
         default: null,
@@ -40,7 +49,7 @@ const props = defineProps({
     },
     lazy: {
         type: Boolean,
-        default: true, // Изменяем значение по умолчанию на true
+        default: true,
     },
     eager: {
         type: Boolean,
@@ -58,16 +67,28 @@ const props = defineProps({
         type: String,
         default: '',
     },
+    /** Nuxt Image (ipx): по умолчанию включён, кроме ручного srcset */
+    optimize: {
+        type: Boolean,
+        default: true,
+    },
 });
+
 // SSR и первый клиентский кадр: картинка «видима», без opacity/transform рассинхрона
 const isLoaded = ref(true);
 const hasMounted = ref(false);
 
-const imgRef = ref<HTMLImageElement | null>(null);
+const imgRef = ref<HTMLImageElement | { $el?: HTMLImageElement } | null>(null);
+
+const useNuxtImage = computed(() => props.optimize && !props.srcset);
 
 const loading = computed<'lazy' | 'eager' | undefined>(() =>
     props.eager ? 'eager' : props.lazy ? 'lazy' : undefined,
 );
+
+const nuxtModifiers = computed(() => ({
+    fit: (props.cover ? 'cover' : 'contain') as 'cover' | 'contain',
+}));
 
 const wrapperStyle = computed(() => {
     const styles: Record<string, string> = {
@@ -109,6 +130,20 @@ const imageStylePlaceholder = computed(() => ({
     opacity: isLoaded.value ? 0 : 1,
 }));
 
+function resolveImgEl(): HTMLImageElement | null {
+    const el = imgRef.value;
+    if (!el) {
+        return null;
+    }
+    if (el instanceof HTMLImageElement) {
+        return el;
+    }
+    if (el.$el instanceof HTMLImageElement) {
+        return el.$el;
+    }
+    return null;
+}
+
 function onLoad() {
     isLoaded.value = true;
 }
@@ -119,11 +154,10 @@ function onError() {
 
 onMounted(() => {
     hasMounted.value = true;
-    const img = imgRef.value;
+    const img = resolveImgEl();
     if (!img) {
         return;
     }
-    // Анимация появления только после mount и только если ещё не в кэше
     if (!img.complete || img.naturalWidth === 0) {
         isLoaded.value = false;
     }
@@ -132,10 +166,8 @@ onMounted(() => {
 
 <template>
     <div class="s-image" :style="wrapperStyle">
-        <!-- Gradient overlay -->
         <div v-if="gradient" class="s-image__gradient" :style="{ background: gradient }" />
 
-        <!-- Placeholder (blur) - показываем только на клиенте когда изображение ещё не loaded -->
         <img
             v-if="!isLoaded && lazySrc && hasMounted"
             class="s-image__placeholder"
@@ -147,7 +179,23 @@ onMounted(() => {
             height="100%"
         />
 
-        <picture>
+        <NuxtImg
+            v-if="useNuxtImage"
+            ref="imgRef"
+            class="s-image__img"
+            :src="src"
+            :alt="alt"
+            :width="imgWidth"
+            :height="imgHeight"
+            :sizes="sizes"
+            :loading="loading"
+            :modifiers="nuxtModifiers"
+            :style="imageStyle"
+            @load="onLoad"
+            @error="onError"
+        />
+
+        <picture v-else>
             <source v-if="webpSrc" :srcset="webpSrc" type="image/webp" />
             <img
                 ref="imgRef"
@@ -166,7 +214,6 @@ onMounted(() => {
             />
         </picture>
 
-        <!-- central slot -->
         <div class="s-image__overlay">
             <slot />
         </div>
@@ -181,7 +228,6 @@ onMounted(() => {
     border-radius: 12px;
 }
 
-/* основной img и placeholder — оба абсолютные */
 .s-image__img,
 .s-image__placeholder {
     width: 100%;
@@ -193,18 +239,15 @@ onMounted(() => {
     will-change: opacity, transform;
 }
 
-/* placeholder сверху, пока основное изображение не загружено */
 .s-image__placeholder {
     z-index: 1;
     pointer-events: none;
 }
 
-/* основной img ниже placeholder, но выше gradient; его opacity контролируется через inline style */
 .s-image__img {
     z-index: 0;
 }
 
-/* градиент над картинкой, под контентом */
 .s-image__gradient {
     position: absolute;
     inset: 0;
@@ -212,7 +255,6 @@ onMounted(() => {
     pointer-events: none;
 }
 
-/* слот поверх всех */
 .s-image__overlay {
     position: absolute;
     inset: 0;
@@ -220,10 +262,9 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    pointer-events: none; /* позволяет элементам быть неинтерактивными по умолчанию */
+    pointer-events: none;
 }
 
-/* разрешаем интерактивность внутри слота */
 .s-image__overlay ::v-deep(*) {
     pointer-events: auto;
 }
