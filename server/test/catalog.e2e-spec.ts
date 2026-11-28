@@ -111,13 +111,12 @@ describe('Catalog (e2e)', () => {
 			.get(`/api/product-article/${catalog.article.id}`)
 			.query({})
 			.expect(200);
-		expect(card.body.productSizes.map((s: { name: string }) => s.name).sort()).toEqual([
-			'50',
-			'75B'
-		]);
-		expect(card.body.productColors.map((c: { name: string }) => c.name)).not.toContain(
-			'Принт'
-		);
+		expect(
+			card.body.productSizes.map((s: { name: string }) => s.name).sort()
+		).toEqual(['50', '75B']);
+		expect(
+			card.body.productColors.map((c: { name: string }) => c.name)
+		).not.toContain('Принт');
 
 		const bySize = await request(app.getHttpServer())
 			.get(`/api/product-article/${catalog.article.id}`)
@@ -126,9 +125,9 @@ describe('Catalog (e2e)', () => {
 		expect(bySize.body.productColors.map((c: { name: string }) => c.name)).toEqual([
 			'Белый'
 		]);
-		expect(bySize.body.productColors.map((c: { name: string }) => c.name)).not.toContain(
-			'Принт'
-		);
+		expect(
+			bySize.body.productColors.map((c: { name: string }) => c.name)
+		).not.toContain('Принт');
 	});
 
 	it('скрытый и закончившийся артикул: 404 и available=0', async () => {

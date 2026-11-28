@@ -40,17 +40,8 @@ export function filtersFromQuery(query = {}) {
 
 /** Состояние → query без пустых значений (для router.push / replace) */
 export function filtersToQuery(filters) {
-    const {
-        category,
-        subcategory,
-        search,
-        brands,
-        sizes,
-        minPrice,
-        maxPrice,
-        sort,
-        page,
-    } = filters;
+    const { category, subcategory, search, brands, sizes, minPrice, maxPrice, sort, page } =
+        filters;
     return {
         ...(category && subcategory
             ? { category: String(category), subcategory: String(subcategory) }

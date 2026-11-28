@@ -420,7 +420,9 @@ onMounted(() => {
                                     <td>
                                         <NuxtLink
                                             v-if="productArticleId(product)"
-                                            :to="productArticleAdminRoute(productArticleId(product))"
+                                            :to="
+                                                productArticleAdminRoute(productArticleId(product))
+                                            "
                                             class="admin-orders__product-link"
                                             @click.stop
                                         >

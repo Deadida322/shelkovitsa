@@ -44,9 +44,7 @@ const isUnavailable = computed(() => Boolean(loadError.value || !shopItem.value?
 /** Остаток выбранного SKU (только после /api/product с размером и цветом). */
 const variantStock = ref(null);
 
-const hasVariantSelection = computed(
-    () => Boolean(cartInfo.value.size && cartInfo.value.color),
-);
+const hasVariantSelection = computed(() => Boolean(cartInfo.value.size && cartInfo.value.color));
 
 const showStockCaption = computed(
     () =>
@@ -270,18 +268,13 @@ const shopColorImage = computed(() => {
             Загрузка…
         </div>
 
-        <div
-            v-else-if="isUnavailable"
-            class="catalog-item-page catalog-item-page--status"
-        >
+        <div v-else-if="isUnavailable" class="catalog-item-page catalog-item-page--status">
             <vs-alert color="#1A5CFF">
                 <template #icon>
                     <v-icon size="40">mdi-information</v-icon>
                 </template>
                 <div class="text-h6 mb-2">Товар недоступен</div>
-                <div>
-                    Товар снят с витрины или не найден. Посмотрите другие позиции в каталоге.
-                </div>
+                <div>Товар снят с витрины или не найден. Посмотрите другие позиции в каталоге.</div>
                 <a href="#" class="catalog-item-page__catalog-link" @click.prevent="goToCatalog">
                     Перейти в каталог
                 </a>
