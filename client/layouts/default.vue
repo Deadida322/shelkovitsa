@@ -9,9 +9,7 @@ const mappingStore = useMappingStore();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 
-if (import.meta.client) {
-    await authStore.getMe();
-}
+await authStore.getMe();
 await cartStore.initializeCart();
 const route = useRoute();
 const isAdminPage = computed(() => route.path.startsWith('/admin'));
@@ -94,7 +92,8 @@ useAsyncData(
     &__menu {
         min-width: 300px;
 
-        @media screen and (max-width: 1000px) {
+        // граница с .catalog-toolbar__cats-btn / .catalog-mobile-cats
+        @media screen and (max-width: $bp-categories) {
             display: none;
         }
     }

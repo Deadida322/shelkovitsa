@@ -700,7 +700,7 @@ useHead({
         gap: 12px 24px;
 
         &--actions {
-            @media screen and (max-width: 1000px) {
+            @media screen and (max-width: $bp-categories) {
                 width: 100%;
                 justify-content: space-between;
             }
@@ -715,7 +715,8 @@ useHead({
     &__cats-btn {
         display: none;
 
-        @media screen and (max-width: 1000px) {
+        // граница с .shelkovitsa-body__menu (default layout)
+        @media screen and (max-width: $bp-categories) {
             display: inline-flex;
         }
     }
@@ -744,7 +745,7 @@ useHead({
         max-width: 240px;
         flex: 1 1 160px;
 
-        @media screen and (max-width: 1000px) {
+        @media screen and (max-width: $bp-categories) {
             min-width: 0;
             max-width: none;
         }
@@ -767,7 +768,8 @@ useHead({
     background: #fff;
     box-shadow: 0px 4px 6px 0px rgba(34, 60, 80, 0.2);
 
-    @media screen and (max-width: 1000px) {
+    // граница с .shelkovitsa-body__menu (default layout)
+    @media screen and (max-width: $bp-categories) {
         display: grid;
     }
 

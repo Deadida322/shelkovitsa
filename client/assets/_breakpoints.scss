@@ -1,0 +1,4 @@
+// Общий compact-порог layout (категории + совпадает с NAV в utils/breakpoints.js).
+// Категории: сайдбар (layout) ↔ кнопка «Категории» (catalog)
+// Держать в синхроне с COMPACT_LAYOUT_PX в utils/breakpoints.js
+$bp-categories: 1000px;
