@@ -7,8 +7,12 @@ import { useMappingStore } from '~/stores/mapping';
 const categoriesStore = useCategoriesStore();
 const mappingStore = useMappingStore();
 const cartStore = useCartStore();
+const authStore = useAuthStore();
 
-cartStore.initializeCart();
+if (import.meta.client) {
+    await authStore.getMe();
+}
+await cartStore.initializeCart();
 const route = useRoute();
 const isAdminPage = computed(() => route.path.startsWith('/admin'));
 watch(
