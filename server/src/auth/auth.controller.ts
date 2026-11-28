@@ -38,10 +38,19 @@ interface ICookieOptions {
 	sameSite: 'none' | 'lax' | 'strict' | boolean;
 	path: string;
 }
+const cookieSameSite = (): ICookieOptions['sameSite'] => {
+	const fromEnv = process.env.COOKIE_SAME_SITE;
+	if (fromEnv === 'lax' || fromEnv === 'strict' || fromEnv === 'none') {
+		return fromEnv;
+	}
+	// same-origin фронт + API: lax; none — только если реально кросс-сайт
+	return 'lax';
+};
+
 const cookieOptions: ICookieOptions = {
 	secure: process.env.NODE_ENV === 'production',
 	httpOnly: true,
-	sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+	sameSite: cookieSameSite(),
 	path: '/'
 };
 

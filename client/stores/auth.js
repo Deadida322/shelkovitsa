@@ -23,16 +23,13 @@ export const useAuthStore = defineStore('auth', () => {
         });
     };
 
-    // Кука user — только подсказка для UI; актуальные данные и права берём с сервера
+    // Кука user — кэш для UI; права и профиль сверяем с /api/auth/me
     const getMe = async () => {
-        if (user.value && user.value.fio) {
-            await api('/api/auth/me')
-                .then((res) => {
-                    user.value = { ...res };
-                })
-                .catch(() => {
-                    user.value = null;
-                });
+        try {
+            const res = await api('/api/auth/me');
+            user.value = { ...res };
+        } catch {
+            user.value = null;
         }
     };
     const clearUser = () => {
