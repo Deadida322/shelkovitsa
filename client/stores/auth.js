@@ -23,13 +23,23 @@ export const useAuthStore = defineStore('auth', () => {
         });
     };
 
-    // Кука user — кэш для UI; права и профиль сверяем с /api/auth/me
+    // Кука user — кэш UI на домене Nuxt; access_token — httpOnly на API-хосте.
+    // На SSR (:3000) access_token часто недоступен → /me падает; кэш user не затираем.
     const getMe = async () => {
         try {
-            const res = await api('/api/auth/me');
+            const opts = {};
+            if (import.meta.server) {
+                const { cookie } = useRequestHeaders(['cookie']);
+                if (cookie) {
+                    opts.headers = { cookie };
+                }
+            }
+            const res = await api('/api/auth/me', opts);
             user.value = { ...res };
         } catch {
-            user.value = null;
+            if (import.meta.client) {
+                user.value = null;
+            }
         }
     };
     const clearUser = () => {

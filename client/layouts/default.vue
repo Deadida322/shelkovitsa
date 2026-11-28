@@ -9,9 +9,7 @@ const mappingStore = useMappingStore();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
 
-if (import.meta.client) {
-    await authStore.getMe();
-}
+await authStore.getMe();
 await cartStore.initializeCart();
 const route = useRoute();
 const isAdminPage = computed(() => route.path.startsWith('/admin'));

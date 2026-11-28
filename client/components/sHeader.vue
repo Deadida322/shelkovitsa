@@ -10,17 +10,30 @@ const route = useRoute();
 const active = ref(route.path);
 const bp = useBreakpoints();
 const mobileMenuVisible = ref(false);
+/**
+ * До mount SSR HTML и клиент должны совпасть:
+ * - ширина viewport на SSR неизвестна
+ * - /me на SSR часто без access_token (кука API-хоста) → user расходится
+ */
+const navReady = ref(false);
 
 const router = useRouter();
 
-/** Центровое меню: «ЗАКАЗЫ» только для авторизованных */
+const isNavCompact = computed(() => navReady.value && bp.isNavCompact);
+const isNavWide = computed(() => !navReady.value || bp.isNavWide);
+
+/** Базовое меню на SSR/гидрации; «ЗАКАЗЫ» — только после mount */
 const menuItems = computed(() => {
     const items = [...menu];
-    if (!authStore.user) return items;
+    if (!navReady.value || !authStore.user) return items;
     const contactsIdx = items.findIndex((item) => item.to === '/contacts');
     const insertAt = contactsIdx >= 0 ? contactsIdx : items.length;
     items.splice(insertAt, 0, { title: 'ЗАКАЗЫ', to: '/orders' });
     return items;
+});
+
+onMounted(() => {
+    navReady.value = true;
 });
 
 watch(active, (val) => {
@@ -40,12 +53,9 @@ watch(
     },
 );
 
-watch(
-    () => bp.isNavCompact,
-    (compact) => {
-        if (!compact) mobileMenuVisible.value = false;
-    },
-);
+watch(isNavCompact, (compact) => {
+    if (!compact) mobileMenuVisible.value = false;
+});
 
 function isMenuActive(to) {
     if (to === '/catalog') {
@@ -56,7 +66,7 @@ function isMenuActive(to) {
 </script>
 
 <template>
-    <vs-navbar v-model="active" shadow :center-collapsed="bp.isNavCompact" padding-scroll>
+    <vs-navbar v-model="active" shadow :center-collapsed="isNavCompact" padding-scroll>
         <template #left>
             <NuxtLink to="/">
                 <div class="logo">SHELKOVITSA</div>
@@ -64,7 +74,7 @@ function isMenuActive(to) {
         </template>
         <vs-navbar-item
             v-for="item in menuItems"
-            v-show="bp.isNavWide"
+            v-show="isNavWide"
             :id="item.to"
             :key="item.to"
             :active="isMenuActive(item.to)"
@@ -83,7 +93,7 @@ function isMenuActive(to) {
                         />
                     </NuxtLink>
                     <v-btn
-                        v-show="bp.isNavWide"
+                        v-show="isNavWide"
                         variant="tonal"
                         size="small"
                         icon="mdi-logout"
@@ -92,18 +102,18 @@ function isMenuActive(to) {
                     />
                 </template>
                 <template v-else-if="!authStore.loading">
-                    <NuxtLink v-show="bp.isNavWide" to="/signin">
+                    <NuxtLink v-show="isNavWide" to="/signin">
                         <vs-button type="flat">Войти</vs-button>
                     </NuxtLink>
 
-                    <NuxtLink v-show="bp.isNavWide" to="/signup">
+                    <NuxtLink v-show="isNavWide" to="/signup">
                         <vs-button>Регистрация</vs-button>
                     </NuxtLink>
                 </template>
             </client-only>
 
             <v-btn
-                v-show="bp.isNavCompact"
+                v-show="isNavCompact"
                 class="ml-6"
                 size="small"
                 variant="tonal"
