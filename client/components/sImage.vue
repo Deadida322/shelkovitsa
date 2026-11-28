@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps({
     src: {
@@ -138,8 +138,15 @@ function resolveImgEl(): HTMLImageElement | null {
     if (el instanceof HTMLImageElement) {
         return el;
     }
-    if (el.$el instanceof HTMLImageElement) {
-        return el.$el;
+    const root = '$el' in el ? (el as { $el?: unknown }).$el : null;
+    if (root instanceof HTMLImageElement) {
+        return root;
+    }
+    if (root instanceof HTMLElement) {
+        const nested = root.querySelector('img');
+        if (nested instanceof HTMLImageElement) {
+            return nested;
+        }
     }
     return null;
 }
@@ -152,16 +159,32 @@ function onError() {
     isLoaded.value = true;
 }
 
-onMounted(() => {
-    hasMounted.value = true;
+function syncImageLoadState() {
     const img = resolveImgEl();
     if (!img) {
         return;
     }
     if (!img.complete || img.naturalWidth === 0) {
         isLoaded.value = false;
+        return;
     }
+    isLoaded.value = true;
+}
+
+onMounted(async () => {
+    hasMounted.value = true;
+    await nextTick();
+    syncImageLoadState();
 });
+
+watch(
+    () => props.src,
+    async () => {
+        isLoaded.value = true;
+        await nextTick();
+        syncImageLoadState();
+    },
+);
 </script>
 
 <template>
@@ -190,6 +213,7 @@ onMounted(() => {
             :sizes="sizes"
             :loading="loading"
             :modifiers="nuxtModifiers"
+            :placeholder="false"
             :style="imageStyle"
             @load="onLoad"
             @error="onError"
