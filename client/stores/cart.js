@@ -75,9 +75,11 @@ export const useCartStore = defineStore('cart', () => {
         syncCart();
     };
 
-    const clearCart = () => {
+    const clearCart = async () => {
         cart.value = [];
-        syncCart();
+        cartCookie.value = [];
+        clearLegacyCartCookie();
+        await syncCart();
     };
 
     const mergeCartWithBackend = async () => {
