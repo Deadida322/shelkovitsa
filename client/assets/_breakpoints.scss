@@ -1,0 +1,4 @@
+// Общие CSS-пороги. Пары show/hide должны использовать ОДИН и тот же токен.
+// Категории: сайдбар (layout) ↔ кнопка «Категории» (catalog)
+// Держать в синхроне с CATEGORIES_BREAKPOINT_PX в utils/breakpoints.js
+$bp-categories: 1000px;

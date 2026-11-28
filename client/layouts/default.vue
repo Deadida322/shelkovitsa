@@ -94,7 +94,8 @@ useAsyncData(
     &__menu {
         min-width: 300px;
 
-        @media screen and (max-width: 1000px) {
+        // граница с .catalog-toolbar__cats-btn / .catalog-mobile-cats
+        @media screen and (max-width: $bp-categories) {
             display: none;
         }
     }

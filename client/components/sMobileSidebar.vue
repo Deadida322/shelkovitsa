@@ -1,8 +1,5 @@
 <script setup>
-import useBreakpoints from '@/composables/breakpoints';
-
 const open = defineModel('open', { type: Boolean, default: false });
-const bp = useBreakpoints();
 const authStore = useAuthStore();
 const attrs = useAttrs();
 
@@ -73,7 +70,7 @@ async function onLogout() {
                     <div v-if="authStore.user" class="d-flex">
                         <vs-button type="flat" @click="onLogout">Выйти</vs-button>
                     </div>
-                    <div v-else-if="bp.isSmallMobile || bp.isMobile || bp.isTablet" class="d-flex">
+                    <div v-else class="d-flex">
                         <vs-button type="flat" @click="close">
                             <nuxt-link to="/signin">Войти</nuxt-link>
                         </vs-button>

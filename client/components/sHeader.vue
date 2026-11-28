@@ -1,16 +1,15 @@
 <script setup>
 import { NuxtLink } from '#components';
 import { useAuthStore, useFiltersStore } from '#imports';
-import { useDisplay } from 'vuetify';
+import useBreakpoints from '@/composables/breakpoints';
 import menu from '~/assets/js/menu';
 
 const authStore = useAuthStore();
 const filtersStore = useFiltersStore();
 const route = useRoute();
 const active = ref(route.path);
-const display = useDisplay();
+const bp = useBreakpoints();
 const mobileMenuVisible = ref(false);
-const centerCollapsed = computed(() => display.xs.value || display.sm.value || display.md.value);
 
 const router = useRouter();
 
@@ -41,6 +40,13 @@ watch(
     },
 );
 
+watch(
+    () => bp.isNavCompact,
+    (compact) => {
+        if (!compact) mobileMenuVisible.value = false;
+    },
+);
+
 function isMenuActive(to) {
     if (to === '/catalog') {
         return route.path.startsWith('/catalog');
@@ -50,7 +56,7 @@ function isMenuActive(to) {
 </script>
 
 <template>
-    <vs-navbar v-model="active" shadow :center-collapsed="centerCollapsed" padding-scroll>
+    <vs-navbar v-model="active" shadow :center-collapsed="bp.isNavCompact" padding-scroll>
         <template #left>
             <NuxtLink to="/">
                 <div class="logo">SHELKOVITSA</div>
@@ -58,9 +64,9 @@ function isMenuActive(to) {
         </template>
         <vs-navbar-item
             v-for="item in menuItems"
+            v-show="bp.isNavWide"
             :id="item.to"
             :key="item.to"
-            class="d-none d-sm-flex"
             :active="isMenuActive(item.to)"
         >
             <div>{{ item.title }}</div>
@@ -77,7 +83,7 @@ function isMenuActive(to) {
                         />
                     </NuxtLink>
                     <v-btn
-                        class="d-none d-sm-flex"
+                        v-show="bp.isNavWide"
                         variant="tonal"
                         size="small"
                         icon="mdi-logout"
@@ -86,18 +92,19 @@ function isMenuActive(to) {
                     />
                 </template>
                 <template v-else-if="!authStore.loading">
-                    <NuxtLink to="/signin">
-                        <vs-button class="d-none d-sm-block" type="flat">Войти</vs-button>
+                    <NuxtLink v-show="bp.isNavWide" to="/signin">
+                        <vs-button type="flat">Войти</vs-button>
                     </NuxtLink>
 
-                    <NuxtLink to="/signup">
-                        <vs-button class="d-none d-sm-block">Регистрация</vs-button>
+                    <NuxtLink v-show="bp.isNavWide" to="/signup">
+                        <vs-button>Регистрация</vs-button>
                     </NuxtLink>
                 </template>
             </client-only>
 
             <v-btn
-                class="d-sm-none d-block ml-6"
+                v-show="bp.isNavCompact"
+                class="ml-6"
                 size="small"
                 variant="tonal"
                 icon
