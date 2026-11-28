@@ -355,6 +355,98 @@ describe('Админка каталога (e2e)', () => {
 			expect(await storage().exists(second.name)).toBe(false);
 		});
 
+		it('удаление последнего фото опубликованного артикула снимает с витрины', async () => {
+			await uploadImage().expect(201);
+			await update({ isVisible: true }).expect(200);
+			const [only] = await files();
+			await admin
+				.delete(`/api/admin/product-article/images/${only.id}`)
+				.expect(204);
+			const article = await manager().findOneBy(ProductArticle, {
+				id: catalog.article.id
+			});
+			expect(article!.isVisible).toBe(false);
+			expect(await files()).toHaveLength(0);
+			expect((await publicList().expect(200)).body.count).toBe(0);
+		});
+
+		it('опубликованный артикул без фото снимается с витрины при открытии карточки админки', async () => {
+			await manager().update(ProductArticle, catalog.article.id, { isVisible: true });
+			const res = await admin
+				.get(`/api/admin/product-article/${catalog.article.id}`)
+				.expect(200);
+			expect(res.body.isVisible).toBe(false);
+			expect(res.body.productFiles).toHaveLength(0);
+			const row = await manager().findOneBy(ProductArticle, {
+				id: catalog.article.id
+			});
+			expect(row!.isVisible).toBe(false);
+			expect((await publicList().expect(200)).body.count).toBe(0);
+		});
+
+		it('карточка админки и витрины не дублируют одно и то же фото', async () => {
+			await uploadImage().expect(201);
+			const [file] = await files();
+			const adminDetail = await admin
+				.get(`/api/admin/product-article/${catalog.article.id}`)
+				.expect(200);
+			const ids = adminDetail.body.productFiles.map((f: { id: number }) => f.id);
+			expect(ids).toEqual([file.id]);
+			expect(new Set(ids).size).toBe(ids.length);
+		});
+
+		it('удаление не-логотипа: на витрине остаётся логотип, id совпадают с БД', async () => {
+			await uploadImage().expect(201);
+			await uploadImage().expect(201);
+			await update({ isVisible: true }).expect(200);
+			let [logo, extra] = await files();
+			expect(logo.isLogo).toBe(true);
+			await admin
+				.delete(`/api/admin/product-article/images/${extra.id}`)
+				.expect(204);
+			const row = await manager().findOneBy(ProductArticle, {
+				id: catalog.article.id
+			});
+			expect(row!.isVisible).toBe(true);
+			const dbIds = (await files()).map((f) => f.id);
+			expect(dbIds).toEqual([logo.id]);
+			const publicDetail = await request(app.getHttpServer())
+				.get(`/api/product-article/${catalog.article.id}`)
+				.expect(200);
+			expect(publicDetail.body.productFiles.map((f: { id: number }) => f.id)).toEqual(
+				dbIds
+			);
+			expect(publicDetail.body.productFiles[0].isLogo).toBe(true);
+		});
+
+		it('удаление логотипа при других фото: логотип переходит, артикул видим на витрине', async () => {
+			await uploadImage().expect(201);
+			await uploadImage().expect(201);
+			await update({ isVisible: true }).expect(200);
+			const [logoFile, sibling] = await files();
+			expect(logoFile.isLogo).toBe(true);
+			const siblingId = sibling.id;
+			await admin
+				.delete(`/api/admin/product-article/images/${logoFile.id}`)
+				.expect(204);
+			const row = await manager().findOneBy(ProductArticle, {
+				id: catalog.article.id
+			});
+			expect(row!.isVisible).toBe(true);
+			const rest = await files();
+			expect(rest).toHaveLength(1);
+			expect(rest[0].id).toBe(siblingId);
+			expect(rest[0].isLogo).toBe(true);
+			const publicDetail = await request(app.getHttpServer())
+				.get(`/api/product-article/${catalog.article.id}`)
+				.expect(200);
+			expect(publicDetail.body.productFiles.map((f: { id: number }) => f.id)).toEqual([
+				siblingId
+			]);
+			expect(publicDetail.body.productFiles[0].isLogo).toBe(true);
+			expect((await publicList().expect(200)).body.count).toBe(1);
+		});
+
 		it('не-картинка и подделанный Content-Type — 422', async () => {
 			const upload = (buffer: Buffer, filename: string, contentType: string) =>
 				admin

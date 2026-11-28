@@ -124,13 +124,25 @@ export class ProductArticleService {
 		const available = sellableProducts.reduce((sum, p) => sum + (p.amount ?? 0), 0);
 
 		// превью (isLogo) всегда первым — и в админке, и на карточке
-		const productFiles = [...(article.productFiles ?? [])].sort(
+		const productFiles = filterDuplicateObjectById(article.productFiles ?? []).sort(
 			(a, b) => Number(b.isLogo) - Number(a.isLogo) || a.id - b.id
 		);
+
+		let isVisible = article.isVisible;
+		if (isVisible && productFiles.length === 0) {
+			const hidden = await this.unpublishIfNoImages(article.id);
+			if (hidden) {
+				isVisible = false;
+				if (!isAdmin) {
+					throw new NotFoundException('Артикул продукта не найден');
+				}
+			}
+		}
 
 		// сериализация — FullProductArticleDto / FullProductArticleAdminDto в контроллере
 		return {
 			...article,
+			isVisible,
 			available,
 			productFiles,
 			productColors: filterDuplicateObjectById(
@@ -245,7 +257,9 @@ export class ProductArticleService {
 		return getPaginateResult(
 			result.map((el) => ({
 				...el,
-				productFiles: el.productFiles.filter((file) => file.isLogo),
+				productFiles: filterDuplicateObjectById(el.productFiles ?? []).filter(
+					(file) => file.isLogo
+				),
 				...(isAdmin ? { totalAmount: amounts.get(el.id) ?? 0 } : {})
 			})),
 			total,
@@ -338,6 +352,12 @@ export class ProductArticleService {
 			conditions.push({
 				sql: (id) =>
 					`NOT EXISTS (SELECT 1 FROM product_file f WHERE f."productArticleId" = ${id})`,
+				params: {}
+			});
+		} else if (!isAdmin) {
+			conditions.push({
+				sql: (id) =>
+					`EXISTS (SELECT 1 FROM product_file f WHERE f."productArticleId" = ${id})`,
 				params: {}
 			});
 		}
@@ -523,11 +543,12 @@ export class ProductArticleService {
 			throw new NotFoundException('Не найдено такого продукта');
 		}
 
+		const existing = filterDuplicateObjectById(productArticle.productFiles ?? []);
 		const { key, contentType } = uploadedImageKey(image);
 		await this.storage.save(key, image.buffer, contentType);
 		await this.productFileRepository.save({
 			name: key,
-			isLogo: productArticle.productFiles.length === 0,
+			isLogo: existing.length === 0,
 			productArticle
 		});
 	}
@@ -542,17 +563,21 @@ export class ProductArticleService {
 			throw new NotFoundException('Не найдено такого файла');
 		}
 
+		const articleId = file.productArticle.id;
+
 		await this.dataSource.transaction(async (manager) => {
 			await manager.delete(ProductFile, file.id);
 			if (file.isLogo) {
 				const next = await manager.findOne(ProductFile, {
-					where: { productArticle: { id: file.productArticle.id } },
+					where: { productArticle: { id: articleId } },
 					order: { id: 'ASC' }
 				});
 				if (next) {
 					await manager.update(ProductFile, next.id, { isLogo: true });
 				}
 			}
+
+			await this.unpublishIfNoImages(articleId, manager);
 		});
 
 		await this.storage
@@ -670,7 +695,7 @@ export class ProductArticleService {
 			await manager.delete(Product, { productArticle: { id } });
 			// фото удаляются каскадом (product_file.productArticleId ON DELETE CASCADE)
 			await manager.delete(ProductArticle, id);
-			return article.productFiles;
+			return filterDuplicateObjectById(article.productFiles ?? []);
 		});
 
 		await Promise.all(
@@ -748,6 +773,28 @@ export class ProductArticleService {
 		if (toCreate.length) await manager.save(Product, toCreate);
 	}
 
+	/** Снять с витрины, если в БД не осталось файлов (в т.ч. починка устаревших данных). */
+	private async unpublishIfNoImages(
+		articleId: number,
+		manager: EntityManager = this.dataSource.manager
+	): Promise<boolean> {
+		const remaining = await manager.count(ProductFile, {
+			where: { productArticle: { id: articleId } }
+		});
+		if (remaining !== 0) {
+			return false;
+		}
+		const article = await manager.findOne(ProductArticle, {
+			where: { id: articleId },
+			withDeleted: true
+		});
+		if (!article?.isVisible) {
+			return false;
+		}
+		await manager.update(ProductArticle, articleId, { isVisible: false });
+		return true;
+	}
+
 	private async assertPublishable(manager: EntityManager, articleId: number) {
 		const article = await manager.findOne(ProductArticle, {
 			where: { id: articleId },
@@ -758,9 +805,10 @@ export class ProductArticleService {
 			return;
 		}
 
+		const fileCount = filterDuplicateObjectById(article.productFiles ?? []).length;
 		const reasons = [
 			!article.name && 'отсутствует имя',
-			!article.productFiles?.length && 'отсутствуют файлы',
+			!fileCount && 'отсутствуют файлы',
 			!article.productSubcategory?.id && 'отсутствует привязка к подкатегории',
 			!(await this.activeProducts(manager, articleId)).length &&
 				'отсутствуют цвета или размеры продукта'

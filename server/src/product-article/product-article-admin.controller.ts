@@ -62,6 +62,18 @@ export class ProductArticleAdminController {
 		return this.productArticleService.getFilters(query, true);
 	}
 
+	@Patch('images/:fileId/logo')
+	@HttpCode(204)
+	async setLogo(@Param('fileId', ParseIntPipe) fileId: number): Promise<void> {
+		await this.productArticleService.changeLogo(fileId);
+	}
+
+	@Delete('images/:fileId')
+	@HttpCode(204)
+	async deleteImage(@Param('fileId', ParseIntPipe) fileId: number): Promise<void> {
+		await this.productArticleService.deleteImage(fileId);
+	}
+
 	@SerializeOptions({ type: FullProductArticleAdminDto })
 	@Get(':id')
 	async getOne(@Param('id', ParseIntPipe) id: number) {
@@ -100,18 +112,6 @@ export class ProductArticleAdminController {
 		@UploadedFile(new ParseImagePipe()) image: Express.Multer.File
 	): Promise<void> {
 		await this.productArticleService.uploadImage(id, image);
-	}
-
-	@Patch('images/:fileId/logo')
-	@HttpCode(204)
-	async setLogo(@Param('fileId', ParseIntPipe) fileId: number): Promise<void> {
-		await this.productArticleService.changeLogo(fileId);
-	}
-
-	@Delete('images/:fileId')
-	@HttpCode(204)
-	async deleteImage(@Param('fileId', ParseIntPipe) fileId: number): Promise<void> {
-		await this.productArticleService.deleteImage(fileId);
 	}
 
 	@Post('import')
