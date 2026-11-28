@@ -41,16 +41,32 @@ const { modelValue, required, icon, email, customRules, minLength } = toRefs(pro
 const componentValue = useComponentValue({ modelValue, emit });
 
 const rules = computed(() => ({
+    ...customRules.value,
     required: required.value ? helpers.withMessage('Укажите поле', requiredFunc) : true,
     email: email.value ? helpers.withMessage('Неверный формат почты', emailFunc) : true,
     minLength: minLength.value
-        ? helpers.withMessage(`Слишком короткое значение`, minLengthFunc(minLength))
+        ? helpers.withMessage(
+              `Минимум ${minLength.value} символов`,
+              minLengthFunc(minLength),
+          )
         : true,
-    ...customRules.value,
 }));
 
 const $v = useVuelidate(rules, componentValue);
-const computedErrors = computed(() => $v.value.$errors?.[0]?.$message);
+const computedErrors = computed(() =>
+    $v.value.$dirty ? $v.value.$errors?.[0]?.$message : undefined,
+);
+
+function onBlur() {
+    $v.value.$touch();
+    $v.value.$validate();
+}
+
+function onInput() {
+    if ($v.value.$dirty) {
+        $v.value.$validate();
+    }
+}
 const attrs = useAttrs();
 
 const inputState = computed(() => (computedErrors.value ? 'danger' : undefined));
@@ -74,8 +90,8 @@ const vsInputAttrs = computed(() => {
         :state="inputState"
         placeholder="Ваш логин"
         v-bind="vsInputAttrs"
-        @blur="$v.$touch()"
-        @input="$v.$reset()"
+        @blur="onBlur"
+        @input="onInput"
     >
         <template v-if="icon" #icon>
             <v-icon>{{ `mdi-${icon}` }}</v-icon>

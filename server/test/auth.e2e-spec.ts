@@ -46,7 +46,7 @@ describe('Auth (e2e)', () => {
 	it('проверяет совпадение паролей', async () => {
 		await request(app.getHttpServer())
 			.post('/api/auth/register')
-			.send({ ...CUSTOMER, rePassword: 'other' })
+			.send({ ...CUSTOMER, rePassword: 'other-pass' })
 			.expect(400);
 	});
 
@@ -54,6 +54,18 @@ describe('Auth (e2e)', () => {
 		const res = await request(app.getHttpServer())
 			.post('/api/auth/register')
 			.send({ mail: 'not-an-email' })
+			.expect(422);
+		expect(res.body.error.message).toBeInstanceOf(Array);
+	});
+
+	it('отклоняет регистрацию с паролем короче 8 символов (422)', async () => {
+		const res = await request(app.getHttpServer())
+			.post('/api/auth/register')
+			.send({
+				...CUSTOMER,
+				password: 'short',
+				rePassword: 'short'
+			})
 			.expect(422);
 		expect(res.body.error.message).toBeInstanceOf(Array);
 	});
