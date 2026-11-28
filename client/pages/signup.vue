@@ -5,9 +5,9 @@ import { VsNotification } from 'vuesax-alpha';
 const { $api } = useNuxtApp();
 const user = ref({});
 const rePasswordValidation = computed(() => ({
-    rePassword: helpers.withMessage(
-        'Пароли должны совпадать',
-        () => user.value.password === user.value.rePassword,
+    match: helpers.withMessage(
+        'Пароли не совпадают',
+        (value) => !value || user.value.password === value,
     ),
 }));
 

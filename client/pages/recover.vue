@@ -16,9 +16,9 @@ const resetForm = ref({ password: '', rePassword: '' });
 const isLoading = ref(false);
 
 const rePasswordValidation = computed(() => ({
-    rePassword: helpers.withMessage(
-        'Пароли должны совпадать',
-        () => resetForm.value.password === resetForm.value.rePassword,
+    match: helpers.withMessage(
+        'Пароли не совпадают',
+        (value) => !value || resetForm.value.password === value,
     ),
 }));
 
